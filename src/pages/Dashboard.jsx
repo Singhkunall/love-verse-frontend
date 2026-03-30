@@ -13,7 +13,7 @@ import Sidebar from '../components/Sidebar'; // NAYA: Sidebar Import
 import io from 'socket.io-client';
 import FloatingHearts from '../components/FloatingHearts'; // NAYA: Import FloatingHearts
 
-const socket = io.connect('https://love-verse-backend.vercel.app');
+const socket = io.connect(import.meta.env.VITE_API_URL);
 
 function Dashboard() {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')));
