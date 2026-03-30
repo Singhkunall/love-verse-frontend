@@ -15,7 +15,7 @@ function ChessGame({ user, roomId, onBack, isWhite }) {
   const socketRef = useRef(null);
 
   useEffect(() => {
-    socketRef.current = io('http://localhost:8000');
+    socketRef.current = io(import.meta.env.VITE_API_URL);
     const socket = socketRef.current;
     socket.emit("join_chat", roomId);
 

@@ -3,7 +3,7 @@ import { Timer, Zap, Trophy, RefreshCw, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import io from 'socket.io-client';
 
-const socket = io.connect('http://localhost:8000');
+const socket = io.connect(import.meta.env.VITE_API_URL);
 
 function FastestFinger({ user, roomId, onBack }) {
   const [gameState, setGameState] = useState('idle'); // idle, waiting, clickNow, finished

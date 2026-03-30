@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
-import { Heart, Lock, Mail, User, ShieldCheck, ArrowLeft, Sparkles } from 'lucide-react';
+import { Heart, Lock, Mail, User, ArrowLeft, Sparkles } from 'lucide-react';
 import Dashboard from './pages/Dashboard'; 
+
+// Backend URL variable
+const API_URL = import.meta.env.VITE_API_URL;
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token'));
@@ -21,7 +24,8 @@ function App() {
     setLoading(true);
     const loadId = toast.loading("Sending secret code... 💌");
     try {
-      await axios.post('http://localhost:8000/api/auth/send-otp', { email });
+      // ✅ Fixed: Localhost hataya
+      await axios.post(`${API_URL}/api/auth/send-otp`, { email });
       toast.success("Code tumhare email par bhej diya! Check karo.", { id: loadId });
       setShowOtpScreen(true);
     } catch (error) {
@@ -33,14 +37,19 @@ function App() {
     e.preventDefault();
     setLoading(true);
     const endpoint = isRegistering ? 'register' : 'login';
+    // Partner1 role default rakha hai, backend logic ke hisab se adjust kar sakte ho
     const payload = isRegistering ? { name, email, password, otp, role: 'partner1' } : { email, password };
 
     try {
-      const res = await axios.post(`http://localhost:8000/api/auth/${endpoint}`, payload);
+      // ✅ Fixed: Localhost hataya
+      const res = await axios.post(`${API_URL}/api/auth/${endpoint}`, payload);
+      
       if (isRegistering) {
         toast.success("Account ban gaya! Ab login karo ❤️");
-        setIsRegistering(false); setShowOtpScreen(false);
+        setIsRegistering(false); 
+        setShowOtpScreen(false);
       } else {
+        // Backend se res.data.token aur res.data (user info) aana chahiye
         localStorage.setItem('token', res.data.token);
         localStorage.setItem('user', JSON.stringify(res.data));
         setToken(res.data.token);
@@ -52,7 +61,6 @@ function App() {
     } finally { setLoading(false); }
   };
 
-  // DASHBOARD UPDATE: Pass user and token as props if needed
   if (token) return <Dashboard user={user} token={token} />;
 
   return (

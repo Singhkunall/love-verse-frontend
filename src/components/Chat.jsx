@@ -7,7 +7,7 @@ import Peer from 'peerjs';
 import toast, { Toaster } from 'react-hot-toast';
 import Routine from './Routine'; 
 
-const socket = io.connect('http://localhost:8000');
+const socket = io.connect(import.meta.env.VITE_API_URL);
 
 function Chat({ user }) {
   const [currentMessage, setCurrentMessage] = useState("");
@@ -120,7 +120,7 @@ function Chat({ user }) {
 
   const fetchChatHistory = async () => {
     try {
-      const res = await axios.get(`http://localhost:8000/api/chat/history/${roomId}`);
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/chat/history/${roomId}`);
       setMessageList(res.data);
     } catch (err) {
       console.error("History fetch error:", err);

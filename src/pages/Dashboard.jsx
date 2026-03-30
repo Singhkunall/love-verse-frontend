@@ -13,7 +13,7 @@ import Sidebar from '../components/Sidebar'; // NAYA: Sidebar Import
 import io from 'socket.io-client';
 import FloatingHearts from '../components/FloatingHearts'; // NAYA: Import FloatingHearts
 
-const socket = io.connect('http://localhost:8000');
+const socket = io.connect('https://love-verse-backend.vercel.app');
 
 function Dashboard() {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')));
@@ -61,14 +61,14 @@ function Dashboard() {
   // --- LOGIC FUNCTIONS (Functions intact) ---
   const fetchTasks = async () => {
     try {
-      const res = await axios.get(`http://localhost:8000/api/routine/${roomId}`);
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/routine/${roomId}`);
       setTasks(res.data);
     } catch (err) { console.error("Task fetch error"); }
   };
 
   const toggleTask = async (id, currentStatus) => {
     try {
-      await axios.put(`http://localhost:8000/api/routine/toggle/${id}`, { completed: !currentStatus });
+      await axios.put(`${import.meta.env.VITE_API_URL}/api/routine/toggle/${id}`, { completed: !currentStatus });
       socket.emit("update_task", { roomId });
       fetchTasks();
     } catch (err) { toast.error("Update failed"); }
@@ -78,7 +78,7 @@ function Dashboard() {
     try {
       const currentUserId = user._id || user.id;
       const currentPartnerId = user.partnerId?._id || user.partnerId;
-      const res = await axios.get(`http://localhost:8000/api/auth/get-memories`, { params: { userId: currentUserId, partnerId: currentPartnerId } });
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/get-memories`, { params: { userId: currentUserId, partnerId: currentPartnerId } });
       setMemories(res.data);
     } catch (err) { console.error("Memories load fail", err); }
   };
@@ -86,7 +86,7 @@ function Dashboard() {
   const fetchUserProfile = async () => {
     try {
       const currentId = user._id || user.id;
-      const res = await axios.get(`http://localhost:8000/api/auth/profile/${currentId}`);
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/profile/${currentId}`);
       setUser(res.data);
       localStorage.setItem('user', JSON.stringify(res.data));
       if (res.data.anniversaryDate) calculateDays(res.data.anniversaryDate);
@@ -102,7 +102,7 @@ function Dashboard() {
 
   const handleMoodUpdate = async (newMood) => {
     try {
-      await axios.post('http://localhost:8000/api/auth/update-mood', { userId: user._id || user.id, mood: newMood });
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/update-mood`, { userId: user._id || user.id, mood: newMood });
       toast.success(`Mood: ${newMood}`); fetchUserProfile();
     } catch (err) { toast.error("Mood update fail!"); }
   };
@@ -117,7 +117,7 @@ function Dashboard() {
     if (!tempDate) return toast.error("Date choose karo!");
     const loadingToast = toast.loading("Saving...");
     try {
-      await axios.post('http://localhost:8000/api/auth/update-anniversary', { userId: user._id || user.id, date: tempDate });
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/update-anniversary`, { userId: user._id || user.id, date: tempDate });
       toast.success("Date Locked!", { id: loadingToast });
       fetchUserProfile(); setShowInput(false);
     } catch (err) { toast.error("Error!", { id: loadingToast }); }
@@ -137,7 +137,7 @@ function Dashboard() {
     if (!newMem.image || !newMem.caption) return toast.error("Bhai photo select karo aur caption dalo!");
     const uploadToast = toast.loading("Uploading...");
     try {
-      await axios.post('http://localhost:8000/api/auth/add-memory', {
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/add-memory`, {
         userId: user._id || user.id, partnerId: user.partnerId?._id || user.partnerId, image: newMem.image, caption: newMem.caption
       });
       toast.success("Locked! 💖", { id: uploadToast });
@@ -154,7 +154,7 @@ function Dashboard() {
             toast.dismiss(t.id);
             const deleteToast = toast.loading("Deleting...");
             try {
-              await axios.delete(`http://localhost:8000/api/auth/delete-memory/${id}`);
+              await axios.delete(`${import.meta.env.VITE_API_URL}/api/auth/delete-memory/${id}`);
               toast.success("Deleted!", { id: deleteToast });
               fetchMemories();
             } catch (err) { toast.error("Fail!", { id: deleteToast }); }
@@ -188,7 +188,7 @@ function Dashboard() {
     // NAYA: Offline nudge check logic
     const checkOfflineNudges = async () => {
       try {
-        const res = await axios.get(`http://localhost:8000/api/auth/check-nudges/${userId}`);
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/check-nudges/${userId}`);
         if (res.data.length > 0) {
           triggerHearts();
           toast("Partner ne aapki absence mein Hug bheja tha! 🤗❤️", { icon: '💖' });
@@ -216,7 +216,7 @@ function Dashboard() {
       });
 
       // 2. Save to DB (For Offline Support)
-      await axios.post('http://localhost:8000/api/auth/send-nudge', {
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/send-nudge`, {
         senderId: userId,
         receiverId: partnerId,
         roomId: roomId

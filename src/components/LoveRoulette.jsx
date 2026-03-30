@@ -27,7 +27,7 @@ function LoveRoulette({ user, roomId, socket }) {
   }, []);
 
   const fetchTodayTask = async () => {
-    const res = await axios.get(`http://localhost:8000/api/roulette/${roomId}`);
+    const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/roulette/${roomId}`);
     if (res.data) setCurrentTask(res.data);
   };
 
@@ -44,7 +44,7 @@ function LoveRoulette({ user, roomId, socket }) {
     const randomTask = tasks[Math.floor(Math.random() * tasks.length)].text;
     
     try {
-      await axios.post('http://localhost:8000/api/roulette/spin', {
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/roulette/spin`, {
         roomId, userId: user._id || user.id, task: randomTask
       });
       

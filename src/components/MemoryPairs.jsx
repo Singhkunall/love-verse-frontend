@@ -3,7 +3,7 @@ import { RefreshCw, Brain, Trophy, ArrowLeft } from 'lucide-react';
 import io from 'socket.io-client';
 import toast from 'react-hot-toast';
 
-const socket = io.connect('http://localhost:8000');
+const socket = io.connect(import.meta.env.VITE_API_URL);
 const EMOJIS = ['💖', '🐱', '🍕', '🌈', '🍦', '🎁'];
 
 function MemoryPairs({ user, roomId, onBack }) {

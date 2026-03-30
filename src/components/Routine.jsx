@@ -3,8 +3,7 @@ import { Trash2, Plus, CheckCircle2, Circle, Calendar, Heart } from 'lucide-reac
 import io from 'socket.io-client';
 import axios from 'axios';
 
-const socket = io.connect('http://localhost:8000');
-
+const socket = io.connect(import.meta.env.VITE_API_URL);
 function Routine({ user, onClose }) {
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState("");
@@ -26,7 +25,7 @@ function Routine({ user, onClose }) {
 
   const fetchTasks = async () => {
     try {
-      const res = await axios.get(`http://localhost:8000/api/routine/${roomId}`);
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/routine/${roomId}`);
       setTasks(res.data);
     } catch (err) { console.error("Error fetching tasks", err); }
   };
@@ -41,7 +40,7 @@ function Routine({ user, onClose }) {
       addedBy: user.name
     };
     try {
-      await axios.post(`http://localhost:8000/api/routine/add`, taskData);
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/routine/add`, taskData);
       socket.emit("update_task", { roomId }); // Partner ko signal bhejo
       setNewTask("");
       fetchTasks();
@@ -51,7 +50,7 @@ function Routine({ user, onClose }) {
   // 3. Toggle Task (Complete/Incomplete)
   const toggleTask = async (taskId, currentStatus) => {
     try {
-      await axios.put(`http://localhost:8000/api/routine/toggle/${taskId}`, {
+      await axios.put(`${import.meta.env.VITE_API_URL}/api/routine/toggle/${taskId}`, {
         completed: !currentStatus
       });
       socket.emit("update_task", { roomId });
@@ -62,7 +61,7 @@ function Routine({ user, onClose }) {
   // 4. Delete Task
   const deleteTask = async (taskId) => {
     try {
-      await axios.delete(`http://localhost:8000/api/routine/delete/${taskId}`);
+      await axios.delete(`${import.meta.env.VITE_API_URL}/api/routine/delete/${taskId}`);
       socket.emit("update_task", { roomId });
       fetchTasks();
     } catch (err) { console.error(err); }
