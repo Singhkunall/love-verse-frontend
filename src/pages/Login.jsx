@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import { Heart, Mail, Lock, Sparkles } from 'lucide-react';
+import { Heart, Mail, Lock } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Link, useNavigate } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google'; // Google Login Import
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
+  // --- 1. Manual Login Function ---
   const handleLogin = async (e) => {
     e.preventDefault();
     const loadId = toast.loading("Checking credentials... ❤️");
@@ -22,6 +24,26 @@ const Login = () => {
       navigate('/dashboard'); 
     } catch (error) {
       toast.error(error.response?.data?.message || "Login fail ho gaya!", { id: loadId });
+    }
+  };
+
+  // --- 2. Google Login Success Function ---
+  const handleGoogleSuccess = async (credentialResponse) => {
+    const loadId = toast.loading("Google se connect ho rahe hain... ✨");
+    try {
+      // Backend ke naye google-login route par request bhej rahe hain
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/google-login`, {
+        token: credentialResponse.credential
+      });
+
+      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('user', JSON.stringify(res.data));
+
+      toast.success(`Google se Login Safal! ❤️`, { id: loadId });
+      navigate('/dashboard');
+    } catch (error) {
+      console.error(error);
+      toast.error("Google Login fail ho gaya!", { id: loadId });
     }
   };
 
@@ -75,6 +97,25 @@ const Login = () => {
             Login ❤️
           </button>
         </form>
+
+        {/* --- OR Divider --- */}
+        <div className="relative my-8 text-center">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-200"></div>
+          </div>
+          <span className="relative px-4 bg-white text-gray-400 text-sm font-medium">ya fir</span>
+        </div>
+
+        {/* --- Google Login Button --- */}
+        <div className="flex justify-center scale-110 transform transition-all hover:scale-105">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => toast.error("Google Login Failed")}
+            useOneTap
+            theme="filled_blue"
+            shape="pill"
+          />
+        </div>
 
         <p className="text-center mt-8 text-gray-500 font-medium">
           Naye ho? <Link to="/register" className="text-rose-500 font-bold hover:underline underline-offset-4">Register karo</Link>
