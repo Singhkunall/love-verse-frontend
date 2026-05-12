@@ -170,6 +170,11 @@ function Dashboard() {
     socket.emit("join_chat", roomId);
     socket.on("task_updated", () => { fetchTasks(); });
 
+    socket.on("partner_connected", () => {
+      fetchUserProfile();
+      toast.success("Partner connect ho gaya! ❤️");
+    });
+
     // NAYA: Nudge Receive Logic with Hearts
     socket.on("receive_nudge", (data) => {
       toast(`${data.senderName} ne aapko ek Virtual Hug bheja! 🤗❤️`, {
@@ -204,6 +209,7 @@ function Dashboard() {
     return () => {
       socket.off("receive_nudge");
       socket.off("task_updated");
+      socket.off("partner_connected");
     };
   }, [roomId, userId]);
 
