@@ -14,21 +14,28 @@ const Login = () => {
   }, []);
 
   const handleGoogleSuccess = async (credentialResponse) => {
-    const loadId = toast.loading("Connecting to Love-Verse... ❤️");
-    try {
-      const res = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/auth/google-login`,
-        { token: credentialResponse.credential }
-      );
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('user', JSON.stringify(res.data));
-      toast.success(`Welcome, ${res.data.name}! ✨`, { id: loadId });
-      navigate('/dashboard');
-    } catch (error) {
-      console.error("Login Error:", error);
-      toast.error(error.response?.data?.message || "Login fail ho gaya!", { id: loadId });
-    }
-  };
+  const loadId = toast.loading("Connecting to Love-Verse... ❤️");
+  try {
+    // Decode the JWT token from Google
+    const decoded = JSON.parse(atob(credentialResponse.credential.split('.')[1]));
+    
+    const res = await axios.post(
+      `${import.meta.env.VITE_API_URL}/api/auth/google-login`,
+      { 
+        name: decoded.name, 
+        email: decoded.email, 
+        picture: decoded.picture 
+      }
+    );
+    localStorage.setItem('token', res.data.token);
+    localStorage.setItem('user', JSON.stringify(res.data));
+    toast.success(`Welcome, ${res.data.name}! ✨`, { id: loadId });
+    navigate('/dashboard');
+  } catch (error) {
+    console.error("Login Error:", error);
+    toast.error(error.response?.data?.message || "Login fail ho gaya!", { id: loadId });
+  }
+};
 
   return (
     <div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center p-4 relative overflow-hidden">
