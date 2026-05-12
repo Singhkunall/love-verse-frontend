@@ -55,7 +55,7 @@ function Dashboard() {
   // NAYA: Hearts trigger karne ka function
   const triggerHearts = () => {
     setShowHearts(true);
-    setTimeout(() => setShowHearts(false), 6000); 
+    setTimeout(() => setShowHearts(false), 6000);
   };
 
   // --- LOGIC FUNCTIONS (Functions intact) ---
@@ -169,7 +169,7 @@ function Dashboard() {
     socket.emit("setup", userId);
     socket.emit("join_chat", roomId);
     socket.on("task_updated", () => { fetchTasks(); });
-    
+
     // NAYA: Nudge Receive Logic with Hearts
     socket.on("receive_nudge", (data) => {
       toast(`${data.senderName} ne aapko ek Virtual Hug bheja! 🤗❤️`, {
@@ -210,9 +210,9 @@ function Dashboard() {
   const sendNudge = async () => {
     try {
       // 1. Send via Socket (Real-time)
-      socket.emit("send_nudge", { 
-        roomId, 
-        senderName: user.name 
+      socket.emit("send_nudge", {
+        roomId,
+        senderName: user.name
       });
 
       // 2. Save to DB (For Offline Support)
@@ -229,11 +229,26 @@ function Dashboard() {
     }
   };
 
+  const handleConnect = async () => {
+    if (!partnerEmail) return toast.error("Partner ka email daalo!");
+    const loadId = toast.loading("Connecting...");
+    try {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/connect`, {
+        userId: userId,
+        partnerEmail: partnerEmail
+      });
+      toast.success(res.data.message, { id: loadId });
+      fetchUserProfile();
+    } catch (err) {
+      toast.error("Connect fail ho gaya!", { id: loadId });
+    }
+  };
+
   const glassStyle = "bg-white/70 backdrop-blur-2xl border border-white/50 shadow-xl";
 
   return (
     <div className="min-h-screen bg-[#fff0f3] flex gap-6 p-4 md:p-6 lg:p-8 font-sans overflow-x-hidden relative">
-      
+
       {/* NAYA: Floating Hearts Component */}
       {showHearts && <FloatingHearts />}
 
@@ -258,10 +273,10 @@ function Dashboard() {
         {/* --- DYNAMIC TABS --- */}
         {activeTab === 'home' && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
-            
+
             {/* LOVE-O-METER UI CARD */}
             <div className={`${glassStyle} p-6 rounded-[2.5rem] relative overflow-hidden group`}>
-               <div className="flex justify-between items-end mb-4 relative z-10">
+              <div className="flex justify-between items-end mb-4 relative z-10">
                 <div>
                   <p className="text-[10px] font-black text-rose-400 uppercase tracking-widest">Love Connection</p>
                   <h4 className="text-2xl font-black text-gray-800 flex items-center gap-2">
@@ -274,7 +289,7 @@ function Dashboard() {
                 </div>
               </div>
               <div className="h-4 bg-rose-50 rounded-full border border-rose-100 p-1 relative z-10">
-                <div 
+                <div
                   className="h-full bg-gradient-to-r from-rose-400 to-pink-500 rounded-full transition-all duration-1000"
                   style={{ width: `${progress}%` }}
                 ></div>
@@ -343,7 +358,11 @@ function Dashboard() {
                 ) : (
                   <div className="flex gap-2">
                     <input type="email" placeholder="Partner's Email" value={partnerEmail} onChange={(e) => setPartnerEmail(e.target.value)} className="flex-1 p-3 bg-white rounded-xl border border-gray-100 outline-none text-sm focus:ring-1 ring-rose-200" />
-                    <button className="bg-gray-900 text-white px-4 py-2 rounded-xl font-bold text-xs">Invite</button>
+                    <button
+                      onClick={handleConnect}
+                      className="bg-gray-900 text-white px-4 py-2 rounded-xl font-bold text-xs">
+                      Invite
+                    </button>
                   </div>
                 )}
               </div>
