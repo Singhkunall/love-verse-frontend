@@ -103,7 +103,10 @@ function Dashboard() {
   const handleMoodUpdate = async (newMood) => {
     try {
       await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/update-mood`, { userId: user._id || user.id, mood: newMood });
-      toast.success(`Mood: ${newMood}`); fetchUserProfile();
+      toast.success(`Mood: ${newMood}`);
+      fetchUserProfile();
+      // Real-time partner ko notify karo
+      socket.emit("mood_updated", { roomId, mood: newMood });
     } catch (err) { toast.error("Mood update fail!"); }
   };
 
@@ -173,6 +176,10 @@ function Dashboard() {
     socket.on("partner_connected", () => {
       fetchUserProfile();
       toast.success("Partner connect ho gaya! ❤️");
+
+    });
+    socket.on("partner_mood_updated", () => {
+      fetchUserProfile();
     });
 
     // NAYA: Nudge Receive Logic with Hearts
@@ -210,6 +217,7 @@ function Dashboard() {
       socket.off("receive_nudge");
       socket.off("task_updated");
       socket.off("partner_connected");
+      socket.off("partner_mood_updated");
     };
   }, [roomId, userId]);
 
