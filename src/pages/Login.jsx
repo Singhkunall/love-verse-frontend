@@ -1,28 +1,29 @@
-import React from 'react';
-import { Heart, Sparkles } from 'lucide-react';
+import React, { useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 
 const Login = () => {
   const navigate = useNavigate();
 
-  // Google Login Success Handler
+  // Agar already logged in hai toh dashboard pe bhejo
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) navigate('/dashboard');
+  }, []);
+
   const handleGoogleSuccess = async (credentialResponse) => {
     const loadId = toast.loading("Connecting to Love-Verse... ❤️");
     try {
-      // Backend request
-      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/google-login`, {
-        token: credentialResponse.credential
-      });
-
-      // Data store karna
+      const res = await axios.post(
+        `${import.meta.env.VITE_API_URL}/api/auth/google-login`,
+        { token: credentialResponse.credential }
+      );
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data));
-
-      toast.success(`Welcome back! ✨`, { id: loadId });
-      navigate('/dashboard'); 
+      toast.success(`Welcome, ${res.data.name}! ✨`, { id: loadId });
+      navigate('/dashboard');
     } catch (error) {
       console.error("Login Error:", error);
       toast.error(error.response?.data?.message || "Login fail ho gaya!", { id: loadId });
@@ -30,53 +31,93 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-rose-50 flex items-center justify-center p-4 relative overflow-hidden">
-      
-      {/* Background Decor */}
-      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-rose-200 blur-[120px] rounded-full opacity-50"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-pink-200 blur-[120px] rounded-full opacity-50"></div>
+    <div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center p-4 relative overflow-hidden">
 
-      <div className="bg-white/80 backdrop-blur-xl p-10 rounded-[3rem] shadow-2xl border border-white w-full max-w-md relative z-10">
-        
-        {/* Logo Section */}
-        <div className="flex flex-col items-center mb-10">
-          <div className="bg-rose-500 p-4 rounded-3xl shadow-lg shadow-rose-200 mb-4 transform rotate-12 transition-transform hover:rotate-0 cursor-pointer">
-             <Heart className="text-white fill-white" size={32} />
+      {/* Animated background orbs */}
+      <div className="absolute w-[500px] h-[500px] rounded-full bg-rose-600/20 blur-[120px] top-[-100px] left-[-100px] animate-pulse" />
+      <div className="absolute w-[400px] h-[400px] rounded-full bg-pink-500/15 blur-[100px] bottom-[-80px] right-[-80px] animate-pulse" style={{ animationDelay: '1s' }} />
+      <div className="absolute w-[300px] h-[300px] rounded-full bg-red-500/10 blur-[80px] top-[40%] left-[40%] animate-pulse" style={{ animationDelay: '2s' }} />
+
+      {/* Floating hearts background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
+        {['❤️','💖','💗','💓','💞'].map((h, i) => (
+          <span
+            key={i}
+            className="absolute text-2xl opacity-10 animate-bounce"
+            style={{
+              left: `${10 + i * 20}%`,
+              top: `${15 + (i % 3) * 25}%`,
+              animationDelay: `${i * 0.5}s`,
+              animationDuration: `${2 + i * 0.4}s`
+            }}
+          >{h}</span>
+        ))}
+      </div>
+
+      <div className="relative z-10 w-full max-w-md">
+
+        {/* Card */}
+        <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-10 shadow-[0_0_80px_rgba(244,63,94,0.15)]">
+
+          {/* Logo */}
+          <div className="flex flex-col items-center mb-10">
+            <div className="relative mb-6">
+              <div className="w-20 h-20 bg-gradient-to-br from-rose-500 to-pink-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-rose-500/40 rotate-12 hover:rotate-0 transition-all duration-500 cursor-pointer">
+                <span className="text-4xl">❤️</span>
+              </div>
+              <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-400 rounded-full border-2 border-[#0d0d0d] animate-pulse" />
+            </div>
+            <h1 className="text-4xl font-black text-white tracking-tighter">Love-Verse</h1>
+            <p className="text-white/40 text-sm mt-2 font-medium italic tracking-wide">"Where hearts meet digitally"</p>
           </div>
-          <h2 className="text-3xl font-black text-gray-800 tracking-tighter text-center">Love-Verse</h2>
-          <p className="text-gray-400 text-sm mt-1 font-medium italic">"Where hearts meet digitally"</p>
-        </div>
 
-        <div className="space-y-8">
-          <div className="text-center">
-            <h3 className="text-xl font-bold text-gray-700">Welcome Back!</h3>
-            <p className="text-gray-500 text-sm mt-2">Login karne ke liye niche diye gaye button ka use karein.</p>
+          {/* Divider */}
+          <div className="flex items-center gap-4 mb-8">
+            <div className="flex-1 h-px bg-white/10" />
+            <span className="text-white/30 text-xs font-bold uppercase tracking-widest">Login with</span>
+            <div className="flex-1 h-px bg-white/10" />
           </div>
 
-          {/* --- Google Login Button --- */}
-          <div className="flex justify-center scale-125 transform transition-all hover:scale-110 py-6">
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => toast.error("Google Login Failed")}
-              useOneTap
-              theme="filled_blue"
-              shape="pill"
-            />
+          {/* Google Login Button */}
+          <div className="flex justify-center mb-8">
+            <div className="transform scale-110">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => toast.error("Google Login Failed! 😢")}
+                useOneTap
+                theme="filled_black"
+                shape="pill"
+                size="large"
+                text="continue_with"
+              />
+            </div>
           </div>
 
-          <div className="pt-4 flex flex-col items-center gap-4">
-             <div className="flex items-center gap-2 text-rose-400 font-semibold text-sm">
-                <Sparkles size={16} />
-                <span>No password required</span>
-             </div>
+          {/* Info */}
+          <div className="flex items-center justify-center gap-2 mb-8">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+            <span className="text-white/40 text-xs font-semibold">No password required • Secure Google Auth</span>
           </div>
-        </div>
 
-        <div className="mt-12 pt-6 border-t border-gray-100 text-center">
-          <p className="text-gray-500 font-medium text-sm">
-            Naye ho? <Link to="/register" className="text-rose-500 font-bold hover:underline underline-offset-4">Register/Sign up karein</Link>
+          {/* Divider */}
+          <div className="h-px bg-white/10 mb-6" />
+
+          {/* Register link */}
+          <p className="text-center text-white/40 text-sm">
+            Naye ho?{' '}
+            <Link
+              to="/register"
+              className="text-rose-400 font-bold hover:text-rose-300 transition-colors underline underline-offset-4"
+            >
+              Account banao
+            </Link>
           </p>
         </div>
+
+        {/* Bottom text */}
+        <p className="text-center text-white/20 text-xs mt-6 font-medium">
+          Made with ❤️ for couples
+        </p>
       </div>
     </div>
   );
