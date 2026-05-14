@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, useAnimation } from 'framer-motion';
-import { RotateCw, Star, Gift, Music, Camera, Heart, CheckCircle, Zap } from 'lucide-react';
+import { RotateCw, Star, Gift, Music, Camera, Heart, CheckCircle, Zap, Upload, Image } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -17,6 +17,9 @@ function LoveRoulette({ user, roomId, socket }) {
   const [spinning, setSpinning] = useState(false);
   const [currentTask, setCurrentTask] = useState(null);
   const [completing, setCompleting] = useState(false);
+  const [proofImage, setProofImage] = useState(null);
+  const [proofPreview, setProofPreview] = useState(null);
+  const [showProofForm, setShowProofForm] = useState(false);
   const controls = useAnimation();
 
   useEffect(() => {
@@ -68,13 +71,34 @@ function LoveRoulette({ user, roomId, socket }) {
     setSpinning(false);
   };
 
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onloadend = () => {
+        setProofImage(reader.result);
+        setProofPreview(reader.result);
+      };
+    }
+  };
+
   const completeTask = async () => {
+    if (!proofImage) {
+      toast.error("Photo proof upload karo pehle! 📸");
+      return;
+    }
     setCompleting(true);
     try {
       await axios.post(`${import.meta.env.VITE_API_URL}/api/roulette/complete`, {
-        roomId, userId: user._id || user.id
+        roomId,
+        userId: user._id || user.id,
+        proofImage
       });
       toast.success("Task Complete! +50 XP 🎉");
+      setShowProofForm(false);
+      setProofImage(null);
+      setProofPreview(null);
       fetchTodayTask();
     } catch (err) {
       toast.error("Error!");
@@ -82,16 +106,9 @@ function LoveRoulette({ user, roomId, socket }) {
     setCompleting(false);
   };
 
-  const getDifficultyColor = (task) => {
-    if (task?.includes('surprise') || task?.includes('date')) return 'text-red-500 bg-red-50';
-    if (task?.includes('song') || task?.includes('plan')) return 'text-yellow-500 bg-yellow-50';
-    return 'text-green-500 bg-green-50';
-  };
-
   return (
     <div className="bg-white/70 backdrop-blur-xl p-8 rounded-[3rem] border border-white shadow-xl text-center overflow-hidden relative">
       
-      {/* Header */}
       <h3 className="text-xl font-black text-gray-800 mb-2 flex items-center justify-center gap-2">
         <RotateCw className={spinning ? "animate-spin text-rose-500" : "text-rose-500"} /> 
         Love Roulette
@@ -121,7 +138,6 @@ function LoveRoulette({ user, roomId, socket }) {
           animate={{ scale: 1, opacity: 1 }} 
           className="space-y-6"
         >
-          {/* Task Card */}
           <div className={`p-6 rounded-[2rem] border-2 border-dashed ${currentTask.isCompleted ? 'bg-green-50 border-green-200' : 'bg-rose-50 border-rose-200'}`}>
             <p className="text-[10px] font-black text-rose-400 uppercase tracking-widest mb-2">
               Today's Challenge
@@ -133,28 +149,84 @@ function LoveRoulette({ user, roomId, socket }) {
               Spun by: {currentTask.spunBy?.name}
             </p>
 
-            {/* XP Badge */}
             <div className="inline-flex items-center gap-1 bg-yellow-100 text-yellow-600 px-3 py-1 rounded-full text-xs font-black mb-4">
               <Zap size={12} /> +50 XP on completion
             </div>
 
-            {/* Completion Status */}
             {currentTask.isCompleted ? (
-              <div className="flex items-center justify-center gap-2 bg-green-100 text-green-600 p-3 rounded-2xl">
-                <CheckCircle size={20} />
-                <span className="font-black text-sm">
-                  Completed by {currentTask.completedBy?.name || 'you'}! 🎉
-                </span>
+              <div className="space-y-4">
+                <div className="flex items-center justify-center gap-2 bg-green-100 text-green-600 p-3 rounded-2xl">
+                  <CheckCircle size={20} />
+                  <span className="font-black text-sm">
+                    Completed by {currentTask.completedBy?.name || 'you'}! 🎉
+                  </span>
+                </div>
+                {/* Show proof photo */}
+                {currentTask.proofImage && (
+                  <div className="mt-4">
+                    <p className="text-xs font-black text-gray-400 uppercase mb-2">Photo Proof 📸</p>
+                    <img 
+                      src={currentTask.proofImage} 
+                      alt="proof" 
+                      className="w-full rounded-2xl object-cover max-h-48"
+                    />
+                  </div>
+                )}
               </div>
             ) : (
-              <button
-                onClick={completeTask}
-                disabled={completing}
-                className="w-full py-3 bg-gradient-to-r from-green-400 to-emerald-500 text-white rounded-2xl font-black hover:scale-105 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                <CheckCircle size={18} />
-                {completing ? "Marking..." : "Mark as Complete ✅"}
-              </button>
+              <div className="space-y-4">
+                {!showProofForm ? (
+                  <button
+                    onClick={() => setShowProofForm(true)}
+                    className="w-full py-3 bg-gradient-to-r from-green-400 to-emerald-500 text-white rounded-2xl font-black hover:scale-105 transition-all flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle size={18} />
+                    Mark as Complete ✅
+                  </button>
+                ) : (
+                  <div className="space-y-4 bg-white p-4 rounded-2xl border border-gray-100">
+                    <p className="text-sm font-black text-gray-700">Upload Photo Proof 📸</p>
+                    
+                    {/* Photo Preview */}
+                    {proofPreview ? (
+                      <div className="relative">
+                        <img 
+                          src={proofPreview} 
+                          alt="preview" 
+                          className="w-full rounded-2xl object-cover max-h-48"
+                        />
+                        <button
+                          onClick={() => { setProofImage(null); setProofPreview(null); }}
+                          className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full text-xs"
+                        >✕</button>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-rose-200 rounded-2xl cursor-pointer bg-rose-50 hover:bg-rose-100 transition-all">
+                        <Camera size={24} className="text-rose-400 mb-2" />
+                        <span className="text-xs font-bold text-rose-400">Click to upload photo</span>
+                        <input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
+                      </label>
+                    )}
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => { setShowProofForm(false); setProofImage(null); setProofPreview(null); }}
+                        className="flex-1 py-2 bg-gray-100 text-gray-600 rounded-2xl font-bold text-sm"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={completeTask}
+                        disabled={completing || !proofImage}
+                        className="flex-1 py-2 bg-gradient-to-r from-green-400 to-emerald-500 text-white rounded-2xl font-black text-sm disabled:opacity-50 flex items-center justify-center gap-1"
+                      >
+                        <Upload size={14} />
+                        {completing ? "Submitting..." : "Submit Proof"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </motion.div>
