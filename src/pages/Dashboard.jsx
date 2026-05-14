@@ -12,7 +12,7 @@ import Calendar from '../components/Calendar';
 import Sidebar from '../components/Sidebar'; // NAYA: Sidebar Import
 import io from 'socket.io-client';
 import FloatingHearts from '../components/FloatingHearts'; // NAYA: Import FloatingHearts
-import LoveRoulette from '../components/LoveRoulette';
+
 
 const socket = io.connect(import.meta.env.VITE_API_URL);
 
@@ -466,9 +466,9 @@ function Dashboard() {
               />
             ) : (
               <div className="space-y-10 animate-in slide-in-from-right duration-500">
-                <LoveRoulette user={user} roomId={roomId} socket={socket} />
+
                 <div className="text-center space-y-3">
-                
+
                   <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-rose-100 rounded-full text-rose-500 font-black text-[10px] uppercase tracking-[0.2em]">
                     <Zap size={14} className="fill-current" /> Live 1v1 Battle
                   </div>
@@ -541,6 +541,12 @@ function Dashboard() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {activeTab === 'roulette' && (
+          <div className="max-w-2xl mx-auto w-full animate-in fade-in slide-in-from-right-4 duration-500">
+            <LoveRoulette user={user} roomId={roomId} socket={socket} />
           </div>
         )}
 
