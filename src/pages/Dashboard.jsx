@@ -12,7 +12,7 @@ import Calendar from '../components/Calendar';
 import Sidebar from '../components/Sidebar'; // NAYA: Sidebar Import
 import io from 'socket.io-client';
 import FloatingHearts from '../components/FloatingHearts'; // NAYA: Import FloatingHearts
-
+import LoveRoulette from '../components/LoveRoulette';
 
 const socket = io.connect(import.meta.env.VITE_API_URL);
 
