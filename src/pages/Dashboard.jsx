@@ -589,8 +589,8 @@ function Dashboard() {
               {memories.map((mem, index) => (
                 <div key={mem._id} className={`group relative bg-white p-4 pb-12 shadow-2xl transition-all duration-500 hover:rotate-0 hover:scale-105 ${index % 2 === 0 ? '-rotate-2' : 'rotate-2'}`}>
                   <button onClick={() => handleDeleteMemory(mem._id)} className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-xl opacity-0 group-hover:opacity-100 z-10 transition-opacity cursor-pointer shadow-lg"><Trash2 size={18} /></button>
-                  <div className="aspect-square overflow-hidden rounded-3xl mb-4 border border-gray-50 shadow-inner">
-                    <img src={mem.imageUrl} alt="memory" className="w-full h-full object-cover grayscale-[20%] group-hover:grayscale-0 transition-all duration-500" />
+                  <div className="overflow-hidden rounded-3xl mb-4 border border-gray-50 shadow-inner">
+                    <img src={mem.imageUrl} alt="memory" className="w-full h-auto object-contain grayscale-[20%] group-hover:grayscale-0 transition-all duration-500" />
                   </div>
                   <p className="font-medium text-gray-800 text-center italic tracking-tight px-2">"{mem.caption}"</p>
                   <p className="text-[9px] text-gray-400 text-center mt-3 font-bold uppercase tracking-tighter">{new Date(mem.createdAt).toDateString()}</p>
