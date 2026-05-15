@@ -10,6 +10,7 @@ const FloatingHearts = () => {
       left: Math.random() * 100 + 'vw',
       delay: Math.random() * 3 + 's',
       duration: Math.random() * 3 + 2 + 's'
+      
     }));
     setHearts(newHearts);
     const timer = setTimeout(() => setHearts([]), 6000); // 6 sec baad khatam

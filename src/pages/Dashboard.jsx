@@ -107,7 +107,7 @@ function Dashboard() {
       toast.success(`Mood: ${newMood}`);
       fetchUserProfile();
       // Real-time partner ko notify karo
-      socket.emit("mood_updated", { roomId, mood: newMood });
+      socket.emit("mood_updated", { roomId, mood: newMood, partnerId });
     } catch (err) { toast.error("Mood update fail!"); }
   };
 
@@ -124,6 +124,7 @@ function Dashboard() {
       await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/update-anniversary`, { userId: user._id || user.id, date: tempDate });
       toast.success("Date Locked!", { id: loadingToast });
       fetchUserProfile(); setShowInput(false);
+      socket.emit("anniversary_updated", { roomId, partnerId });
     } catch (err) { toast.error("Error!", { id: loadingToast }); }
   };
 

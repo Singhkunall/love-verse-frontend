@@ -24,10 +24,10 @@ function ChessGame({ user, roomId, onBack, isWhite }) {
         const newGame = new Chess(prevGame.fen());
         try {
           newGame.move(move);
-          if (newGame.isCheckmate()) toast.success("💀 CHECKMATE! Aap haar gaye!");
+          if (newGame.isCheckmate()) toast.success("💀 CHECKMATE! You Lost It!");
           else if (newGame.isStalemate()) toast("🤝 Stalemate! Draw!", { icon: "♟️" });
           else if (newGame.isDraw()) toast("🤝 Draw!", { icon: "🏳️" });
-          else if (newGame.isCheck()) toast("⚠️ Aapko Check hai!", { icon: "👑" });
+          else if (newGame.isCheck()) toast("⚠️ Check!", { icon: "👑" });
           return newGame;
         } catch (e) {
           return prevGame;
@@ -86,7 +86,7 @@ function ChessGame({ user, roomId, onBack, isWhite }) {
       setHighlightedSquares({});
       socket.emit("send_chess_move", { roomId, move: moveData });
 
-      if (gameCopy.isCheckmate()) toast.success("🏆 CHECKMATE! Aap jeet gaye!");
+      if (gameCopy.isCheckmate()) toast.success("🏆 CHECKMATE! You Won!");
       else if (gameCopy.isStalemate()) toast("🤝 Stalemate! Draw!", { icon: "♟️" });
       else if (gameCopy.isDraw()) toast("🤝 Draw!", { icon: "🏳️" });
       else if (gameCopy.isCheck()) toast("⚠️ Check!", { icon: "👑" });
