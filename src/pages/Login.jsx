@@ -3,6 +3,8 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
+import { Browser } from '@capacitor/browser';
+import { Capacitor } from '@capacitor/core';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -13,29 +15,34 @@ const Login = () => {
     if (token) navigate('/dashboard');
   }, []);
 
+  const handleMobileGoogleLogin = async () => {
+    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=36124091072-k7t809qm7ttdvjf0c306qmblbvlqo622.apps.googleusercontent.com&redirect_uri=${import.meta.env.VITE_API_URL}/api/auth/google-callback&response_type=code&scope=openid email profile`;
+    await Browser.open({ url: googleAuthUrl });
+  };
+
   const handleGoogleSuccess = async (credentialResponse) => {
-  const loadId = toast.loading("Connecting to Love-Verse... ❤️");
-  try {
-    // Decode the JWT token from Google
-    const decoded = JSON.parse(atob(credentialResponse.credential.split('.')[1]));
-    
-    const res = await axios.post(
-      `${import.meta.env.VITE_API_URL}/api/auth/google-login`,
-      { 
-        name: decoded.name, 
-        email: decoded.email, 
-        picture: decoded.picture 
-      }
-    );
-    localStorage.setItem('token', res.data.token);
-    localStorage.setItem('user', JSON.stringify(res.data));
-    toast.success(`Welcome, ${res.data.name}! ✨`, { id: loadId });
-    navigate('/dashboard');
-  } catch (error) {
-    console.error("Login Error:", error);
-    toast.error(error.response?.data?.message || "Login fail ho gaya!", { id: loadId });
-  }
-};
+    const loadId = toast.loading("Connecting to Love-Verse... ❤️");
+    try {
+      // Decode the JWT token from Google
+      const decoded = JSON.parse(atob(credentialResponse.credential.split('.')[1]));
+
+      const res = await axios.post(
+        `${import.meta.env.VITE_API_URL}/api/auth/google-login`,
+        {
+          name: decoded.name,
+          email: decoded.email,
+          picture: decoded.picture
+        }
+      );
+      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('user', JSON.stringify(res.data));
+      toast.success(`Welcome, ${res.data.name}! ✨`, { id: loadId });
+      navigate('/dashboard');
+    } catch (error) {
+      console.error("Login Error:", error);
+      toast.error(error.response?.data?.message || "Login fail ho gaya!", { id: loadId });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center p-4 relative overflow-hidden">
@@ -47,7 +54,7 @@ const Login = () => {
 
       {/* Floating hearts background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
-        {['❤️','💖','💗','💓','💞'].map((h, i) => (
+        {['❤️', '💖', '💗', '💓', '💞'].map((h, i) => (
           <span
             key={i}
             className="absolute text-2xl opacity-10 animate-bounce"
@@ -86,18 +93,29 @@ const Login = () => {
           </div>
 
           {/* Google Login Button */}
+          {/* Google Login Button */}
           <div className="flex justify-center mb-8">
-            <div className="transform scale-110">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => toast.error("Google Login Failed! 😢")}
-                useOneTap
-                theme="filled_black"
-                shape="pill"
-                size="large"
-                text="continue_with"
-              />
-            </div>
+            {Capacitor.isNativePlatform() ? (
+              <button
+                onClick={handleMobileGoogleLogin}
+                className="flex items-center gap-3 bg-white text-gray-800 font-bold px-8 py-3 rounded-full shadow-lg hover:shadow-xl transition-all"
+              >
+                <img src="https://www.google.com/favicon.ico" className="w-5 h-5" />
+                Continue with Google
+              </button>
+            ) : (
+              <div className="transform scale-110">
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={() => toast.error("Google Login Failed! 😢")}
+                  useOneTap
+                  theme="filled_black"
+                  shape="pill"
+                  size="large"
+                  text="continue_with"
+                />
+              </div>
+            )}
           </div>
 
           {/* Info */}
