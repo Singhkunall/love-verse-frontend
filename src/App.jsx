@@ -4,6 +4,8 @@ import { Toaster } from 'react-hot-toast';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import AuthCallback from './pages/AuthCallback';
+
 
 // Protected Route — bina login ke dashboard nahi milega
 const ProtectedRoute = ({ children }) => {
@@ -27,6 +29,7 @@ function App() {
           }
         />
         <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/auth-callback" element={<AuthCallback />} />
       </Routes>
     </>
   );
