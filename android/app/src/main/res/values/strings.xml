@@ -4,4 +4,5 @@
     <string name="title_activity_main">LoveVerse</string>
     <string name="package_name">com.loveverse.app</string>
     <string name="custom_url_scheme">com.loveverse.app</string>
+    <string name="server_client_id">36124091072-k7t809qm7ttdvjf0c306qmblbvlqo622.apps.googleusercontent.com</string>
 </resources>

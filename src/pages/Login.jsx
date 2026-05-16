@@ -16,34 +16,50 @@ const Login = () => {
     if (token) navigate('/dashboard');
   }, []);
 
+  const handleGoogleSuccess = async (credentialResponse) => {
+    const loadId = toast.loading('Signing in...');
+    try {
+      const token = credentialResponse?.credential;
+      if (!token) throw new Error('Google credential not received');
+
+      const res = await axios.post(
+        'https://love-verse-backend.onrender.com/api/auth/google-login',
+        { token }
+      );
+
+      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('user', JSON.stringify(res.data));
+      toast.success(`Welcome, ${res.data.name}! ✨`, { id: loadId });
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Web Login Error:', error);
+      toast.error('Google Login Failed! 😢', { id: loadId });
+    }
+  };
+
   const handleMobileGoogleLogin = async () => {
-  const loadId = toast.loading("Connecting to Love-Verse... ❤️");
-  try {
-    await GoogleAuth.initialize({
-      clientId: '36124091072-730dtf33h5oj8rr35gtiun8324l15d88.apps.googleusercontent.com',
-      scopes: ['profile', 'email'],
-    });
-    
-    const googleUser = await GoogleAuth.signIn();
-    
-    const res = await axios.post(
-      `${import.meta.env.VITE_API_URL}/api/auth/google-login`,
-      {
-        name: googleUser.displayName,
-        email: googleUser.email,
-        picture: googleUser.imageUrl,
-      }
-    );
-    
-    localStorage.setItem('token', res.data.token);
-    localStorage.setItem('user', JSON.stringify(res.data));
-    toast.success(`Welcome, ${res.data.name}! ✨`, { id: loadId });
-    navigate('/dashboard');
-  } catch (error) {
-    console.error("Mobile Login Error:", error);
-    toast.error("Login fail ho gaya!", { id: loadId });
-  }
-};
+    const loadId = toast.loading('Signing in...');
+    try {
+      const googleUser = await GoogleAuth.signIn();
+
+      const res = await axios.post(
+        'https://love-verse-backend.onrender.com/api/auth/google-login',
+        {
+          name: googleUser.displayName,
+          email: googleUser.email,
+          picture: googleUser.imageUrl,
+        }
+      );
+
+      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('user', JSON.stringify(res.data));
+      toast.success(`Welcome, ${res.data.name}! ✨`, { id: loadId });
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Mobile Login Error:', error);
+      toast.error('Login fail ho gaya!', { id: loadId });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center p-4 relative overflow-hidden">
