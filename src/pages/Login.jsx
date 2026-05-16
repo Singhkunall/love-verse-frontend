@@ -5,7 +5,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
-import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
+
 
 const Login = () => {
   const navigate = useNavigate();
@@ -38,33 +38,17 @@ const Login = () => {
   };
 
   const handleMobileGoogleLogin = async () => {
-  const loadId = toast.loading('Signing in...');
+  const loadId = toast.loading('Opening Google Login...');
   try {
-    await GoogleAuth.initialize({
-      clientId: '36124091072-730dtf33h5oj8rr35gtiun8324l15d88.apps.googleusercontent.com',
-      scopes: ['profile', 'email'],
-      grantOfflineAccess: true,
+    await Browser.open({ 
+      url: 'https://love-verse-frontend.vercel.app/login',
+      presentationStyle: 'fullscreen'
     });
-      const googleUser = await GoogleAuth.signIn();
-
-      const res = await axios.post(
-        'https://love-verse-backend.onrender.com/api/auth/google-login',
-        {
-          name: googleUser.displayName,
-          email: googleUser.email,
-          picture: googleUser.imageUrl,
-        }
-      );
-
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('user', JSON.stringify(res.data));
-      toast.success(`Welcome, ${res.data.name}! ✨`, { id: loadId });
-      navigate('/dashboard');
-    } catch (error) {
-      console.error('Mobile Login Error:', error);
-      toast.error('Login fail ho gaya!', { id: loadId });
-    }
-  };
+    toast.dismiss(loadId);
+  } catch (error) {
+    toast.error('Browser open nahi hua!', { id: loadId });
+  }
+};
 
   return (
     <div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center p-4 relative overflow-hidden">
