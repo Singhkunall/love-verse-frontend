@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "873350716755",
+    "project_id": "love-verse-b17be",
+    "storage_bucket": "love-verse-b17be.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:873350716755:android:8053dec7a82bc74a5855a6",
+        "android_client_info": {
+          "package_name": "com.loveverse.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBgzcdcSrxaOtVZQ4YrjVnHwY5V5tNgQr0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
