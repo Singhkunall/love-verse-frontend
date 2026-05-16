@@ -38,8 +38,13 @@ const Login = () => {
   };
 
   const handleMobileGoogleLogin = async () => {
-    const loadId = toast.loading('Signing in...');
-    try {
+  const loadId = toast.loading('Signing in...');
+  try {
+    await GoogleAuth.initialize({
+      clientId: '36124091072-730dtf33h5oj8rr35gtiun8324l15d88.apps.googleusercontent.com',
+      scopes: ['profile', 'email'],
+      grantOfflineAccess: true,
+    });
       const googleUser = await GoogleAuth.signIn();
 
       const res = await axios.post(
