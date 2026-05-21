@@ -181,11 +181,10 @@ function Chat({ user }) {
   
   navigator.mediaDevices.getUserMedia({ 
     video: isVideo ? { width: 1280, height: 720 } : false, 
-    audio: true 
+    audio: { echoCancellation: true, noiseSuppression: true }
   }).then((stream) => {
     setCalling(true);
     
-    // Apna video muted rakh
     if (myVideo.current) {
       myVideo.current.srcObject = stream;
       myVideo.current.muted = true;
@@ -201,8 +200,8 @@ function Chat({ user }) {
       metadata: { type: isVideo ? "video" : "audio" }
     });
 
-    // Remote stream receive karo
     call.on('stream', (remoteStream) => {
+      console.log("Remote stream received (caller):", remoteStream.getTracks());
       if (remoteVideo.current) {
         remoteVideo.current.srcObject = remoteStream;
         remoteVideo.current.muted = false;
@@ -211,6 +210,7 @@ function Chat({ user }) {
       }
     });
 
+    call.on('close', () => cleanupCall());
     call.on('error', (err) => {
       console.error("Call error:", err);
       toast.error("Call failed!");
@@ -219,40 +219,45 @@ function Chat({ user }) {
 
     currentCallRef.current = call;
   }).catch(err => {
+    console.error("Media error:", err);
     toast.error("Camera/Mic access denied!");
   });
 };
 
-  const answerCall = () => {
-  if (!currentCallRef.current) return;
+const answerCall = () => {
+  const call = currentCallRef.current;
+  if (!call) return;
   
   const constraints = { 
     video: callType === "video" ? { width: 640, height: 480 } : false, 
-    audio: true 
+    audio: { echoCancellation: true, noiseSuppression: true }
   };
 
   navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
-    setCalling(true);
     setIncomingCall(false);
+    setCalling(true);
     
-    // Local stream set karo
     if (myVideo.current) {
       myVideo.current.srcObject = stream;
-      myVideo.current.muted = true; // apni awaaz khud nahi sunni
+      myVideo.current.muted = true;
     }
-    
-    // Call answer karo stream ke saath
-    currentCallRef.current.answer(stream);
 
-    // Remote stream receive karo
-    currentCallRef.current.on('stream', (remoteStream) => {
+    // stream event PEHLE set karo, PHIR answer karo
+    call.on('stream', (remoteStream) => {
+      console.log("Remote stream received (answerer):", remoteStream.getTracks());
       if (remoteVideo.current) {
         remoteVideo.current.srcObject = remoteStream;
-        remoteVideo.current.muted = false; // partner ki awaaz sunni hai
+        remoteVideo.current.muted = false;
         remoteVideo.current.volume = 1.0;
         remoteVideo.current.play().catch(e => console.log("Autoplay error:", e));
       }
     });
+
+    call.on('close', () => cleanupCall());
+
+    // stream listener set hone ke BAAD answer
+    call.answer(stream);
+
   }).catch((err) => {
     console.error("Camera error:", err);
     toast.error("Camera busy or access denied!");
