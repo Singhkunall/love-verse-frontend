@@ -365,8 +365,18 @@ function Chat({ user }) {
       <div className="bg-white/60 backdrop-blur-md p-5 flex items-center justify-between border-b border-rose-50/50">
         <div className="flex items-center gap-4">
           <div className="relative">
-            <div className="w-12 h-12 bg-rose-500 rounded-2xl flex items-center justify-center font-black text-white shadow-lg">
-              {user.partnerId?.name?.charAt(0).toUpperCase() || 'P'}
+            <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-lg">
+              {user.partnerId?.avatar ? (
+                <img
+                  src={user.partnerId.avatar}
+                  alt={user.partnerId.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-rose-500 flex items-center justify-center font-black text-white">
+                  {user.partnerId?.name?.charAt(0).toUpperCase() || 'P'}
+                </div>
+              )}
             </div>
             <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
           </div>

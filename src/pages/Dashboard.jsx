@@ -315,8 +315,18 @@ function Dashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               <div className={`lg:col-span-4 ${glassStyle} p-8 rounded-[3rem] text-center flex flex-col items-center justify-center relative overflow-hidden`}>
                 <div className="absolute top-4 right-4 text-rose-200 animate-pulse"><Star size={24} fill="currentColor" /></div>
-                <div className="w-24 h-24 bg-gradient-to-tr from-rose-500 to-pink-400 rounded-full mb-4 flex items-center justify-center text-white text-4xl font-black border-4 border-white shadow-xl">
-                  {user?.name?.charAt(0)}
+                <div className="w-24 h-24 rounded-full mb-4 border-4 border-white shadow-xl overflow-hidden flex items-center justify-center">
+                  {user?.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt={user.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-tr from-rose-500 to-pink-400 flex items-center justify-center text-white text-4xl font-black">
+                      {user?.name?.charAt(0)?.toUpperCase()}
+                    </div>
+                  )}
                 </div>
                 <h2 className="text-2xl font-black text-gray-800 tracking-tight">{user?.name}</h2>
                 <div className="mt-3 px-4 py-1.5 bg-rose-50 rounded-full text-rose-500 font-bold text-[10px] uppercase tracking-widest border border-rose-100">
