@@ -29,6 +29,7 @@ function Dashboard() {
   const [currentGame, setCurrentGame] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [showHearts, setShowHearts] = useState(false); // NAYA: Hearts state
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const userId = user._id || user.id;
   // ✅ Fix 1: safely extract partnerId as string regardless of object or string
@@ -259,6 +260,26 @@ function Dashboard() {
       toast.error("Connect fail ho gaya!", { id: loadId });
     }
   };
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadingAvatar(true);
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onloadend = async () => {
+      try {
+        const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/update-avatar`, {
+          userId,
+          avatar: reader.result
+        });
+        toast.success("Profile photo updated! 🎉");
+        fetchUserProfile();
+      } catch (err) {
+        toast.error("Upload failed!");
+      }
+      setUploadingAvatar(false);
+    };
+  };
 
   const glassStyle = "bg-white/70 backdrop-blur-2xl border border-white/50 shadow-xl";
 
@@ -315,18 +336,25 @@ function Dashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               <div className={`lg:col-span-4 ${glassStyle} p-8 rounded-[3rem] text-center flex flex-col items-center justify-center relative overflow-hidden`}>
                 <div className="absolute top-4 right-4 text-rose-200 animate-pulse"><Star size={24} fill="currentColor" /></div>
-                <div className="w-24 h-24 rounded-full mb-4 border-4 border-white shadow-xl overflow-hidden flex items-center justify-center">
-                  {user?.avatar ? (
-                    <img
-                      src={user.avatar}
-                      alt={user.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-tr from-rose-500 to-pink-400 flex items-center justify-center text-white text-4xl font-black">
-                      {user?.name?.charAt(0)?.toUpperCase()}
-                    </div>
-                  )}
+                <div className="relative w-24 h-24 mb-4 group cursor-pointer">
+                  <div className="w-24 h-24 rounded-full border-4 border-white shadow-xl overflow-hidden flex items-center justify-center">
+                    {user?.avatar ? (
+                      <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-tr from-rose-500 to-pink-400 flex items-center justify-center text-white text-4xl font-black">
+                        {user?.name?.charAt(0)?.toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  {/* Camera overlay on hover */}
+                  <label className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-all cursor-pointer flex items-center justify-center">
+                    {uploadingAvatar ? (
+                      <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <span className="text-white text-xs font-black">📷</span>
+                    )}
+                    <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+                  </label>
                 </div>
                 <h2 className="text-2xl font-black text-gray-800 tracking-tight">{user?.name}</h2>
                 <div className="mt-3 px-4 py-1.5 bg-rose-50 rounded-full text-rose-500 font-bold text-[10px] uppercase tracking-widest border border-rose-100">
