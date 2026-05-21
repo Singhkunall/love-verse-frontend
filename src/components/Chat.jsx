@@ -176,66 +176,88 @@ function Chat({ user }) {
 
   // --- 3. CALLING FUNCTIONS (UPDATED) ---
   const startCall = (isVideo) => {
-    if (!peer) return;
-    setCallType(isVideo ? "video" : "audio");
-
-    navigator.mediaDevices.getUserMedia({
-      video: isVideo ? { width: 1280, height: 720 } : false,
-      audio: true
-    }).then((stream) => {
-      setCalling(true);
-
-      setTimeout(() => {
-        if (myVideo.current) myVideo.current.srcObject = stream;
-      }, 300);
-
-      socket.emit("send_call_signal", {
-        to: partnerId,
-        from: userId,
-        type: isVideo ? "video" : "audio"
-      });
-
-      // Added prefix 'lv-' to destination and added metadata
-      const call = peer.call(`lv-${partnerId}`, stream, {
-        metadata: { type: isVideo ? "video" : "audio" }
-      });
-
-      call.on('stream', (remoteStream) => {
-        if (remoteVideo.current) remoteVideo.current.srcObject = remoteStream;
-      });
-      currentCallRef.current = call;
-    }).catch(err => {
-      toast.error("Camera access denied!");
+  if (!peer) return;
+  setCallType(isVideo ? "video" : "audio");
+  
+  navigator.mediaDevices.getUserMedia({ 
+    video: isVideo ? { width: 1280, height: 720 } : false, 
+    audio: true 
+  }).then((stream) => {
+    setCalling(true);
+    
+    // Apna video muted rakh
+    if (myVideo.current) {
+      myVideo.current.srcObject = stream;
+      myVideo.current.muted = true;
+    }
+    
+    socket.emit("send_call_signal", {
+      to: partnerId,
+      from: userId,
+      type: isVideo ? "video" : "audio"
     });
-  };
+
+    const call = peer.call(`lv-${partnerId}`, stream, {
+      metadata: { type: isVideo ? "video" : "audio" }
+    });
+
+    // Remote stream receive karo
+    call.on('stream', (remoteStream) => {
+      if (remoteVideo.current) {
+        remoteVideo.current.srcObject = remoteStream;
+        remoteVideo.current.muted = false;
+        remoteVideo.current.volume = 1.0;
+        remoteVideo.current.play().catch(e => console.log("Autoplay error:", e));
+      }
+    });
+
+    call.on('error', (err) => {
+      console.error("Call error:", err);
+      toast.error("Call failed!");
+      cleanupCall();
+    });
+
+    currentCallRef.current = call;
+  }).catch(err => {
+    toast.error("Camera/Mic access denied!");
+  });
+};
 
   const answerCall = () => {
-    if (!currentCallRef.current) return;
-
-    const constraints = {
-      video: callType === "video" ? { width: 640, height: 480 } : false,
-      audio: true
-    };
-
-    navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
-      setCalling(true);
-      setIncomingCall(false);
-
-      if (myVideo.current) myVideo.current.srcObject = stream;
-
-      currentCallRef.current.answer(stream);
-
-      currentCallRef.current.on('stream', (remoteStream) => {
-        if (remoteVideo.current) {
-          remoteVideo.current.srcObject = remoteStream;
-          remoteVideo.current.play().catch(e => console.log("Auto-play error:", e));
-        }
-      });
-    }).catch((err) => {
-      console.error("Camera error:", err);
-      toast.error("Camera busy or access denied!");
-    });
+  if (!currentCallRef.current) return;
+  
+  const constraints = { 
+    video: callType === "video" ? { width: 640, height: 480 } : false, 
+    audio: true 
   };
+
+  navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
+    setCalling(true);
+    setIncomingCall(false);
+    
+    // Local stream set karo
+    if (myVideo.current) {
+      myVideo.current.srcObject = stream;
+      myVideo.current.muted = true; // apni awaaz khud nahi sunni
+    }
+    
+    // Call answer karo stream ke saath
+    currentCallRef.current.answer(stream);
+
+    // Remote stream receive karo
+    currentCallRef.current.on('stream', (remoteStream) => {
+      if (remoteVideo.current) {
+        remoteVideo.current.srcObject = remoteStream;
+        remoteVideo.current.muted = false; // partner ki awaaz sunni hai
+        remoteVideo.current.volume = 1.0;
+        remoteVideo.current.play().catch(e => console.log("Autoplay error:", e));
+      }
+    });
+  }).catch((err) => {
+    console.error("Camera error:", err);
+    toast.error("Camera busy or access denied!");
+  });
+};
 
   const endCall = () => {
     socket.emit("end_call_signal", { to: partnerId });
