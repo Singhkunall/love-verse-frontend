@@ -17,25 +17,32 @@ const Login = () => {
   }, []);
 
   const handleGoogleSuccess = async (credentialResponse) => {
-    const loadId = toast.loading('Signing in...');
-    try {
-      const token = credentialResponse?.credential;
-      if (!token) throw new Error('Google credential not received');
+  const loadId = toast.loading('Signing in...');
+  try {
+    const token = credentialResponse?.credential;
+    if (!token) throw new Error('Google credential not received');
 
-      const res = await axios.post(
-        'https://love-verse-backend.onrender.com/api/auth/google-login',
-        { token }
-      );
+    // Decode JWT token to get user info
+    const decoded = JSON.parse(atob(token.split('.')[1]));
 
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('user', JSON.stringify(res.data));
-      toast.success(`Welcome, ${res.data.name}! ✨`, { id: loadId });
-      navigate('/dashboard');
-    } catch (error) {
-      console.error('Web Login Error:', error);
-      toast.error('Google Login Failed! 😢', { id: loadId });
-    }
-  };
+    const res = await axios.post(
+      'https://love-verse-backend.onrender.com/api/auth/google-login',
+      { 
+        name: decoded.name, 
+        email: decoded.email, 
+        picture: decoded.picture 
+      }
+    );
+
+    localStorage.setItem('token', res.data.token);
+    localStorage.setItem('user', JSON.stringify(res.data));
+    toast.success(`Welcome, ${res.data.name}! ✨`, { id: loadId });
+    navigate('/dashboard');
+  } catch (error) {
+    console.error('Web Login Error:', error);
+    toast.error('Google Login Failed! 😢', { id: loadId });
+  }
+};
 
   const handleMobileGoogleLogin = async () => {
   const loadId = toast.loading('Opening Google Login...');
