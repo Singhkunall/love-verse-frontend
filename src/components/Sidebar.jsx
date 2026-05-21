@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Heart, Home, MessageCircle, Zap, Image as ImageIcon, Calendar as CalendarIcon, Gamepad2, ShoppingBag, LogOut, RotateCw, Menu, X } from 'lucide-react';
+import { Heart, Home, MessageCircle, Zap, Image as ImageIcon, Calendar as CalendarIcon, Gamepad2, ShoppingBag, LogOut, RotateCw, Menu, X, Mic } from 'lucide-react';
+
 
 function SidebarBtn({ icon, label, active, onClick }) {
     return (
@@ -83,6 +84,7 @@ const Sidebar = ({ activeTab, setActiveTab, user, handleLogout, sendNudge }) => 
                         <SidebarBtn icon={<Gamepad2 size={20} />} label="Games" active={activeTab === 'games'} onClick={() => setActiveTab('games')} />
                         <SidebarBtn icon={<RotateCw size={20} />} label="Love Roulette" active={activeTab === 'roulette'} onClick={() => setActiveTab('roulette')} />
                         <SidebarBtn icon={<ShoppingBag size={20} />} label="Wishlist" active={activeTab === 'wishlist'} onClick={() => setActiveTab('wishlist')} />
+                        <SidebarBtn icon={<Mic size={20} />} label="Voice Notes" active={activeTab === 'voice_notes'} onClick={() => setActiveTab('voice_notes')} />
                     </div>
                     <div className="pt-4">
                         <button
@@ -162,6 +164,7 @@ const Sidebar = ({ activeTab, setActiveTab, user, handleLogout, sendNudge }) => 
                                 { icon: <CalendarIcon size={20} />, label: "Calendar", tab: 'calendar' },
                                 { icon: <RotateCw size={20} />, label: "Roulette", tab: 'roulette' },
                                 { icon: <ShoppingBag size={20} />, label: "Wishlist", tab: 'wishlist' },
+                                { icon: <Mic size={20} />, label: "Voice Notes", tab: 'voice_notes' },
                                 { icon: <LogOut size={20} />, label: "Logout", tab: 'logout' },
                             ].map((item) => (
                                 <button
