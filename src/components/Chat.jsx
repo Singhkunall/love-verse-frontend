@@ -40,17 +40,16 @@ function Chat({ user }) {
 
     // Prefix 'lv-' added to avoid ID collision and WebSocket closing
     const newPeer = new Peer(`lv-${userId}-${Date.now()}`, {
+      host: 'love-verse-backend.onrender.com',
+      port: 443,
+      path: '/peerjs',
+      secure: true,
       debug: 1,
       config: {
         'iceServers': [
           { urls: "stun:stun.relay.metered.ca:80" },
           {
             urls: "turn:global.relay.metered.ca:80",
-            username: import.meta.env.VITE_TURN_USERNAME,
-            credential: import.meta.env.VITE_TURN_CREDENTIAL,
-          },
-          {
-            urls: "turn:global.relay.metered.ca:80?transport=tcp",
             username: import.meta.env.VITE_TURN_USERNAME,
             credential: import.meta.env.VITE_TURN_CREDENTIAL,
           },
@@ -177,62 +176,62 @@ function Chat({ user }) {
 
   // --- 3. CALLING FUNCTIONS (UPDATED) ---
   const startCall = (isVideo) => {
-  if (!peer) return;
-  setCallType(isVideo ? "video" : "audio");
+    if (!peer) return;
+    setCallType(isVideo ? "video" : "audio");
 
-  // Pehle partner ka current peer ID lo
-  socket.emit("get_peer_id", { partnerId });
-  
-  socket.once("partner_peer_id", ({ peerId }) => {
-    if (!peerId) {
-      toast.error("Partner offline hai!");
-      return;
-    }
+    // Pehle partner ka current peer ID lo
+    socket.emit("get_peer_id", { partnerId });
 
-    navigator.mediaDevices.getUserMedia({ 
-      video: isVideo ? { width: 1280, height: 720 } : false, 
-      audio: { echoCancellation: true, noiseSuppression: true }
-    }).then((stream) => {
-      setCalling(true);
-      
-      if (myVideo.current) {
-        myVideo.current.srcObject = stream;
-        myVideo.current.muted = true;
+    socket.once("partner_peer_id", ({ peerId }) => {
+      if (!peerId) {
+        toast.error("Partner offline hai!");
+        return;
       }
-      
-      socket.emit("send_call_signal", {
-        to: partnerId,
-        from: userId,
-        type: isVideo ? "video" : "audio"
-      });
 
-      // Hardcoded lv-${partnerId} ki jagah dynamic peerId use karo
-      const call = peer.call(peerId, stream, {
-        metadata: { type: isVideo ? "video" : "audio" }
-      });
+      navigator.mediaDevices.getUserMedia({
+        video: isVideo ? { width: 1280, height: 720 } : false,
+        audio: { echoCancellation: true, noiseSuppression: true }
+      }).then((stream) => {
+        setCalling(true);
 
-      call.on('stream', (remoteStream) => {
-        console.log("Remote stream received (caller):", remoteStream.getTracks());
-        if (remoteVideo.current) {
-          remoteVideo.current.srcObject = remoteStream;
-          remoteVideo.current.muted = false;
-          remoteVideo.current.volume = 1.0;
-          remoteVideo.current.play().catch(e => console.log("Autoplay:", e));
+        if (myVideo.current) {
+          myVideo.current.srcObject = stream;
+          myVideo.current.muted = true;
         }
-      });
 
-      call.on('close', () => cleanupCall());
-      call.on('error', (err) => {
-        toast.error("Call failed!");
-        cleanupCall();
-      });
+        socket.emit("send_call_signal", {
+          to: partnerId,
+          from: userId,
+          type: isVideo ? "video" : "audio"
+        });
 
-      currentCallRef.current = call;
-    }).catch(err => {
-      toast.error("Camera/Mic access denied!");
+        // Hardcoded lv-${partnerId} ki jagah dynamic peerId use karo
+        const call = peer.call(peerId, stream, {
+          metadata: { type: isVideo ? "video" : "audio" }
+        });
+
+        call.on('stream', (remoteStream) => {
+          console.log("Remote stream received (caller):", remoteStream.getTracks());
+          if (remoteVideo.current) {
+            remoteVideo.current.srcObject = remoteStream;
+            remoteVideo.current.muted = false;
+            remoteVideo.current.volume = 1.0;
+            remoteVideo.current.play().catch(e => console.log("Autoplay:", e));
+          }
+        });
+
+        call.on('close', () => cleanupCall());
+        call.on('error', (err) => {
+          toast.error("Call failed!");
+          cleanupCall();
+        });
+
+        currentCallRef.current = call;
+      }).catch(err => {
+        toast.error("Camera/Mic access denied!");
+      });
     });
-  });
-};
+  };
 
   const answerCall = () => {
     const call = currentCallRef.current;
