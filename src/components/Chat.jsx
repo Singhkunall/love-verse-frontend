@@ -46,17 +46,25 @@ function Chat({ user }) {
     socket.emit("setup", userId);
 
     const newPeer = new Peer(`lv-${userId}-${Date.now()}`, {
-      host: 'love-verse-backend.onrender.com',
-      port: 443,
-      path: '/peerjs',
-      secure: true,
       debug: 1,
       config: {
         'iceServers': [
           { urls: "stun:stun.relay.metered.ca:80" },
-          { urls: "turn:global.relay.metered.ca:80", username: import.meta.env.VITE_TURN_USERNAME, credential: import.meta.env.VITE_TURN_CREDENTIAL },
-          { urls: "turn:global.relay.metered.ca:443", username: import.meta.env.VITE_TURN_USERNAME, credential: import.meta.env.VITE_TURN_CREDENTIAL },
-          { urls: "turns:global.relay.metered.ca:443?transport=tcp", username: import.meta.env.VITE_TURN_USERNAME, credential: import.meta.env.VITE_TURN_CREDENTIAL },
+          {
+            urls: "turn:global.relay.metered.ca:80",
+            username: import.meta.env.VITE_TURN_USERNAME,
+            credential: import.meta.env.VITE_TURN_CREDENTIAL,
+          },
+          {
+            urls: "turn:global.relay.metered.ca:443",
+            username: import.meta.env.VITE_TURN_USERNAME,
+            credential: import.meta.env.VITE_TURN_CREDENTIAL,
+          },
+          {
+            urls: "turns:global.relay.metered.ca:443?transport=tcp",
+            username: import.meta.env.VITE_TURN_USERNAME,
+            credential: import.meta.env.VITE_TURN_CREDENTIAL,
+          },
         ]
       }
     });
@@ -215,7 +223,7 @@ function Chat({ user }) {
           socket.emit("send_call_signal", { to: partnerId, from: userId, type: isVideo ? "video" : "audio" });
           const call = peer.call(peerId, stream, { metadata: { type: isVideo ? "video" : "audio" } });
           call.on('stream', (remoteStream) => {
-            if (remoteVideo.current) { remoteVideo.current.srcObject = remoteStream; remoteVideo.current.muted = false; remoteVideo.current.volume = 1.0; remoteVideo.current.play().catch(() => {}); }
+            if (remoteVideo.current) { remoteVideo.current.srcObject = remoteStream; remoteVideo.current.muted = false; remoteVideo.current.volume = 1.0; remoteVideo.current.play().catch(() => { }); }
           });
           call.on('close', () => cleanupCall());
           call.on('error', () => { toast.error("Call failed!"); cleanupCall(); });
@@ -232,7 +240,7 @@ function Chat({ user }) {
         setIncomingCall(false); setCalling(true);
         if (myVideo.current) { myVideo.current.srcObject = stream; myVideo.current.muted = true; }
         call.on('stream', (remoteStream) => {
-          if (remoteVideo.current) { remoteVideo.current.srcObject = remoteStream; remoteVideo.current.muted = false; remoteVideo.current.volume = 1.0; remoteVideo.current.play().catch(() => {}); }
+          if (remoteVideo.current) { remoteVideo.current.srcObject = remoteStream; remoteVideo.current.muted = false; remoteVideo.current.volume = 1.0; remoteVideo.current.play().catch(() => { }); }
         });
         call.on('close', () => cleanupCall());
         call.answer(stream);
