@@ -186,6 +186,12 @@ function Dashboard() {
       fetchUserProfile();
     });
 
+    socket.on("partner_avatar_updated", () => {
+      fetchUserProfile(); // Partner ka naya avatar fetch karo
+    });
+
+    socket.off("partner_avatar_updated");
+
     // NAYA: Nudge Receive Logic with Hearts
     socket.on("receive_nudge", (data) => {
       toast(`${data.senderName} ne aapko ek Virtual Hug bheja! 🤗❤️`, {
@@ -273,10 +279,14 @@ function Dashboard() {
         userId,
         avatar: reader.result
       });
-      // Turant UI update karo — fetchUserProfile ka wait mat karo
+      // Apna UI turant update karo
       const updatedUser = { ...user, avatar: res.data.avatar };
       setUser(updatedUser);
       localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      // Partner ko notify karo
+      socket.emit("avatar_updated", { roomId, partnerId });
+      
       toast.success("Profile photo updated! 🎉");
     } catch (err) {
       toast.error("Upload failed!");
