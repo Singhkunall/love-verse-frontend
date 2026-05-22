@@ -190,9 +190,7 @@ function Dashboard() {
       fetchUserProfile();
     });
 
-    socket.on("partner_avatar_updated", () => {
-      fetchUserProfile(); // Partner ka naya avatar fetch karo
-    });
+
 
     // socket.off("partner_avatar_updated");
 
@@ -290,7 +288,8 @@ function Dashboard() {
         localStorage.setItem('user', JSON.stringify(updatedUser));
 
         // Partner ko notify karo
-        socket.emit("avatar_updated", { roomId, partnerId });
+        // partnerId se emit karo roomId ki jagah
+        socket.emit("avatar_updated", { partnerId });
 
         toast.success("Profile photo updated! 🎉");
       } catch (err) {
