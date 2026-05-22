@@ -262,25 +262,28 @@ function Dashboard() {
     }
   };
   const handleAvatarUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setUploadingAvatar(true);
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onloadend = async () => {
-      try {
-        const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/update-avatar`, {
-          userId,
-          avatar: reader.result
-        });
-        toast.success("Profile photo updated! 🎉");
-        fetchUserProfile();
-      } catch (err) {
-        toast.error("Upload failed!");
-      }
-      setUploadingAvatar(false);
-    };
+  const file = e.target.files[0];
+  if (!file) return;
+  setUploadingAvatar(true);
+  const reader = new FileReader();
+  reader.readAsDataURL(file);
+  reader.onloadend = async () => {
+    try {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/update-avatar`, {
+        userId,
+        avatar: reader.result
+      });
+      // Turant UI update karo — fetchUserProfile ka wait mat karo
+      const updatedUser = { ...user, avatar: res.data.avatar };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      toast.success("Profile photo updated! 🎉");
+    } catch (err) {
+      toast.error("Upload failed!");
+    }
+    setUploadingAvatar(false);
   };
+};
 
   const glassStyle = "bg-white/70 backdrop-blur-2xl border border-white/50 shadow-xl";
 
