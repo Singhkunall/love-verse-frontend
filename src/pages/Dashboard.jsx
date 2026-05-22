@@ -186,8 +186,10 @@ function Dashboard() {
       fetchUserProfile();
     });
     socket.on("partner_avatar_updated", () => {
-      console.log("Partner avatar updated event received!"); // DEBUG
-      fetchUserProfile();
+      console.log("Event received! Fetching profile...");
+      fetchUserProfile().then(() => {
+        console.log("Profile fetched! Partner avatar:", user.partnerId?.avatar);
+      });
     });
 
 
