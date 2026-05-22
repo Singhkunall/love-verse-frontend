@@ -3,7 +3,7 @@ import io from 'socket.io-client';
 import axios from 'axios';
 import { Send, CheckCheck, Smile, Phone, Video, MoreVertical, Plus, Loader2, PhoneOff, ListTodo, Mic, MicOff, Play, Pause } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
-import Peer from 'peerjs';
+import AgoraRTC from 'agora-rtc-sdk-ng';
 import toast, { Toaster } from 'react-hot-toast';
 import Routine from './Routine';
 
@@ -15,83 +15,72 @@ function Chat({ user }) {
   const [isTyping, setIsTyping] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-
-  // Voice Note states
   const [recording, setRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [sendingVoice, setSendingVoice] = useState(false);
   const [playingId, setPlayingId] = useState(null);
-
-  const [peer, setPeer] = useState(null);
   const [calling, setCalling] = useState(false);
   const [incomingCall, setIncomingCall] = useState(false);
   const [callType, setCallType] = useState("video");
   const [showRoutine, setShowRoutine] = useState(false);
 
   const scrollRef = useRef();
-  const myVideo = useRef();
-  const remoteVideo = useRef();
-  const currentCallRef = useRef();
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
   const timerRef = useRef(null);
   const audioRefs = useRef({});
+  const agoraClientRef = useRef(null);
+  const localTracksRef = useRef({ audio: null, video: null });
 
   const userId = user._id || user.id;
   const partnerId = user.partnerId?._id || user.partnerId;
   const roomId = [userId, partnerId].sort().join("_");
 
+  // Agora initialize
   useEffect(() => {
     if (!userId) return;
     socket.emit("setup", userId);
 
-    const newPeer = new Peer(`lv-${userId}-${Date.now()}`, {
-      debug: 1,
-      config: {
-        'iceServers': [
-          { urls: "stun:stun.relay.metered.ca:80" },
-          {
-            urls: "turn:global.relay.metered.ca:80",
-            username: import.meta.env.VITE_TURN_USERNAME,
-            credential: import.meta.env.VITE_TURN_CREDENTIAL,
-          },
-          {
-            urls: "turn:global.relay.metered.ca:443",
-            username: import.meta.env.VITE_TURN_USERNAME,
-            credential: import.meta.env.VITE_TURN_CREDENTIAL,
-          },
-          {
-            urls: "turns:global.relay.metered.ca:443?transport=tcp",
-            username: import.meta.env.VITE_TURN_USERNAME,
-            credential: import.meta.env.VITE_TURN_CREDENTIAL,
-          },
-        ]
+    const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+    agoraClientRef.current = client;
+
+    client.on('user-published', async (remoteUser, mediaType) => {
+      await client.subscribe(remoteUser, mediaType);
+      if (mediaType === 'audio') {
+        remoteUser.audioTrack?.play();
+      }
+      if (mediaType === 'video') {
+        remoteUser.videoTrack?.play('remote-video');
       }
     });
 
-    setPeer(newPeer);
-    newPeer.on('open', (id) => {
-      socket.emit("register_peer", { peerId: id, userId });
-    });
-    newPeer.on('call', (call) => {
-      setIncomingCall(true);
-      if (call.metadata?.type) setCallType(call.metadata.type);
-      currentCallRef.current = call;
-    });
-    newPeer.on('error', (err) => {
-      if (err.type === 'peer-unavailable') { toast.error("Partner is offline!"); setCalling(false); }
-      if (err.type === 'disconnected') newPeer.reconnect();
+    client.on('user-unpublished', () => {
+      console.log('Remote user unpublished');
     });
 
-    return () => { if (newPeer) newPeer.destroy(); };
+    client.on('user-left', () => {
+      cleanupCall();
+    });
+
+    return () => {
+      client.leave();
+    };
   }, [userId]);
 
+  // Socket listeners for call signals
   useEffect(() => {
-    const handleSignal = (data) => { setCallType(data.type); setIncomingCall(true); toast(`Incoming ${data.type} call...`, { icon: '📞' }); };
+    const handleSignal = (data) => {
+      setCallType(data.type);
+      setIncomingCall(true);
+      toast(`Incoming ${data.type} call...`, { icon: '📞' });
+    };
     const handleEndSignal = () => cleanupCall();
     socket.on("incoming_call_signal", handleSignal);
     socket.on("call_ended_signal", handleEndSignal);
-    return () => { socket.off("incoming_call_signal", handleSignal); socket.off("call_ended_signal", handleEndSignal); };
+    return () => {
+      socket.off("incoming_call_signal", handleSignal);
+      socket.off("call_ended_signal", handleEndSignal);
+    };
   }, []);
 
   // Voice note received
@@ -107,12 +96,19 @@ function Chat({ user }) {
     return () => socket.off("receive_voice_note", handleVoiceNote);
   }, []);
 
-  const cleanupCall = () => {
-    setCalling(false); setIncomingCall(false);
-    if (currentCallRef.current) currentCallRef.current.close();
-    if (myVideo.current?.srcObject) { myVideo.current.srcObject.getTracks().forEach(t => t.stop()); myVideo.current.srcObject = null; }
-    if (remoteVideo.current) remoteVideo.current.srcObject = null;
-    setTimeout(() => window.location.reload(), 300);
+  const cleanupCall = async () => {
+    try {
+      localTracksRef.current.audio?.stop();
+      localTracksRef.current.audio?.close();
+      localTracksRef.current.video?.stop();
+      localTracksRef.current.video?.close();
+      localTracksRef.current = { audio: null, video: null };
+      await agoraClientRef.current?.leave();
+    } catch (err) {
+      console.error("Cleanup error:", err);
+    }
+    setCalling(false);
+    setIncomingCall(false);
   };
 
   const fetchChatHistory = async () => {
@@ -123,20 +119,111 @@ function Chat({ user }) {
   };
 
   useEffect(() => {
-    if (roomId && partnerId) { socket.emit("join_chat", roomId); fetchChatHistory(); }
+    if (roomId && partnerId) {
+      socket.emit("join_chat", roomId);
+      fetchChatHistory();
+    }
   }, [roomId, partnerId]);
 
   useEffect(() => {
-    const handleReceive = (data) => { if (data.sender !== userId) setMessageList(list => [...list, data]); };
-    const handleTyping = (data) => { if (data.userId !== userId) setIsTyping(data.typing); };
+    const handleReceive = (data) => {
+      if (data.sender !== userId) setMessageList(list => [...list, data]);
+    };
+    const handleTyping = (data) => {
+      if (data.userId !== userId) setIsTyping(data.typing);
+    };
     socket.on("receive_message", handleReceive);
     socket.on("display_typing", handleTyping);
-    return () => { socket.off("receive_message", handleReceive); socket.off("display_typing", handleTyping); };
+    return () => {
+      socket.off("receive_message", handleReceive);
+      socket.off("display_typing", handleTyping);
+    };
   }, [userId]);
 
-  useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messageList, isTyping]);
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messageList, isTyping]);
 
-  // --- VOICE NOTE RECORDING ---
+  // --- AGORA CALL FUNCTIONS ---
+  const startCall = async (isVideo) => {
+    setCallType(isVideo ? "video" : "audio");
+    try {
+      const appId = import.meta.env.VITE_AGORA_APP_ID;
+      const uid = Math.floor(Math.random() * 100000);
+
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/agora/token`, {
+        channelName: roomId, uid
+      });
+      const token = res.data.token;
+
+      await agoraClientRef.current.join(appId, roomId, token, uid);
+
+      const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+      localTracksRef.current.audio = audioTrack;
+
+      let videoTrack = null;
+      if (isVideo) {
+        videoTrack = await AgoraRTC.createCameraVideoTrack();
+        localTracksRef.current.video = videoTrack;
+        videoTrack.play('local-video');
+      }
+
+      const tracksToPublish = isVideo ? [audioTrack, videoTrack] : [audioTrack];
+      await agoraClientRef.current.publish(tracksToPublish);
+
+      setCalling(true);
+
+      socket.emit("send_call_signal", {
+        to: partnerId,
+        from: userId,
+        type: isVideo ? "video" : "audio",
+      });
+
+    } catch (err) {
+      console.error("Call error:", err);
+      toast.error("Call start nahi ho paya!");
+    }
+  };
+
+  const answerCall = async () => {
+    setIncomingCall(false);
+    setCalling(true);
+    try {
+      const appId = import.meta.env.VITE_AGORA_APP_ID;
+      const uid = Math.floor(Math.random() * 100000);
+
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/agora/token`, {
+        channelName: roomId, uid
+      });
+      const token = res.data.token;
+
+      await agoraClientRef.current.join(appId, roomId, token, uid);
+
+      const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+      localTracksRef.current.audio = audioTrack;
+
+      let videoTrack = null;
+      if (callType === 'video') {
+        videoTrack = await AgoraRTC.createCameraVideoTrack();
+        localTracksRef.current.video = videoTrack;
+        videoTrack.play('local-video');
+      }
+
+      const tracksToPublish = callType === 'video' ? [audioTrack, videoTrack] : [audioTrack];
+      await agoraClientRef.current.publish(tracksToPublish);
+
+    } catch (err) {
+      console.error("Answer error:", err);
+      toast.error("Call answer nahi ho paya!");
+    }
+  };
+
+  const endCall = () => {
+    socket.emit("end_call_signal", { to: partnerId });
+    cleanupCall();
+  };
+
+  // --- VOICE NOTE ---
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -180,7 +267,6 @@ function Chat({ user }) {
           roomId, senderId: userId, senderName: user.name,
           audio: reader.result, duration: recordingTime,
         });
-
         const msgData = { ...res.data, isVoiceNote: true, sender: userId, senderName: user.name, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
         socket.emit("new_voice_note", { ...res.data, roomId, senderName: user.name });
         setMessageList(prev => [...prev, msgData]);
@@ -208,46 +294,6 @@ function Chat({ user }) {
   };
 
   const formatTime = (secs) => `${Math.floor(secs / 60)}:${(secs % 60).toString().padStart(2, '0')}`;
-
-  // --- CALL FUNCTIONS ---
-  const startCall = (isVideo) => {
-    if (!peer) return;
-    setCallType(isVideo ? "video" : "audio");
-    socket.emit("get_peer_id", { partnerId });
-    socket.once("partner_peer_id", ({ peerId }) => {
-      if (!peerId) { toast.error("Partner offline hai!"); return; }
-      navigator.mediaDevices.getUserMedia({ video: isVideo ? { width: 1280, height: 720 } : false, audio: { echoCancellation: true, noiseSuppression: true } })
-        .then((stream) => {
-          setCalling(true);
-          if (myVideo.current) { myVideo.current.srcObject = stream; myVideo.current.muted = true; }
-          socket.emit("send_call_signal", { to: partnerId, from: userId, type: isVideo ? "video" : "audio" });
-          const call = peer.call(peerId, stream, { metadata: { type: isVideo ? "video" : "audio" } });
-          call.on('stream', (remoteStream) => {
-            if (remoteVideo.current) { remoteVideo.current.srcObject = remoteStream; remoteVideo.current.muted = false; remoteVideo.current.volume = 1.0; remoteVideo.current.play().catch(() => { }); }
-          });
-          call.on('close', () => cleanupCall());
-          call.on('error', () => { toast.error("Call failed!"); cleanupCall(); });
-          currentCallRef.current = call;
-        }).catch(() => toast.error("Camera/Mic access denied!"));
-    });
-  };
-
-  const answerCall = () => {
-    const call = currentCallRef.current;
-    if (!call) return;
-    navigator.mediaDevices.getUserMedia({ video: callType === "video" ? { width: 640, height: 480 } : false, audio: { echoCancellation: true, noiseSuppression: true } })
-      .then((stream) => {
-        setIncomingCall(false); setCalling(true);
-        if (myVideo.current) { myVideo.current.srcObject = stream; myVideo.current.muted = true; }
-        call.on('stream', (remoteStream) => {
-          if (remoteVideo.current) { remoteVideo.current.srcObject = remoteStream; remoteVideo.current.muted = false; remoteVideo.current.volume = 1.0; remoteVideo.current.play().catch(() => { }); }
-        });
-        call.on('close', () => cleanupCall());
-        call.answer(stream);
-      }).catch(() => toast.error("Camera busy or access denied!"));
-  };
-
-  const endCall = () => { socket.emit("end_call_signal", { to: partnerId }); cleanupCall(); };
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -282,8 +328,10 @@ function Chat({ user }) {
       {calling && (
         <div className="absolute inset-0 z-[100] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4">
           <div className="relative w-full h-[80%] rounded-[2rem] overflow-hidden bg-gray-800 shadow-2xl">
-            <video playsInline ref={remoteVideo} autoPlay className="w-full h-full object-cover" />
-            <video playsInline muted ref={myVideo} autoPlay className="absolute bottom-4 right-4 w-28 h-40 object-cover rounded-xl border-2 border-white/20 shadow-2xl" />
+            {/* Remote video — Agora inject karega yahan */}
+            <div id="remote-video" className="w-full h-full" />
+            {/* Local video */}
+            <div id="local-video" className="absolute bottom-4 right-4 w-28 h-40 rounded-xl border-2 border-white/20 shadow-2xl overflow-hidden" />
             <div className="absolute top-6 left-6 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
               <p className="text-white text-xs font-bold uppercase tracking-widest">{callType} Call Active</p>
             </div>
@@ -347,18 +395,13 @@ function Chat({ user }) {
           return (
             <div key={index} className={`flex ${isMine ? "justify-end" : "justify-start"} animate-in slide-in-from-bottom-2`}>
               <div className={`max-w-[70%] flex flex-col ${isMine ? "items-end" : "items-start"}`}>
-
-                {/* VOICE NOTE BUBBLE */}
                 {msg.isVoiceNote ? (
                   <button
                     onClick={() => handlePlay(msg._id, msg.audioUrl)}
                     className={`flex items-center gap-3 px-4 py-3 rounded-[2rem] shadow-sm ${isMine ? 'bg-rose-500 rounded-tr-none' : 'bg-white rounded-tl-none border border-rose-50'}`}
                   >
                     <div className={`w-9 h-9 rounded-full flex items-center justify-center ${isMine ? 'bg-white/20' : 'bg-rose-500'}`}>
-                      {playingId === msg._id
-                        ? <Pause size={16} className="text-white" />
-                        : <Play size={16} className="text-white" />
-                      }
+                      {playingId === msg._id ? <Pause size={16} className="text-white" /> : <Play size={16} className="text-white" />}
                     </div>
                     <div className="flex gap-0.5 items-center h-6">
                       {Array.from({ length: 18 }).map((_, i) => (
@@ -379,7 +422,6 @@ function Chat({ user }) {
                     )}
                   </div>
                 )}
-
                 <div className={`flex items-center gap-1.5 mt-1.5 px-2 ${isMine ? "flex-row-reverse" : "flex-row"}`}>
                   <span className="text-[9px] font-bold text-gray-400">{msg.time}</span>
                   {isMine && <CheckCheck size={12} className="text-rose-400" />}
@@ -396,19 +438,15 @@ function Chat({ user }) {
 
       {/* Input Bar */}
       <div className="p-6 bg-transparent">
-        {/* Recording indicator */}
         {recording && (
           <div className="flex items-center justify-between mb-3 px-4 py-2 bg-red-50 rounded-2xl border border-red-100">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
               <span className="text-red-500 font-black text-sm">Recording... {formatTime(recordingTime)}</span>
             </div>
-            <button onClick={stopRecording} className="text-red-500 font-black text-xs bg-red-100 px-3 py-1 rounded-full">
-              Send ✓
-            </button>
+            <button onClick={stopRecording} className="text-red-500 font-black text-xs bg-red-100 px-3 py-1 rounded-full">Send ✓</button>
           </div>
         )}
-
         <div className="bg-white/80 backdrop-blur-2xl p-2 rounded-[2.5rem] flex items-center gap-2 border border-white shadow-xl shadow-rose-200/20 focus-within:ring-2 ring-rose-100 transition-all">
           <label className="p-3 text-rose-400 hover:bg-rose-50 rounded-full cursor-pointer transition-all">
             {isUploading ? <Loader2 size={22} className="animate-spin" /> : <Plus size={22} />}
@@ -426,8 +464,6 @@ function Chat({ user }) {
             className="flex-1 bg-transparent border-none outline-none text-sm text-gray-700 font-medium px-2"
             disabled={recording || sendingVoice}
           />
-
-          {/* Mic button — show when no text */}
           {currentMessage.length === 0 ? (
             <button
               onClick={recording ? stopRecording : startRecording}
