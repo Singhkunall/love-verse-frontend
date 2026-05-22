@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, Home, MessageCircle, Zap, Image as ImageIcon, Calendar as CalendarIcon, Gamepad2, ShoppingBag, LogOut, RotateCw, Menu, X, Mic } from 'lucide-react';
+import { Heart, Home, MessageCircle, Zap, Image as ImageIcon, Calendar as CalendarIcon, Gamepad2, ShoppingBag, LogOut, RotateCw, Menu, X, Mic, PlaySquare } from 'lucide-react';
 
 
 function SidebarBtn({ icon, label, active, onClick }) {
@@ -72,6 +72,7 @@ const Sidebar = ({ activeTab, setActiveTab, user, handleLogout, sendNudge }) => 
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-4 mb-2">The Essentials</p>
                         <SidebarBtn icon={<Home size={20} />} label="Home" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
                         <SidebarBtn icon={<MessageCircle size={20} />} label="Chat & Call" active={activeTab === 'chat'} onClick={() => setActiveTab('chat')} />
+                        <SidebarBtn icon={<PlaySquare size={20} />} label="Watch Together" active={activeTab === 'watch_together'} onClick={() => setActiveTab('watch_together')} />
                     </div>
                     <div className="space-y-1">
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-4 mb-2">Our Connection</p>
@@ -164,6 +165,7 @@ const Sidebar = ({ activeTab, setActiveTab, user, handleLogout, sendNudge }) => 
                                 { icon: <CalendarIcon size={20} />, label: "Calendar", tab: 'calendar' },
                                 { icon: <RotateCw size={20} />, label: "Roulette", tab: 'roulette' },
                                 { icon: <ShoppingBag size={20} />, label: "Wishlist", tab: 'wishlist' },
+                                { icon: <PlaySquare size={20} />, label: "Watch Together", tab: 'watch_together' },
                                 
                                 { icon: <LogOut size={20} />, label: "Logout", tab: 'logout' },
                             ].map((item) => (

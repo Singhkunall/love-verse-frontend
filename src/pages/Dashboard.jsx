@@ -13,7 +13,7 @@ import Sidebar from '../components/Sidebar'; // NAYA: Sidebar Import
 import io from 'socket.io-client';
 import FloatingHearts from '../components/FloatingHearts'; // NAYA: Import FloatingHearts
 import LoveRoulette from '../components/LoveRoulette';
-
+import WatchTogether from '../components/WatchTogether';
 
 const socket = io.connect(import.meta.env.VITE_API_URL);
 
@@ -666,6 +666,9 @@ function Dashboard() {
           <div className="h-[80vh] flex flex-col animate-in fade-in slide-in-from-right-4 duration-500">
             <Chat user={user} />
           </div>
+        )}
+        {activeTab === 'watch_together' && (
+          <WatchTogether user={user} roomId={roomId} socket={socket} />
         )}
       </main>
     </div>
