@@ -190,7 +190,7 @@ function Dashboard() {
       fetchUserProfile(); // Partner ka naya avatar fetch karo
     });
 
-    socket.off("partner_avatar_updated");
+    // socket.off("partner_avatar_updated");
 
     // NAYA: Nudge Receive Logic with Hearts
     socket.on("receive_nudge", (data) => {
@@ -228,6 +228,7 @@ function Dashboard() {
       socket.off("task_updated");
       socket.off("partner_connected");
       socket.off("partner_mood_updated");
+      socket.off("partner_avatar_updated");
     };
   }, [roomId, userId]);
 
