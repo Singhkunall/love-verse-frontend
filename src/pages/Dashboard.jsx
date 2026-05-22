@@ -185,6 +185,10 @@ function Dashboard() {
     socket.on("partner_mood_updated", () => {
       fetchUserProfile();
     });
+    socket.on("partner_avatar_updated", () => {
+      console.log("Partner avatar updated event received!"); // DEBUG
+      fetchUserProfile();
+    });
 
     socket.on("partner_avatar_updated", () => {
       fetchUserProfile(); // Partner ka naya avatar fetch karo
@@ -269,32 +273,32 @@ function Dashboard() {
     }
   };
   const handleAvatarUpload = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  setUploadingAvatar(true);
-  const reader = new FileReader();
-  reader.readAsDataURL(file);
-  reader.onloadend = async () => {
-    try {
-      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/update-avatar`, {
-        userId,
-        avatar: reader.result
-      });
-      // Apna UI turant update karo
-      const updatedUser = { ...user, avatar: res.data.avatar };
-      setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      
-      // Partner ko notify karo
-      socket.emit("avatar_updated", { roomId, partnerId });
-      
-      toast.success("Profile photo updated! 🎉");
-    } catch (err) {
-      toast.error("Upload failed!");
-    }
-    setUploadingAvatar(false);
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadingAvatar(true);
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onloadend = async () => {
+      try {
+        const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/update-avatar`, {
+          userId,
+          avatar: reader.result
+        });
+        // Apna UI turant update karo
+        const updatedUser = { ...user, avatar: res.data.avatar };
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+
+        // Partner ko notify karo
+        socket.emit("avatar_updated", { roomId, partnerId });
+
+        toast.success("Profile photo updated! 🎉");
+      } catch (err) {
+        toast.error("Upload failed!");
+      }
+      setUploadingAvatar(false);
+    };
   };
-};
 
   const glassStyle = "bg-white/70 backdrop-blur-2xl border border-white/50 shadow-xl";
 
@@ -603,7 +607,7 @@ function Dashboard() {
             <LoveRoulette user={user} roomId={roomId} socket={socket} />
           </div>
         )}
-        
+
 
         {activeTab === 'wishlist' && (
           <div className="max-w-6xl mx-auto w-full animate-in fade-in slide-in-from-right-4 duration-500">
