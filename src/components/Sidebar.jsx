@@ -1,16 +1,13 @@
 import React, { useState } from 'react';
-import { Heart, Home, MessageCircle, Zap, Image as ImageIcon, Calendar as CalendarIcon, Gamepad2, ShoppingBag, LogOut, RotateCw, Menu, X, Mic, PlaySquare } from 'lucide-react';
-
-
+import { Heart, Home, MessageCircle, Zap, Image as ImageIcon, Calendar as CalendarIcon, Gamepad2, ShoppingBag, LogOut, RotateCw, Menu, X, PlaySquare, Globe } from 'lucide-react';
 function SidebarBtn({ icon, label, active, onClick }) {
     return (
         <button
             onClick={onClick}
-            className={`w-full flex items-center gap-4 p-4 rounded-2xl font-bold transition-all duration-300 ${
-                active
+            className={`w-full flex items-center gap-4 p-4 rounded-2xl font-bold transition-all duration-300 ${active
                     ? 'bg-white shadow-md text-rose-500 scale-[1.02] border border-white'
                     : 'text-gray-500 hover:bg-white/40 hover:text-gray-700'
-            }`}
+                }`}
         >
             <div className={`${active ? 'text-rose-500' : 'text-gray-400'}`}>{icon}</div>
             <span className="text-sm tracking-tight">{label}</span>
@@ -24,9 +21,8 @@ function BottomNavBtn({ icon, label, active, onClick }) {
     return (
         <button
             onClick={onClick}
-            className={`flex flex-col items-center justify-center gap-1 flex-1 py-2 transition-all ${
-                active ? 'text-rose-500' : 'text-gray-400'
-            }`}
+            className={`flex flex-col items-center justify-center gap-1 flex-1 py-2 transition-all ${active ? 'text-rose-500' : 'text-gray-400'
+                }`}
         >
             <div className={`p-1.5 rounded-xl transition-all ${active ? 'bg-rose-50' : ''}`}>
                 {icon}
@@ -54,6 +50,8 @@ const Sidebar = ({ activeTab, setActiveTab, user, handleLogout, sendNudge }) => 
         { icon: <Gamepad2 size={20} />, label: "Games", tab: 'games' },
         { icon: <ImageIcon size={20} />, label: "Memories", tab: 'memories_tab' },
         { icon: <Menu size={20} />, label: "More", tab: 'more' },
+        { icon: <Globe size={20} />, label: "Universe", tab: 'universe' },
+
     ];
 
     return (
@@ -79,13 +77,14 @@ const Sidebar = ({ activeTab, setActiveTab, user, handleLogout, sendNudge }) => 
                         <SidebarBtn icon={<Zap size={20} />} label="Daily Routine" active={activeTab === 'routine'} onClick={() => setActiveTab('routine')} />
                         <SidebarBtn icon={<ImageIcon size={20} />} label="Memories" active={activeTab === 'memories_tab'} onClick={() => setActiveTab('memories_tab')} />
                         <SidebarBtn icon={<CalendarIcon size={20} />} label="Love Calendar" active={activeTab === 'calendar'} onClick={() => setActiveTab('calendar')} />
+                        <SidebarBtn icon={<Globe size={20} />} label="Our Universe" active={activeTab === 'universe'} onClick={() => setActiveTab('universe')} />
                     </div>
                     <div className="space-y-1">
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-4 mb-2">Playground</p>
                         <SidebarBtn icon={<Gamepad2 size={20} />} label="Games" active={activeTab === 'games'} onClick={() => setActiveTab('games')} />
                         <SidebarBtn icon={<RotateCw size={20} />} label="Love Roulette" active={activeTab === 'roulette'} onClick={() => setActiveTab('roulette')} />
                         <SidebarBtn icon={<ShoppingBag size={20} />} label="Wishlist" active={activeTab === 'wishlist'} onClick={() => setActiveTab('wishlist')} />
-                        
+
                     </div>
                     <div className="pt-4">
                         <button
@@ -120,7 +119,7 @@ const Sidebar = ({ activeTab, setActiveTab, user, handleLogout, sendNudge }) => 
                 <div className="flex items-center px-2 py-1">
                     <BottomNavBtn icon={<Home size={20} />} label="Home" active={activeTab === 'home'} onClick={() => { setActiveTab('home'); setMobileMenuOpen(false); }} />
                     <BottomNavBtn icon={<MessageCircle size={20} />} label="Chat" active={activeTab === 'chat'} onClick={() => { setActiveTab('chat'); setMobileMenuOpen(false); }} />
-                    
+
                     {/* Center Hug Button */}
                     <button
                         onClick={handleNudgeClick}
@@ -166,7 +165,7 @@ const Sidebar = ({ activeTab, setActiveTab, user, handleLogout, sendNudge }) => 
                                 { icon: <RotateCw size={20} />, label: "Roulette", tab: 'roulette' },
                                 { icon: <ShoppingBag size={20} />, label: "Wishlist", tab: 'wishlist' },
                                 { icon: <PlaySquare size={20} />, label: "Watch Together", tab: 'watch_together' },
-                                
+
                                 { icon: <LogOut size={20} />, label: "Logout", tab: 'logout' },
                             ].map((item) => (
                                 <button
@@ -179,11 +178,10 @@ const Sidebar = ({ activeTab, setActiveTab, user, handleLogout, sendNudge }) => 
                                         }
                                         setMobileMenuOpen(false);
                                     }}
-                                    className={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all ${
-                                        activeTab === item.tab
+                                    className={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all ${activeTab === item.tab
                                             ? 'bg-rose-50 text-rose-500'
                                             : 'bg-gray-50 text-gray-500'
-                                    }`}
+                                        }`}
                                 >
                                     {item.icon}
                                     <span className="text-[10px] font-black uppercase">{item.label}</span>
