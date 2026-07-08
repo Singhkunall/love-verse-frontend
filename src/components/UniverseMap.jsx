@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Plus, X, Heart, Plane, Star, Moon, Sparkles, MapPin } from 'lucide-react';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+
 
 const PIN_TYPES = [
     { type: 'first_meet', label: 'First Meet', emoji: '❤️', color: '#f43f5e' },
