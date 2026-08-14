@@ -27,9 +27,8 @@
 
 | Category | Features Included |
 | :--- | :--- |
-| 🤖 **LoveVerse AI Assistant** | AI Date Night Generator, AI Love Letter & Poem Writer, and Deep Connection Icebreaker Prompts. |
+| 🌍 **3D Next-Gen Universe Globe** | Interactive 3D Earth (Three.js), OpenStreetMap city search, 3D animated love travel arcs, pin light beacons & memory photo spotlight. |
 | ❓ **Couple Quiz Arcade** | 1v1 multiplayer trivia battle ("How Well Do You Know Me?") with secret reveals & live score sync. |
-| 🌌 **Ambient Date Room** | Web audio soundscapes (Cozy Rain 🌧️, Campfire 🔥, Ocean Waves 🌊, Cafe ☕) + romantic quote generator. |
 | 💬 **Real-time Chat & Nudges** | Instant messaging, image previews, typing indicators, floating heart animations, and instant love nudges/hugs. |
 | 📞 **Voice & Video Calling** | HD 1-on-1 audio & video calls powered by **PeerJS WebRTC** & **Agora RTC SDK**. |
 | 🎮 **Couple Arcade** | Real-time interactive games: ♟️ **Chess**, 🎲 **Ludo**, 🧠 **Memory Pairs**, ⚡ **Fastest Finger**, ⌨️ **Typing Race**, 🎡 **Love Roulette**, and ❓ **Couple Quiz**. |

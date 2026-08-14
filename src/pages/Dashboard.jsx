@@ -16,9 +16,7 @@ import LoveRoulette from '../components/LoveRoulette';
 import WatchTogether from '../components/WatchTogether';
 import Ludo from '../components/Ludo';
 import UniverseMap from '../components/UniverseMap';
-import LoveVerseAI from '../components/LoveVerseAI';
 import CoupleQuiz from '../components/CoupleQuiz';
-import AmbientRoom from '../components/AmbientRoom';
 
 const socket = io.connect(import.meta.env.VITE_API_URL);
 
@@ -700,12 +698,6 @@ function Dashboard() {
         )}
         {activeTab === 'universe' && (
           <UniverseMap user={user} roomId={roomId} socket={socket} />
-        )}
-        {activeTab === 'ai_assistant' && (
-          <LoveVerseAI user={user} socket={socket} roomId={roomId} />
-        )}
-        {activeTab === 'ambient_room' && (
-          <AmbientRoom user={user} />
         )}
       </main>
     </div>

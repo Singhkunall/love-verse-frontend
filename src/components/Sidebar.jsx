@@ -80,11 +80,6 @@ const Sidebar = ({ activeTab, setActiveTab, user, handleLogout, sendNudge }) => 
                         <SidebarBtn icon={<Globe size={20} />} label="Our Universe" active={activeTab === 'universe'} onClick={() => setActiveTab('universe')} />
                     </div>
                     <div className="space-y-1">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-4 mb-2">Next-Level Features</p>
-                        <SidebarBtn icon={<Sparkles size={20} />} label="LoveVerse AI" active={activeTab === 'ai_assistant'} onClick={() => setActiveTab('ai_assistant')} />
-                        <SidebarBtn icon={<Moon size={20} />} label="Ambient Room" active={activeTab === 'ambient_room'} onClick={() => setActiveTab('ambient_room')} />
-                    </div>
-                    <div className="space-y-1">
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-4 mb-2">Playground</p>
                         <SidebarBtn icon={<Gamepad2 size={20} />} label="Games" active={activeTab === 'games'} onClick={() => setActiveTab('games')} />
                         <SidebarBtn icon={<RotateCw size={20} />} label="Love Roulette" active={activeTab === 'roulette'} onClick={() => setActiveTab('roulette')} />
@@ -163,8 +158,6 @@ const Sidebar = ({ activeTab, setActiveTab, user, handleLogout, sendNudge }) => 
 
                         <div className="grid grid-cols-3 gap-3">
                             {[
-                                { icon: <Sparkles size={20} />, label: "LoveVerse AI", tab: 'ai_assistant' },
-                                { icon: <Moon size={20} />, label: "Ambient Room", tab: 'ambient_room' },
                                 { icon: <Zap size={20} />, label: "Routine", tab: 'routine' },
                                 { icon: <ImageIcon size={20} />, label: "Memories", tab: 'memories_tab' },
                                 { icon: <CalendarIcon size={20} />, label: "Calendar", tab: 'calendar' },
