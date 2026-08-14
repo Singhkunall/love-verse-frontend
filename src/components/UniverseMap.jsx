@@ -3,7 +3,10 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { Plus, X, Heart, Plane, Star, Moon, Sparkles, MapPin, Search, Compass, Eye, Trash2, Camera, Navigation, Layers } from 'lucide-react';
+import { Plus, X, Heart, Plane, Star, Moon, Sparkles, MapPin, Search, Compass, Eye, Trash2, Camera, Navigation, Layers, Globe as GlobeIcon, Map } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 const PIN_TYPES = [
   { type: 'first_meet', label: 'First Meet', emoji: '❤️', color: '#ff4d6d' },
@@ -22,6 +25,16 @@ const PRESET_SPOTS = [
   { name: 'New York, USA 🏙️', lat: 40.7128, lng: -74.0060 }
 ];
 
+// Helper to create custom Leaflet marker icons
+function createLeafletIcon(emoji) {
+  return L.divIcon({
+    html: `<div style="font-size: 24px; text-shadow: 0 0 10px rgba(255,255,255,0.8);">${emoji}</div>`,
+    className: 'custom-leaflet-pin',
+    iconSize: [30, 30],
+    iconAnchor: [15, 15]
+  });
+}
+
 // Convert lat/lng to 3D coordinates on sphere
 function latLngToVector3(lat, lng, radius) {
   const phi = (90 - lat) * (Math.PI / 180);
@@ -37,7 +50,6 @@ function latLngToVector3(lat, lng, radius) {
 function create3DArc(v1, v2, radius) {
   const distance = v1.distanceTo(v2);
   const mid = v1.clone().add(v2).multiplyScalar(0.5);
-  const midLength = mid.length();
   mid.normalize().multiplyScalar(radius + distance * 0.25);
 
   const curve = new THREE.QuadraticBezierCurve3(v1, mid, v2);
@@ -52,6 +64,17 @@ function create3DArc(v1, v2, radius) {
   });
 
   return new THREE.Line(geometry, material);
+}
+
+// Component to handle Leaflet flyTo
+function LeafletFlyTo({ center }) {
+  const map = useMap();
+  useEffect(() => {
+    if (center) {
+      map.flyTo(center, 5, { duration: 1.5 });
+    }
+  }, [center, map]);
+  return null;
 }
 
 export default function UniverseMap({ user, roomId, socket }) {
@@ -70,12 +93,17 @@ export default function UniverseMap({ user, roomId, socket }) {
   const [activeFilter, setActiveFilter] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedPin, setSelectedPin] = useState(null);
-  const [autoRotate, setAutoRotate] = useState(true);
+
+  // FIX: Default autoRotate is FALSE so globe stays completely STATIONARY!
+  const [autoRotate, setAutoRotate] = useState(false);
+
+  // View Mode: '3d' (Globe) or '2d' (Flat Interactive World Map)
+  const [viewMode, setViewMode] = useState('3d');
+  const [leafletCenter, setLeafletCenter] = useState([20, 0]);
 
   // Search State
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
 
   // New Pin Form
   const [newPin, setNewPin] = useState({
@@ -115,9 +143,9 @@ export default function UniverseMap({ user, roomId, socket }) {
     }
   }, [roomId]);
 
-  // Three.js Scene Setup
+  // Three.js 3D Scene Setup (Only when in 3D Mode)
   useEffect(() => {
-    if (!mountRef.current) return;
+    if (viewMode !== '3d' || !mountRef.current) return;
 
     const W = mountRef.current.clientWidth;
     const H = mountRef.current.clientHeight;
@@ -126,7 +154,6 @@ export default function UniverseMap({ user, roomId, socket }) {
     const scene = new THREE.Scene();
     sceneRef.current = scene;
 
-    // Groups for pins and arcs
     scene.add(pinsGroupRef.current);
     scene.add(arcsGroupRef.current);
 
@@ -267,13 +294,12 @@ export default function UniverseMap({ user, roomId, socket }) {
       }
       renderer.dispose();
     };
-  }, []);
+  }, [viewMode]);
 
   // Update Pins & Journey Arcs on 3D Globe
   useEffect(() => {
-    if (!sceneRef.current) return;
+    if (viewMode !== '3d' || !sceneRef.current) return;
 
-    // Clear old pin objects
     while (pinsGroupRef.current.children.length > 0) {
       const obj = pinsGroupRef.current.children[0];
       pinsGroupRef.current.remove(obj);
@@ -293,14 +319,14 @@ export default function UniverseMap({ user, roomId, socket }) {
       const pos = latLngToVector3(parseFloat(pin.lat), parseFloat(pin.lng), 1.01);
       pinCoords.push(pos);
 
-      // Pin Glowing Sphere
+      // Sphere Marker
       const sphereGeo = new THREE.SphereGeometry(0.025, 16, 16);
       const sphereMat = new THREE.MeshBasicMaterial({ color });
       const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
       sphereMesh.position.copy(pos);
       pinsGroupRef.current.add(sphereMesh);
 
-      // 3D Vertical Light Beacon
+      // Light Beacon Beam
       const beamGeo = new THREE.CylinderGeometry(0.003, 0.008, 0.12, 8);
       const beamMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.8 });
       const beamMesh = new THREE.Mesh(beamGeo, beamMat);
@@ -320,44 +346,43 @@ export default function UniverseMap({ user, roomId, socket }) {
       pinsGroupRef.current.add(ringMesh);
     });
 
-    // Draw Love Journey Arcs between consecutive pins
     for (let i = 0; i < pinCoords.length - 1; i++) {
       const arc = create3DArc(pinCoords[i], pinCoords[i + 1], 1.01);
       arcsGroupRef.current.add(arc);
     }
-  }, [pins, activeFilter]);
+  }, [pins, activeFilter, viewMode]);
 
-  // Smoothly Rotate Camera to Focus on a Location
+  // Focus Camera on 3D Coordinates (Stops auto-rotation)
   const focusOnCoordinates = (lat, lng) => {
-    if (!cameraRef.current || !controlsRef.current) return;
     setAutoRotate(false);
+    setLeafletCenter([parseFloat(lat), parseFloat(lng)]);
 
-    const targetPos = latLngToVector3(parseFloat(lat), parseFloat(lng), 2.2);
+    if (viewMode === '3d' && cameraRef.current && controlsRef.current) {
+      const targetPos = latLngToVector3(parseFloat(lat), parseFloat(lng), 2.2);
+      const startPos = cameraRef.current.position.clone();
+      const duration = 1200;
+      const startTime = performance.now();
 
-    const startPos = cameraRef.current.position.clone();
-    const duration = 1200;
-    const startTime = performance.now();
+      const animateCamera = (currentTime) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeProgress = 0.5 - Math.cos(progress * Math.PI) / 2;
 
-    const animateCamera = (currentTime) => {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const easeProgress = 0.5 - Math.cos(progress * Math.PI) / 2;
+        cameraRef.current.position.lerpVectors(startPos, targetPos, easeProgress);
+        controlsRef.current.update();
 
-      cameraRef.current.position.lerpVectors(startPos, targetPos, easeProgress);
-      controlsRef.current.update();
-
-      if (progress < 1) {
-        requestAnimationFrame(animateCamera);
-      }
-    };
-    requestAnimationFrame(animateCamera);
+        if (progress < 1) {
+          requestAnimationFrame(animateCamera);
+        }
+      };
+      requestAnimationFrame(animateCamera);
+    }
   };
 
-  // Search City via OpenStreetMap Geocoding API
+  // Search City via OpenStreetMap
   const handleSearchCity = async (e) => {
     e.preventDefault();
     if (!searchQuery) return;
-    setIsSearching(true);
     try {
       const res = await axios.get(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}`
@@ -366,7 +391,6 @@ export default function UniverseMap({ user, roomId, socket }) {
     } catch (err) {
       toast.error("City search failed!");
     }
-    setIsSearching(false);
   };
 
   const handleSelectSearchResult = (res) => {
@@ -398,7 +422,7 @@ export default function UniverseMap({ user, roomId, socket }) {
     setShowAddModal(true);
   };
 
-  // Add Memory Pin
+  // Submit New Pin
   const handleAddPinSubmit = async (e) => {
     e.preventDefault();
     if (!newPin.title) return toast.error("Please enter a memory title!");
@@ -433,7 +457,7 @@ export default function UniverseMap({ user, roomId, socket }) {
   const handleDeletePin = async (id) => {
     try {
       await axios.delete(`${import.meta.env.VITE_API_URL}/api/universe/${id}`);
-      toast.success("Pin removed from Universe!");
+      toast.success("Pin removed!");
       setSelectedPin(null);
       fetchPins();
     } catch (err) {
@@ -446,8 +470,47 @@ export default function UniverseMap({ user, roomId, socket }) {
   return (
     <div className="relative w-full h-[88vh] bg-gradient-to-b from-[#030014] via-[#07051e] to-[#02000c] rounded-[3rem] overflow-hidden border border-indigo-900/50 shadow-2xl">
       
-      {/* 3D Canvas Mount */}
-      <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
+      {/* 3D GLOBE / 2D MAP DISPLAY AREA */}
+      {viewMode === '3d' ? (
+        <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
+      ) : (
+        /* 2D Leaflet World Map Mode */
+        <div className="w-full h-full z-0">
+          <MapContainer
+            center={leafletCenter}
+            zoom={3}
+            scrollWheelZoom={true}
+            className="w-full h-full"
+            style={{ background: '#07051e' }}
+          >
+            <TileLayer
+              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+            />
+            <LeafletFlyTo center={leafletCenter} />
+            {filteredPins.map(pin => {
+              const pinType = PIN_TYPES.find(p => p.type === pin.type) || PIN_TYPES[4];
+              return (
+                <Marker
+                  key={pin._id}
+                  position={[parseFloat(pin.lat), parseFloat(pin.lng)]}
+                  icon={createLeafletIcon(pinType.emoji)}
+                  eventHandlers={{
+                    click: () => setSelectedPin(pin)
+                  }}
+                >
+                  <Popup className="custom-popup">
+                    <div className="p-1 text-gray-800">
+                      <p className="font-black text-xs text-rose-500">{pinType.emoji} {pin.title}</p>
+                      <p className="text-[10px] font-bold text-gray-500">{pin.country || 'World'}</p>
+                    </div>
+                  </Popup>
+                </Marker>
+              );
+            })}
+          </MapContainer>
+        </div>
+      )}
 
       {/* TOP HEADER OVERLAY */}
       <div className="absolute top-6 left-6 right-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 z-20 pointer-events-none">
@@ -460,23 +523,39 @@ export default function UniverseMap({ user, roomId, socket }) {
             <h2 className="text-white font-black text-xl tracking-tight flex items-center gap-2">
               Our Universe 🌌
             </h2>
-            <p className="text-gray-400 text-xs font-bold">Interactive 3D Couple Memory Globe</p>
+            <p className="text-gray-400 text-xs font-bold">Interactive Couple Memory World Map</p>
           </div>
         </div>
 
-        {/* STATS BADGES */}
+        {/* STATS & MODE SWITCH BADGES */}
         <div className="pointer-events-auto flex items-center gap-3 bg-black/40 backdrop-blur-2xl p-2 px-4 rounded-3xl border border-white/10 shadow-2xl">
-          <div className="px-3 py-1.5 rounded-2xl bg-rose-500/20 border border-rose-500/30 text-center">
+          {/* View Mode Toggle Button */}
+          <div className="flex bg-white/10 p-1 rounded-2xl border border-white/15">
+            <button
+              onClick={() => setViewMode('3d')}
+              className={`px-3 py-1.5 rounded-xl font-black text-xs flex items-center gap-1.5 transition-all ${
+                viewMode === '3d' ? 'bg-rose-500 text-white shadow-md' : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <GlobeIcon size={14} /> 3D Globe
+            </button>
+            <button
+              onClick={() => setViewMode('2d')}
+              className={`px-3 py-1.5 rounded-xl font-black text-xs flex items-center gap-1.5 transition-all ${
+                viewMode === '2d' ? 'bg-rose-500 text-white shadow-md' : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <Map size={14} /> 2D Map
+            </button>
+          </div>
+
+          <div className="px-3 py-1.5 rounded-2xl bg-rose-500/20 border border-rose-500/30 text-center hidden sm:block">
             <p className="text-rose-400 font-black text-base leading-none">{stats.total}</p>
             <p className="text-[9px] text-gray-300 font-bold uppercase tracking-wider mt-0.5">Memories</p>
           </div>
-          <div className="px-3 py-1.5 rounded-2xl bg-blue-500/20 border border-blue-500/30 text-center">
+          <div className="px-3 py-1.5 rounded-2xl bg-blue-500/20 border border-blue-500/30 text-center hidden sm:block">
             <p className="text-blue-400 font-black text-base leading-none">{stats.countries}</p>
             <p className="text-[9px] text-gray-300 font-bold uppercase tracking-wider mt-0.5">Countries</p>
-          </div>
-          <div className="px-3 py-1.5 rounded-2xl bg-purple-500/20 border border-purple-500/30 text-center">
-            <p className="text-purple-400 font-black text-base leading-none">{stats.dreams}</p>
-            <p className="text-[9px] text-gray-300 font-bold uppercase tracking-wider mt-0.5">Dreams</p>
           </div>
         </div>
       </div>
@@ -494,7 +573,6 @@ export default function UniverseMap({ user, roomId, socket }) {
           <Search size={18} className="absolute left-3.5 top-3.5 text-gray-400" />
         </form>
 
-        {/* Search Results Dropdown */}
         {searchResults.length > 0 && (
           <div className="mt-2 bg-black/80 backdrop-blur-2xl border border-white/20 rounded-2xl overflow-hidden shadow-2xl space-y-1 p-1">
             {searchResults.map((res, idx) => (
@@ -549,16 +627,20 @@ export default function UniverseMap({ user, roomId, socket }) {
             <span className="hidden sm:inline">{p.label}</span>
           </button>
         ))}
-        <div className="w-px h-5 bg-white/20 mx-1" />
-        <button
-          onClick={() => setAutoRotate(!autoRotate)}
-          className={`p-2 rounded-full transition-all ${
-            autoRotate ? 'text-rose-400 bg-rose-500/20' : 'text-gray-400'
-          }`}
-          title="Toggle Auto Rotate"
-        >
-          <Compass size={18} className={autoRotate ? 'animate-spin-slow' : ''} />
-        </button>
+        {viewMode === '3d' && (
+          <>
+            <div className="w-px h-5 bg-white/20 mx-1" />
+            <button
+              onClick={() => setAutoRotate(!autoRotate)}
+              className={`p-2 rounded-full transition-all ${
+                autoRotate ? 'text-rose-400 bg-rose-500/20' : 'text-gray-400'
+              }`}
+              title={autoRotate ? "Auto Rotate Active (Click to Pause)" : "Auto Rotate Stationary (Click to Spin)"}
+            >
+              <Compass size={18} className={autoRotate ? 'animate-spin-slow' : ''} />
+            </button>
+          </>
+        )}
       </div>
 
       {/* PINS DRAWER SIDEBAR (RIGHT) */}
@@ -614,7 +696,7 @@ export default function UniverseMap({ user, roomId, socket }) {
             {filteredPins.length === 0 && (
               <div className="py-12 text-center text-gray-400 text-xs font-bold italic space-y-2">
                 <MapPin size={28} className="mx-auto text-gray-600" />
-                <p>No memory pins here yet.<br />Click the globe or search a city above!</p>
+                <p>No memory pins here yet.<br />Search a city or click the map to add!</p>
               </div>
             )}
           </div>
@@ -631,7 +713,7 @@ export default function UniverseMap({ user, roomId, socket }) {
         </button>
       </div>
 
-      {/* MEMORY SPOTLIGHT MODAL (WHEN A PIN IS SELECTED) */}
+      {/* MEMORY SPOTLIGHT MODAL */}
       {selectedPin && (
         <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in">
           <div className="bg-[#0b081d] border border-white/20 rounded-[2.5rem] p-8 max-w-md w-full text-white shadow-2xl relative space-y-6">
@@ -769,15 +851,5 @@ export default function UniverseMap({ user, roomId, socket }) {
         </div>
       )}
     </div>
-  );
-}
-
-// Simple Globe Icon helper
-function GlobeIcon({ size = 24 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10"></circle>
-      <line x1="2" y1="12" x2="22" y2="12"></line>      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-    </svg>
   );
 }
