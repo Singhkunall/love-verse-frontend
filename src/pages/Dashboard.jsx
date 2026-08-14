@@ -16,6 +16,9 @@ import LoveRoulette from '../components/LoveRoulette';
 import WatchTogether from '../components/WatchTogether';
 import Ludo from '../components/Ludo';
 import UniverseMap from '../components/UniverseMap';
+import LoveVerseAI from '../components/LoveVerseAI';
+import CoupleQuiz from '../components/CoupleQuiz';
+import AmbientRoom from '../components/AmbientRoom';
 
 const socket = io.connect(import.meta.env.VITE_API_URL);
 
@@ -527,6 +530,8 @@ function Dashboard() {
               />
             ) : currentGame === 'ludo' ? (
               <Ludo user={user} roomId={roomId} socket={socket} onBack={() => setCurrentGame(null)} />
+            ) : currentGame === 'quiz' ? (
+              <CoupleQuiz user={user} roomId={roomId} socket={socket} onBack={() => setCurrentGame(null)} />
             ) : (
               <div className="space-y-10 animate-in slide-in-from-right duration-500">
 
@@ -597,9 +602,16 @@ function Dashboard() {
                     </button>
                   </div>
 
-                  <div className="border-4 border-dashed border-rose-200 p-8 rounded-[3.5rem] flex flex-col items-center justify-center text-center group bg-white/30">
-                    <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm group-hover:rotate-180 transition-transform duration-500"><Plus className="text-rose-300" size={32} /></div>
-                    <p className="text-xs font-black text-rose-300 uppercase tracking-[0.3em]">Next Game Loading...</p>
+                  <div className={`${glassStyle} group p-8 rounded-[3.5rem] hover:scale-[1.03] transition-all border-2 border-transparent hover:border-purple-200 relative overflow-hidden shadow-purple-100/50`}>
+                    <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mb-6 shadow-inner"><span className="text-3xl">❓</span></div>
+                    <h4 className="text-2xl font-black text-gray-800 mb-2">Couple Quiz</h4>
+                    <p className="text-xs text-gray-500 font-bold leading-relaxed mb-6 uppercase tracking-tighter">1v1 Trivia • Secret Choice</p>
+                    <button
+                      onClick={() => setCurrentGame('quiz')}
+                      className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-xs group-hover:bg-purple-600 transition-all shadow-lg"
+                    >
+                      Start Quiz ❓
+                    </button>
                   </div>
 
                   <div className={`${glassStyle} group p-8 rounded-[3.5rem] hover:scale-[1.03] transition-all border-2 border-transparent hover:border-rose-200 relative overflow-hidden`}>
@@ -688,6 +700,12 @@ function Dashboard() {
         )}
         {activeTab === 'universe' && (
           <UniverseMap user={user} roomId={roomId} socket={socket} />
+        )}
+        {activeTab === 'ai_assistant' && (
+          <LoveVerseAI user={user} socket={socket} roomId={roomId} />
+        )}
+        {activeTab === 'ambient_room' && (
+          <AmbientRoom user={user} />
         )}
       </main>
     </div>

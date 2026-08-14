@@ -25,13 +25,14 @@
 
 ---
 
-## ✨ Key Features
-
 | Category | Features Included |
 | :--- | :--- |
+| 🤖 **LoveVerse AI Assistant** | AI Date Night Generator, AI Love Letter & Poem Writer, and Deep Connection Icebreaker Prompts. |
+| ❓ **Couple Quiz Arcade** | 1v1 multiplayer trivia battle ("How Well Do You Know Me?") with secret reveals & live score sync. |
+| 🌌 **Ambient Date Room** | Web audio soundscapes (Cozy Rain 🌧️, Campfire 🔥, Ocean Waves 🌊, Cafe ☕) + romantic quote generator. |
 | 💬 **Real-time Chat & Nudges** | Instant messaging, image previews, typing indicators, floating heart animations, and instant love nudges/hugs. |
 | 📞 **Voice & Video Calling** | HD 1-on-1 audio & video calls powered by **PeerJS WebRTC** & **Agora RTC SDK**. |
-| 🎮 **Couple Arcade** | Real-time interactive games: ♟️ **Chess**, 🎲 **Ludo**, 🧠 **Memory Pairs**, ⚡ **Fastest Finger**, ⌨️ **Typing Race**, and 🎡 **Love Roulette**. |
+| 🎮 **Couple Arcade** | Real-time interactive games: ♟️ **Chess**, 🎲 **Ludo**, 🧠 **Memory Pairs**, ⚡ **Fastest Finger**, ⌨️ **Typing Race**, 🎡 **Love Roulette**, and ❓ **Couple Quiz**. |
 | 📺 **Watch Together** | Synchronized YouTube player with live play, pause, seek, and URL synchronization across partner screens. |
 | 🌍 **Universe Memory Map** | Interactive world map powered by **Leaflet** to pin special memories, date spots, and romantic landmarks. |
 | 🎁 **Shared Wishlist & Search** | Amazon product scraper, custom wishlist manager, priority tags, and integrated **Razorpay** checkout. |
