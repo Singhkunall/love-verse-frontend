@@ -34,7 +34,7 @@
 | 📞 **Voice & Video Calling** | HD 1-on-1 audio & video calls powered by **PeerJS WebRTC** & **Agora RTC SDK**. |
 | 🎮 **Couple Arcade** | Real-time interactive games: ♟️ **Chess**, 🎲 **Ludo**, 🧠 **Memory Pairs**, ⚡ **Fastest Finger**, ⌨️ **Typing Race**, 🎡 **Love Roulette**, and ❓ **Couple Quiz**. |
 | 📺 **Watch Together** | Synchronized YouTube player with live play, pause, seek, and URL synchronization across partner screens. |
-| 🌍 **Universe Memory Map** | Interactive world map powered by **Leaflet** to pin special memories, date spots, and romantic landmarks. |
+| 🌍 **3D Next-Gen Universe Globe** | Interactive 3D Earth (Three.js), OpenStreetMap city search, 3D animated love travel arcs, pin light beacons & memory photo spotlight. |
 | 🎁 **Shared Wishlist & Search** | Amazon product scraper, custom wishlist manager, priority tags, and integrated **Razorpay** checkout. |
 | 🎙️ **Voice Notes** | Studio-style voice message recorder with waveform preview, playback, and reaction emojis. |
 | 📅 **Calendar & Routines** | Synchronized couple calendar for anniversaries and dates + daily habits and task checklist sync. |
