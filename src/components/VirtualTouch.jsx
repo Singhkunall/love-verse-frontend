@@ -23,11 +23,25 @@ export default function VirtualTouch({ user, roomId, socket }) {
 
   const userId = user._id || user.id;
 
-  // Handle Socket Events for Partner Touch
+  // Refs for persistent values inside stable socket callback
+  const myNormPosRef = useRef(myNormPos);
+  const selectedThemeRef = useRef(selectedTheme);
+  const showSparkConfettiRef = useRef(showSparkConfetti);
+
+  useEffect(() => {
+    myNormPosRef.current = myNormPos;
+    selectedThemeRef.current = selectedTheme;
+    showSparkConfettiRef.current = showSparkConfetti;
+  }, [myNormPos, selectedTheme, showSparkConfetti]);
+
+  // Handle Socket Events for Partner Touch (Binds ONCE for rock-solid sync)
   useEffect(() => {
     if (!socket) return;
 
-    socket.on('partner_touch_move', (data) => {
+    // Guarantee room registration
+    socket.emit('join_chat', roomId);
+
+    const handlePartnerMove = (data) => {
       setPartnerNormPos({ x: data.nx, y: data.ny });
       setPartnerActive(true);
 
@@ -37,30 +51,33 @@ export default function VirtualTouch({ user, roomId, socket }) {
         const py = data.ny * canvas.height;
         
         // Spawn particles for partner
-        spawnParticles(px, py, selectedTheme.partnerColor, 'Partner ❤️');
+        spawnParticles(px, py, selectedThemeRef.current.partnerColor, 'Partner ❤️');
 
-        // Proximity Spark Check (Distance < 10% of canvas width)
-        if (myNormPos) {
-          const dx = data.nx - myNormPos.x;
-          const dy = data.ny - myNormPos.y;
+        // Proximity Spark Check
+        if (myNormPosRef.current) {
+          const dx = data.nx - myNormPosRef.current.x;
+          const dy = data.ny - myNormPosRef.current.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
 
-          if (dist < 0.12 && !showSparkConfetti) {
+          if (dist < 0.12 && !showSparkConfettiRef.current) {
             triggerSparkBurst(px, py);
           }
         }
       }
-    });
+    };
 
-    socket.on('partner_touch_end', () => {
+    const handlePartnerEnd = () => {
       setPartnerNormPos(null);
-    });
+    };
+
+    socket.on('partner_touch_move', handlePartnerMove);
+    socket.on('partner_touch_end', handlePartnerEnd);
 
     return () => {
-      socket.off('partner_touch_move');
-      socket.off('partner_touch_end');
+      socket.off('partner_touch_move', handlePartnerMove);
+      socket.off('partner_touch_end', handlePartnerEnd);
     };
-  }, [socket, myNormPos, selectedTheme, showSparkConfetti]);
+  }, [socket, roomId]);
 
   // Particle Physics Animation Loop
   useEffect(() => {
