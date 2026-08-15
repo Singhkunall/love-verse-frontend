@@ -468,81 +468,98 @@ function Chat({ user }) {
 
       {/* ACTIVE CALL OVERLAY MODAL */}
       {calling && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-slate-950 text-white animate-in fade-in">
-          {/* Top Bar */}
-          <div className="p-6 flex justify-between items-center bg-slate-900/60 backdrop-blur-md border-b border-slate-800 z-20">
-            <div className="flex items-center gap-3">
+        <div className="fixed inset-0 z-50 flex flex-col bg-slate-950 text-white animate-in fade-in overflow-hidden">
+          
+          {/* CSS override to force Agora video tags to object-fit: cover */}
+          <style>{`
+            #remote-video div, #remote-video video {
+              width: 100% !important;
+              height: 100% !important;
+              object-fit: cover !important;
+              border-radius: 0px !important;
+            }
+            #local-video div, #local-video video {
+              width: 100% !important;
+              height: 100% !important;
+              object-fit: cover !important;
+              border-radius: 1.5rem !important;
+            }
+          `}</style>
+
+          {/* Floating Glassmorphic Top Bar */}
+          <div className="absolute top-6 left-6 right-6 flex justify-between items-center z-30">
+            <div className="px-5 py-2.5 bg-slate-900/70 backdrop-blur-2xl border border-white/10 rounded-full flex items-center gap-3 shadow-2xl">
               <span className="w-3 h-3 rounded-full bg-green-500 animate-ping" />
               <div>
-                <h4 className="text-lg font-black">{callType === 'video' ? 'HD Video Call 📹' : 'HD Audio Call 📞'}</h4>
-                <p className="text-xs text-rose-400 font-bold">{formatTime(callDuration)}</p>
+                <h4 className="text-xs font-black tracking-wider uppercase text-slate-200">
+                  {callType === 'video' ? `HD Video Call with ${partnerName} 📹` : `HD Audio Call with ${partnerName} 📞`}
+                </h4>
+                <p className="text-[10px] text-rose-400 font-bold">{formatTime(callDuration)}</p>
               </div>
             </div>
 
             <button
               onClick={endCall}
-              className="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-full font-black text-xs shadow-lg flex items-center gap-2"
+              className="px-5 py-2.5 bg-red-500/90 hover:bg-red-600 backdrop-blur-xl text-white rounded-full font-black text-xs shadow-xl flex items-center gap-2 transition-all hover:scale-105"
             >
               <PhoneOff size={16} /> End Call
             </button>
           </div>
 
           {/* Call Viewport Display */}
-          <div className="flex-1 relative flex items-center justify-center p-4 bg-slate-950">
-            {/* Remote Video Display */}
+          <div className="relative w-full h-full bg-slate-950 flex items-center justify-center">
+            {/* Remote Video Display (Edge-to-Edge Fullscreen) */}
             {callType === 'video' ? (
-              <div id="remote-video" className="w-full h-full rounded-3xl overflow-hidden shadow-2xl border border-slate-800 relative bg-slate-900 flex items-center justify-center">
-                <p className="text-xs text-slate-500 font-bold italic">Waiting for partner's video feed...</p>
-              </div>
+              <div id="remote-video" className="absolute inset-0 w-full h-full bg-slate-950" />
             ) : (
-              <div className="flex flex-col items-center space-y-4">
-                <div className="w-32 h-32 rounded-full bg-gradient-to-tr from-rose-500 to-pink-600 flex items-center justify-center shadow-2xl animate-pulse">
-                  <Volume2 size={56} className="text-white" />
+              <div className="flex flex-col items-center space-y-4 z-20">
+                <div className="w-36 h-36 rounded-full bg-gradient-to-tr from-rose-500 to-pink-600 flex items-center justify-center shadow-2xl animate-pulse border-4 border-white/20">
+                  <Volume2 size={64} className="text-white" />
                 </div>
-                <h3 className="text-2xl font-black">Connected in Audio Call 💖</h3>
-                <p className="text-xs text-slate-400 font-bold">{formatTime(callDuration)}</p>
+                <h3 className="text-2xl font-black">{partnerName} 💖</h3>
+                <p className="text-xs text-rose-400 font-bold tracking-widest uppercase">{formatTime(callDuration)}</p>
               </div>
             )}
 
             {/* Local Video PIP Box */}
             {callType === 'video' && (
-              <div className="absolute bottom-6 right-6 w-40 h-56 md:w-48 md:h-64 rounded-2xl overflow-hidden border-2 border-rose-500 shadow-2xl bg-black z-30">
+              <div className="absolute bottom-8 right-8 w-36 h-52 md:w-48 md:h-64 rounded-3xl overflow-hidden border-2 border-white/20 shadow-2xl bg-slate-900 z-30 hover:scale-105 transition-all">
                 <div id="local-video" className="w-full h-full object-cover" />
               </div>
             )}
-          </div>
 
-          {/* Call Controls Bar */}
-          <div className="p-6 bg-slate-900/80 backdrop-blur-xl border-t border-slate-800 flex justify-center items-center gap-6 z-20">
-            <button
-              onClick={toggleMic}
-              className={`p-4 rounded-full transition-all ${
-                isMicMuted ? 'bg-red-500 text-white' : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
-              }`}
-              title={isMicMuted ? "Unmute Mic" : "Mute Mic"}
-            >
-              {isMicMuted ? <MicOff size={22} /> : <Mic size={22} />}
-            </button>
-
-            {callType === 'video' && (
+            {/* Floating Glassmorphic Bottom Control Bar */}
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 px-8 py-3.5 bg-slate-900/80 backdrop-blur-2xl border border-white/10 rounded-full flex items-center gap-6 shadow-2xl z-30">
               <button
-                onClick={toggleVideo}
-                className={`p-4 rounded-full transition-all ${
-                  isVideoMuted ? 'bg-red-500 text-white' : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
+                onClick={toggleMic}
+                className={`p-4 rounded-full transition-all hover:scale-110 ${
+                  isMicMuted ? 'bg-red-500 text-white shadow-lg shadow-red-500/30' : 'bg-white/10 text-white hover:bg-white/20'
                 }`}
-                title={isVideoMuted ? "Turn On Camera" : "Turn Off Camera"}
+                title={isMicMuted ? "Unmute Mic" : "Mute Mic"}
               >
-                {isVideoMuted ? <VideoOff size={22} /> : <Video size={22} />}
+                {isMicMuted ? <MicOff size={20} /> : <Mic size={20} />}
               </button>
-            )}
 
-            <button
-              onClick={endCall}
-              className="w-16 h-16 bg-red-500 text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-all"
-              title="End Call"
-            >
-              <PhoneOff size={28} />
-            </button>
+              {callType === 'video' && (
+                <button
+                  onClick={toggleVideo}
+                  className={`p-4 rounded-full transition-all hover:scale-110 ${
+                    isVideoMuted ? 'bg-red-500 text-white shadow-lg shadow-red-500/30' : 'bg-white/10 text-white hover:bg-white/20'
+                  }`}
+                  title={isVideoMuted ? "Turn On Camera" : "Turn Off Camera"}
+                >
+                  {isVideoMuted ? <VideoOff size={20} /> : <Video size={20} />}
+                </button>
+              )}
+
+              <button
+                onClick={endCall}
+                className="w-14 h-14 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-full flex items-center justify-center shadow-xl shadow-red-500/40 hover:scale-110 transition-all"
+                title="End Call"
+              >
+                <PhoneOff size={24} />
+              </button>
+            </div>
           </div>
         </div>
       )}
