@@ -176,9 +176,9 @@ function WatchTogether({ user, roomId, socket }) {
     };
   }, [userId]);
 
-  // Low Latency Live Edge Buffer Sync (Eliminates stream delay & lag accumulation)
+  // Low Latency Live Edge Buffer Sync (Only for receiver, NOT for local streamer!)
   useEffect(() => {
-    if (!isReceivingStream) return;
+    if (!isReceivingStream || isSharingScreen) return;
 
     const syncInterval = setInterval(() => {
       const vid = screenVideoRef.current;
@@ -192,7 +192,7 @@ function WatchTogether({ user, roomId, socket }) {
     }, 1500);
 
     return () => clearInterval(syncInterval);
-  }, [isReceivingStream]);
+  }, [isReceivingStream, isSharingScreen]);
 
   // Clean up Voice & Camera on unmount
   useEffect(() => {
@@ -477,17 +477,8 @@ function WatchTogether({ user, roomId, socket }) {
   const startScreenShareCinema = async () => {
     try {
       const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: {
-          cursor: "always",
-          frameRate: { max: 30, ideal: 24 },
-          width: { max: 1920 },
-          height: { max: 1080 }
-        },
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        }
+        video: { cursor: "always" },
+        audio: true
       });
 
       mediaStreamRef.current = stream;
