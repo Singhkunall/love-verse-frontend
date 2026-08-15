@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PlaySquare, Link as LinkIcon, Search, Sparkles, Film, AlertCircle, Tv, Monitor, ExternalLink, Globe, Play, RefreshCw, Video, StopCircle } from 'lucide-react';
+import { PlaySquare, Link as LinkIcon, Search, Sparkles, Film, AlertCircle, Tv, Monitor, ExternalLink, Globe, Play, RefreshCw, Video, StopCircle, Maximize2, Volume2, VolumeX, Minimize2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const PRESET_VIDEOS = [
@@ -28,15 +28,18 @@ const getYouTubeVideoId = (rawUrl) => {
 };
 
 function WatchTogether({ user, roomId, socket }) {
-  const [activeTab, setActiveTab] = useState('youtube'); // 'youtube' | 'screen_share' | 'web_streamer' | 'direct' | 'ott_guide'
+  const [activeTab, setActiveTab] = useState('youtube'); // 'youtube' | 'screen_share' | 'direct' | 'ott_guide'
   const [videoId, setVideoId] = useState('jfKfPfyJRdk');
   const [webStreamUrl, setWebStreamUrl] = useState(NETMIRROR_DEFAULT_URL);
   const [directMovieUrl, setDirectMovieUrl] = useState('');
   const [inputUrl, setInputUrl] = useState('');
   const [syncedStatus, setSyncedStatus] = useState('Synced Live ✨');
   
-  // Screen Share State
+  // Screen Share & Cinema State
   const [isSharingScreen, setIsSharingScreen] = useState(false);
+  const [isMuted, setIsMuted] = useState(true); // Default muted locally to eliminate audio echo feedback!
+  const [isTheaterMode, setIsTheaterMode] = useState(false);
+
   const screenVideoRef = useRef(null);
   const mediaStreamRef = useRef(null);
 
@@ -51,10 +54,7 @@ function WatchTogether({ user, roomId, socket }) {
 
     // 1. Video URL Change
     const handleVideoChanged = (data) => {
-      if (data.type === 'web_streamer') {
-        setActiveTab('web_streamer');
-        setWebStreamUrl(data.url);
-      } else if (data.type === 'direct') {
+      if (data.type === 'direct') {
         setActiveTab('direct');
         setDirectMovieUrl(data.url);
       } else {
@@ -83,11 +83,13 @@ function WatchTogether({ user, roomId, socket }) {
       mediaStreamRef.current = stream;
       if (screenVideoRef.current) {
         screenVideoRef.current.srcObject = stream;
+        screenVideoRef.current.muted = true; // Mute locally to prevent audio echo loop!
       }
       setIsSharingScreen(true);
+      setIsMuted(true);
       setActiveTab('screen_share');
 
-      toast.success("Virtual Cinema Active! Partner can see your NetMirror stream live inside Love-Verse! 📽️✨");
+      toast.success("Virtual Cinema Active! Local audio muted to prevent echo feedback. 🍿✨");
 
       stream.getVideoTracks()[0].onended = () => {
         stopScreenShareCinema();
@@ -108,6 +110,27 @@ function WatchTogether({ user, roomId, socket }) {
     toast.success("Virtual Cinema Ended!");
   };
 
+  // Fullscreen helper
+  const handleFullscreenCinema = () => {
+    if (screenVideoRef.current) {
+      if (screenVideoRef.current.requestFullscreen) {
+        screenVideoRef.current.requestFullscreen();
+      } else if (screenVideoRef.current.webkitRequestFullscreen) {
+        screenVideoRef.current.webkitRequestFullscreen();
+      } else if (screenVideoRef.current.msRequestFullscreen) {
+        screenVideoRef.current.msRequestFullscreen();
+      }
+    }
+  };
+
+  // Toggle local mute state
+  const toggleMuteCinema = () => {
+    if (screenVideoRef.current) {
+      screenVideoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
+
   // Load new video URL
   const handleLoadVideo = (e) => {
     e.preventDefault();
@@ -123,17 +146,6 @@ function WatchTogether({ user, roomId, socket }) {
         socket.emit("change_video", {
           roomId,
           type: 'youtube',
-          url: trimmed,
-          userName: user?.name || 'Partner'
-        });
-      }
-    } else if (trimmed.includes('net77') || trimmed.startsWith('http')) {
-      setActiveTab('web_streamer');
-      setWebStreamUrl(trimmed);
-      if (socket) {
-        socket.emit("change_video", {
-          roomId,
-          type: 'web_streamer',
           url: trimmed,
           userName: user?.name || 'Partner'
         });
@@ -172,7 +184,9 @@ function WatchTogether({ user, roomId, socket }) {
   const glassStyle = "bg-white/80 backdrop-blur-2xl border border-white/60 shadow-xl rounded-[2.5rem]";
 
   return (
-    <div className="max-w-4xl mx-auto w-full space-y-6 pb-20 animate-in fade-in duration-500 px-4">
+    <div className={`mx-auto w-full space-y-6 pb-20 animate-in fade-in duration-500 px-4 transition-all ${
+      isTheaterMode ? 'max-w-none' : 'max-w-4xl'
+    }`}>
       
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -182,7 +196,7 @@ function WatchTogether({ user, roomId, socket }) {
           </div>
           <div>
             <h3 className="text-3xl font-black text-gray-800">Watch Together 🍿</h3>
-            <p className="text-xs text-gray-500 font-bold">YouTube, NetMirror Cinema, Direct Movies & OTT Guide</p>
+            <p className="text-xs text-gray-500 font-bold">YouTube, Virtual Cinema, Direct Movies & OTT Guide</p>
           </div>
         </div>
 
@@ -281,7 +295,7 @@ function WatchTogether({ user, roomId, socket }) {
       {/* TAB 2: VIRTUAL CINEMA SCREEN SHARE PLAYER (FOR NETMIRROR / NETFLIX / PRIME) */}
       {activeTab === 'screen_share' && (
         <div className={`${glassStyle} p-6 space-y-6 text-center`}>
-          <div className="flex justify-between items-center px-2">
+          <div className="flex flex-wrap justify-between items-center gap-3 px-2">
             <div className="flex items-center gap-2">
               <span className={`w-3.5 h-3.5 rounded-full ${isSharingScreen ? 'bg-green-500 animate-ping' : 'bg-gray-300'}`} />
               <h4 className="text-base font-black text-gray-800">
@@ -289,29 +303,63 @@ function WatchTogether({ user, roomId, socket }) {
               </h4>
             </div>
 
-            {!isSharingScreen ? (
-              <button
-                onClick={startScreenShareCinema}
-                className="px-6 py-2.5 bg-rose-500 text-white rounded-2xl font-black text-xs shadow-lg hover:bg-rose-600 transition-all flex items-center gap-2"
-              >
-                <Video size={16} /> Start NetMirror Screen Stream 🍿
-              </button>
-            ) : (
-              <button
-                onClick={stopScreenShareCinema}
-                className="px-6 py-2.5 bg-gray-900 text-white rounded-2xl font-black text-xs shadow-lg hover:bg-black transition-all flex items-center gap-2"
-              >
-                <StopCircle size={16} /> End Cinema Stream
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {/* Fullscreen & Theater Controls */}
+              {isSharingScreen && (
+                <>
+                  <button
+                    onClick={toggleMuteCinema}
+                    className="p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold text-xs transition-all flex items-center gap-1"
+                    title={isMuted ? "Unmute Audio" : "Mute Audio to Prevent Echo"}
+                  >
+                    {isMuted ? <VolumeX size={16} className="text-rose-500" /> : <Volume2 size={16} className="text-green-500" />}
+                  </button>
+
+                  <button
+                    onClick={() => setIsTheaterMode(!isTheaterMode)}
+                    className="p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold text-xs transition-all flex items-center gap-1"
+                    title="Toggle Theater Mode"
+                  >
+                    {isTheaterMode ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                  </button>
+
+                  <button
+                    onClick={handleFullscreenCinema}
+                    className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl font-black text-xs transition-all flex items-center gap-1.5"
+                  >
+                    <Maximize2 size={14} /> Fullscreen
+                  </button>
+                </>
+              )}
+
+              {!isSharingScreen ? (
+                <button
+                  onClick={startScreenShareCinema}
+                  className="px-6 py-2.5 bg-rose-500 text-white rounded-2xl font-black text-xs shadow-lg hover:bg-rose-600 transition-all flex items-center gap-2"
+                >
+                  <Video size={16} /> Start NetMirror Screen Stream 🍿
+                </button>
+              ) : (
+                <button
+                  onClick={stopScreenShareCinema}
+                  className="px-6 py-2.5 bg-gray-900 text-white rounded-2xl font-black text-xs shadow-lg hover:bg-black transition-all flex items-center gap-2"
+                >
+                  <StopCircle size={16} /> End Cinema Stream
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Screen Video Container */}
-          <div className="relative pt-[56.25%] rounded-3xl overflow-hidden shadow-2xl bg-slate-950 border border-gray-800">
+          <div className={`relative rounded-3xl overflow-hidden shadow-2xl bg-slate-950 border border-gray-800 transition-all ${
+            isTheaterMode ? 'h-[75vh] md:h-[85vh]' : 'pt-[56.25%]'
+          }`}>
             <video
               ref={screenVideoRef}
               autoPlay
               playsInline
+              controls={isSharingScreen}
+              muted={isMuted}
               className="absolute top-0 left-0 w-full h-full object-contain"
             />
             {!isSharingScreen && (
