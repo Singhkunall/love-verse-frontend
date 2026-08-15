@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactPlayer from 'react-player';
-import { PlaySquare, Link as LinkIcon, Search, Sparkles } from 'lucide-react';
+import { PlaySquare, Link as LinkIcon, Search, Sparkles, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const PRESET_VIDEOS = [
@@ -10,11 +10,34 @@ const PRESET_VIDEOS = [
   { name: 'Movie Trailer 🍿', url: 'https://www.youtube.com/watch?v=aWzlQ2N6qqg' }
 ];
 
+// Helper to normalize any YouTube link (Shorts, Shortened, Mobile) into standard YouTube Watch URL
+const normalizeYouTubeUrl = (rawUrl) => {
+  if (!rawUrl) return '';
+  let cleaned = rawUrl.trim();
+  
+  // Handle YouTube Shorts: youtube.com/shorts/VIDEO_ID
+  if (cleaned.includes('/shorts/')) {
+    const parts = cleaned.split('/shorts/');
+    const videoId = parts[1].split('?')[0].split('&')[0];
+    return `https://www.youtube.com/watch?v=${videoId}`;
+  }
+  
+  // Handle Shortened Links: youtu.be/VIDEO_ID
+  if (cleaned.includes('youtu.be/')) {
+    const parts = cleaned.split('youtu.be/');
+    const videoId = parts[1].split('?')[0].split('&')[0];
+    return `https://www.youtube.com/watch?v=${videoId}`;
+  }
+
+  return cleaned;
+};
+
 function WatchTogether({ user, roomId, socket }) {
   const [url, setUrl] = useState('https://www.youtube.com/watch?v=jfKfPfyJRdk');
   const [inputUrl, setInputUrl] = useState('');
-  const [playing, setPlaying] = useState(false);
+  const [playing, setPlaying] = useState(true);
   const [syncedStatus, setSyncedStatus] = useState('Synced Live ✨');
+  const [hasError, setHasError] = useState(false);
 
   const playerRef = useRef(null);
   const isRemoteActionRef = useRef(false);
@@ -51,8 +74,10 @@ function WatchTogether({ user, roomId, socket }) {
     // 1. Video URL Change
     const handleVideoChanged = (data) => {
       isRemoteActionRef.current = true;
-      setUrl(data.url);
+      const normalized = normalizeYouTubeUrl(data.url);
+      setUrl(normalized);
       setPlaying(true);
+      setHasError(false);
       toast(`${data.userName || 'Partner'} loaded a new video! 🍿`, { icon: '🎬' });
       setTimeout(() => { isRemoteActionRef.current = false; }, 800);
     };
@@ -106,12 +131,19 @@ function WatchTogether({ user, roomId, socket }) {
     e.preventDefault();
     if (!inputUrl) return;
 
-    setUrl(inputUrl);
+    const normalized = normalizeYouTubeUrl(inputUrl);
+    if (!ReactPlayer.canPlay(normalized)) {
+      return toast.error("Invalid YouTube URL! Please paste a valid YouTube video link.");
+    }
+
+    setHasError(false);
+    setUrl(normalized);
     setPlaying(true);
+
     if (socket) {
       socket.emit("change_video", {
         roomId,
-        url: inputUrl,
+        url: normalized,
         userName: user?.name || 'Partner'
       });
     }
@@ -120,12 +152,14 @@ function WatchTogether({ user, roomId, socket }) {
   };
 
   const handleSelectPreset = (preset) => {
-    setUrl(preset.url);
+    const normalized = normalizeYouTubeUrl(preset.url);
+    setHasError(false);
+    setUrl(normalized);
     setPlaying(true);
     if (socket) {
       socket.emit("change_video", {
         roomId,
-        url: preset.url,
+        url: normalized,
         userName: user?.name || 'Partner'
       });
     }
@@ -155,6 +189,12 @@ function WatchTogether({ user, roomId, socket }) {
     if (socket) {
       socket.emit("seek_video", { roomId, time: seconds });
     }
+  };
+
+  const handleError = (e) => {
+    console.error("ReactPlayer Error:", e);
+    setHasError(true);
+    toast.error("Error playing video. YouTube may restrict embedding for this video.");
   };
 
   const glassStyle = "bg-white/80 backdrop-blur-2xl border border-white/60 shadow-xl rounded-[2.5rem]";
@@ -218,23 +258,34 @@ function WatchTogether({ user, roomId, socket }) {
       {/* Video Player Box */}
       <div className={`${glassStyle} p-4 md:p-6`}>
         <div className="relative pt-[56.25%] rounded-3xl overflow-hidden shadow-2xl bg-black border border-gray-900">
-          <ReactPlayer 
-            ref={playerRef}
-            url={url} 
-            playing={playing}
-            controls={true}
-            onPlay={handlePlay}
-            onPause={handlePause}
-            onSeek={handleSeek}
-            width="100%"
-            height="100%"
-            className="absolute top-0 left-0"
-            config={{
-              youtube: {
-                playerVars: { disablekb: 1 }
-              }
-            }}
-          />
+          {hasError ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-white space-y-3 bg-slate-900">
+              <AlertCircle size={40} className="text-rose-500" />
+              <h4 className="text-lg font-black">Playback Restricted</h4>
+              <p className="text-xs text-gray-400 max-w-sm">
+                This YouTube video cannot be embedded. Try pasting another YouTube video or choose from Quick Picks!
+              </p>
+            </div>
+          ) : (
+            <ReactPlayer 
+              ref={playerRef}
+              url={url} 
+              playing={playing}
+              controls={true}
+              onPlay={handlePlay}
+              onPause={handlePause}
+              onSeek={handleSeek}
+              onError={handleError}
+              width="100%"
+              height="100%"
+              className="absolute top-0 left-0"
+              config={{
+                youtube: {
+                  playerVars: { autoplay: 1, disablekb: 1 }
+                }
+              }}
+            />
+          )}
         </div>
 
         <div className="flex justify-between items-center mt-4 px-2 text-xs font-bold text-gray-400">
