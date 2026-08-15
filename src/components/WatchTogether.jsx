@@ -51,10 +51,11 @@ function WatchTogether({ user, roomId, socket }) {
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [hasRemoteVideo, setHasRemoteVideo] = useState(false);
 
-  // Floating Emoji & Sidebar Chat State
+  // Floating Emoji, Translucent Chat & Sidebar Chat State
   const [floatingReactions, setFloatingReactions] = useState([]);
   const [cinemaMessages, setCinemaMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
+  const [isTranslucentChatOpen, setIsTranslucentChatOpen] = useState(true);
 
   // Draggable PIP Overlay State
   const [pipPosition, setPipPosition] = useState({ x: 0, y: 0 });
@@ -69,7 +70,9 @@ function WatchTogether({ user, roomId, socket }) {
   const agoraVoiceClientRef = useRef(null);
   const localAudioTrackRef = useRef(null);
   const localVideoTrackRef = useRef(null);
+  const remoteUserRef = useRef(null);
   const chatBottomRef = useRef(null);
+  const overlayChatBottomRef = useRef(null);
 
   // Drag Event Handlers
   const handleDragStart = (clientX, clientY) => {
@@ -174,6 +177,28 @@ function WatchTogether({ user, roomId, socket }) {
         localVideoTrackRef.current.close();
       }
       agoraVoiceClientRef.current?.leave();
+    };
+  }, []);
+
+  // Persistent video playback on Fullscreen Enter / Exit
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setTimeout(() => {
+        if (remoteUserRef.current?.videoTrack && document.getElementById('watch-remote-video')) {
+          remoteUserRef.current.videoTrack.play('watch-remote-video', { fit: 'cover' });
+        }
+        if (localVideoTrackRef.current && document.getElementById('watch-local-video')) {
+          localVideoTrackRef.current.play('watch-local-video', { fit: 'cover' });
+        }
+      }, 300);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
     };
   }, []);
 
@@ -338,6 +363,7 @@ function WatchTogether({ user, roomId, socket }) {
             toast.success("Partner Connected to Voice Chat! 🎙️✨");
           }
           if (mediaType === 'video') {
+            remoteUserRef.current = remoteUser;
             setHasRemoteVideo(true);
             setTimeout(() => {
               remoteUser.videoTrack?.play('watch-remote-video', { fit: 'cover' });
@@ -347,6 +373,7 @@ function WatchTogether({ user, roomId, socket }) {
         });
 
         client.on('user-left', () => {
+          remoteUserRef.current = null;
           setHasRemoteVideo(false);
           toast("Partner disconnected voice/video.");
         });
@@ -772,6 +799,73 @@ function WatchTogether({ user, roomId, socket }) {
                     ))}
                   </div>
 
+                  {/* TRANSLUCENT FLOATING IN-MOVIE CHAT OVERLAY */}
+                  {isTranslucentChatOpen ? (
+                    <div className="absolute bottom-6 left-6 z-50 w-72 md:w-80 max-h-72 bg-black/50 backdrop-blur-xl border border-white/20 rounded-3xl p-3.5 shadow-2xl flex flex-col gap-2 text-white animate-in fade-in zoom-in-95 pointer-events-auto">
+                      <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                        <div className="flex items-center gap-1.5">
+                          <MessageSquare size={14} className="text-rose-400" />
+                          <span className="text-[11px] font-black uppercase tracking-wider text-rose-100">Translucent Movie Chat</span>
+                        </div>
+                        <button
+                          onClick={() => setIsTranslucentChatOpen(false)}
+                          className="text-[10px] bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-full font-bold transition-all"
+                        >
+                          Hide ✖
+                        </button>
+                      </div>
+
+                      {/* Messages List */}
+                      <div className="flex-1 overflow-y-auto max-h-40 space-y-2 pr-1 text-xs">
+                        {cinemaMessages.length === 0 ? (
+                          <p className="text-[10px] text-gray-300 font-bold italic text-center py-4">
+                            Chat live over movie! Messages appear transparently 💕
+                          </p>
+                        ) : (
+                          cinemaMessages.map((msg, idx) => {
+                            const isMe = msg.sender === userId;
+                            return (
+                              <div key={idx} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                                <span className="text-[9px] text-rose-200 font-bold mb-0.5">{isMe ? 'You' : msg.senderName}</span>
+                                <div className={`px-3 py-1.5 rounded-2xl text-[11px] font-bold max-w-[90%] backdrop-blur-md ${
+                                  isMe ? 'bg-rose-500/80 text-white rounded-br-none' : 'bg-white/20 text-white rounded-bl-none'
+                                }`}>
+                                  {msg.message}
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                        <div ref={overlayChatBottomRef} />
+                      </div>
+
+                      {/* Message Input Form */}
+                      <form onSubmit={handleSendChatMessage} className="flex gap-1.5 pt-1">
+                        <input
+                          type="text"
+                          placeholder="Type comment..."
+                          value={chatInput}
+                          onChange={(e) => setChatInput(e.target.value)}
+                          className="flex-1 bg-white/10 border border-white/20 rounded-xl px-3 py-1.5 text-xs text-white placeholder-gray-300 font-bold outline-none focus:border-rose-400"
+                        />
+                        <button
+                          type="submit"
+                          className="px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-black text-xs shadow-md transition-all shrink-0 flex items-center justify-center"
+                        >
+                          <Send size={12} />
+                        </button>
+                      </form>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setIsTranslucentChatOpen(true)}
+                      className="absolute bottom-6 left-6 z-50 px-3.5 py-2 bg-black/60 backdrop-blur-xl border border-white/20 text-white rounded-2xl font-black text-xs shadow-xl hover:bg-black/80 transition-all flex items-center gap-1.5 pointer-events-auto"
+                    >
+                      <MessageSquare size={14} className="text-rose-400" />
+                      <span>Open Movie Chat 💬</span>
+                    </button>
+                  )}
+
                   {/* YOUTUBE DRAGGABLE PIP LIVE CAMERA OVERLAY */}
                   {isVoiceConnected && (isCameraOn || hasRemoteVideo) && (
                     <div
@@ -907,6 +1001,73 @@ function WatchTogether({ user, roomId, socket }) {
                     </div>
                   ))}
                 </div>
+
+                {/* TRANSLUCENT FLOATING IN-MOVIE CHAT OVERLAY */}
+                {isTranslucentChatOpen ? (
+                  <div className="absolute bottom-6 left-6 z-50 w-72 md:w-80 max-h-72 bg-black/50 backdrop-blur-xl border border-white/20 rounded-3xl p-3.5 shadow-2xl flex flex-col gap-2 text-white animate-in fade-in zoom-in-95 pointer-events-auto">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                      <div className="flex items-center gap-1.5">
+                        <MessageSquare size={14} className="text-rose-400" />
+                        <span className="text-[11px] font-black uppercase tracking-wider text-rose-100">Translucent Movie Chat</span>
+                      </div>
+                      <button
+                        onClick={() => setIsTranslucentChatOpen(false)}
+                        className="text-[10px] bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-full font-bold transition-all"
+                      >
+                        Hide ✖
+                      </button>
+                    </div>
+
+                    {/* Messages List */}
+                    <div className="flex-1 overflow-y-auto max-h-40 space-y-2 pr-1 text-xs">
+                      {cinemaMessages.length === 0 ? (
+                        <p className="text-[10px] text-gray-300 font-bold italic text-center py-4">
+                          Chat live over movie! Messages appear transparently 💕
+                        </p>
+                      ) : (
+                        cinemaMessages.map((msg, idx) => {
+                          const isMe = msg.sender === userId;
+                          return (
+                            <div key={idx} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                              <span className="text-[9px] text-rose-200 font-bold mb-0.5">{isMe ? 'You' : msg.senderName}</span>
+                              <div className={`px-3 py-1.5 rounded-2xl text-[11px] font-bold max-w-[90%] backdrop-blur-md ${
+                                isMe ? 'bg-rose-500/80 text-white rounded-br-none' : 'bg-white/20 text-white rounded-bl-none'
+                              }`}>
+                                {msg.message}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                      <div ref={overlayChatBottomRef} />
+                    </div>
+
+                    {/* Message Input Form */}
+                    <form onSubmit={handleSendChatMessage} className="flex gap-1.5 pt-1">
+                      <input
+                        type="text"
+                        placeholder="Type comment..."
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        className="flex-1 bg-white/10 border border-white/20 rounded-xl px-3 py-1.5 text-xs text-white placeholder-gray-300 font-bold outline-none focus:border-rose-400"
+                      />
+                      <button
+                        type="submit"
+                        className="px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-black text-xs shadow-md transition-all shrink-0 flex items-center justify-center"
+                      >
+                        <Send size={12} />
+                      </button>
+                    </form>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setIsTranslucentChatOpen(true)}
+                    className="absolute bottom-6 left-6 z-50 px-3.5 py-2 bg-black/60 backdrop-blur-xl border border-white/20 text-white rounded-2xl font-black text-xs shadow-xl hover:bg-black/80 transition-all flex items-center gap-1.5 pointer-events-auto"
+                  >
+                    <MessageSquare size={14} className="text-rose-400" />
+                    <span>Open Movie Chat 💬</span>
+                  </button>
+                )}
 
                 {/* FULLSCREEN DRAGGABLE PIP LIVE CAMERA OVERLAY */}
                 {isVoiceConnected && (isCameraOn || hasRemoteVideo) && (
