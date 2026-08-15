@@ -367,31 +367,41 @@ function Chat({ user }) {
     if (!file) return;
     setIsUploading(true);
     const isVideo = file.type.startsWith('video/');
-    const resourceType = isVideo ? 'video' : 'image';
 
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', 'love_verse');
-    try {
-      const res = await axios.post(`https://api.cloudinary.com/v1_1/dppwz6x0y/${resourceType}/upload`, formData);
-      const messageData = {
-        room: roomId,
-        sender: userId,
-        senderName: user.name,
-        message: res.data.secure_url,
-        isImage: !isVideo,
-        isVideo: isVideo,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      await socket.emit("send_message", messageData);
-      setMessageList((list) => [...list, messageData]);
-      toast.success(isVideo ? "Video Bhej Di! 🎬" : "Photo Bhej Di! 📸");
-    } catch (err) {
-      console.error("Media upload error:", err);
-      toast.error("Media Upload Fail Hua!");
-    } finally {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onloadend = async () => {
+      try {
+        const base64Data = reader.result;
+        const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/upload-media`, {
+          media: base64Data,
+          resourceType: isVideo ? 'video' : 'image'
+        });
+
+        const messageData = {
+          room: roomId,
+          sender: userId,
+          senderName: user.name,
+          message: res.data.url,
+          isImage: !isVideo,
+          isVideo: isVideo,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+
+        await socket.emit("send_message", messageData);
+        setMessageList((list) => [...list, messageData]);
+        toast.success(isVideo ? "Video Bhej Di! 🎬" : "Photo Bhej Di! 📸");
+      } catch (err) {
+        console.error("Media upload error:", err);
+        toast.error("Media Upload Fail Hua!");
+      } finally {
+        setIsUploading(false);
+      }
+    };
+    reader.onerror = () => {
       setIsUploading(false);
-    }
+      toast.error("File read error!");
+    };
   };
 
   const formatTime = (secs) => {
