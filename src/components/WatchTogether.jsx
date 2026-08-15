@@ -72,6 +72,12 @@ function WatchTogether({ user, roomId, socket }) {
     };
   }, [socket, roomId]);
 
+  useEffect(() => {
+    if (isSharingScreen && screenVideoRef.current) {
+      screenVideoRef.current.muted = true;
+    }
+  }, [isSharingScreen, activeTab]);
+
   // Start Screen Share Virtual Cinema directly inside Watch Together
   const startScreenShareCinema = async () => {
     try {
@@ -81,15 +87,18 @@ function WatchTogether({ user, roomId, socket }) {
       });
 
       mediaStreamRef.current = stream;
-      if (screenVideoRef.current) {
-        screenVideoRef.current.srcObject = stream;
-        screenVideoRef.current.muted = true; // Mute locally to prevent audio echo loop!
-      }
+      setActiveTab('screen_share');
       setIsSharingScreen(true);
       setIsMuted(true);
-      setActiveTab('screen_share');
 
-      toast.success("Virtual Cinema Active! Local audio muted to prevent echo feedback. 🍿✨");
+      setTimeout(() => {
+        if (screenVideoRef.current) {
+          screenVideoRef.current.srcObject = stream;
+          screenVideoRef.current.muted = true; // Mute locally to eliminate double sound for streamer!
+        }
+      }, 100);
+
+      toast.success("Virtual Cinema Active! Love-Verse player muted locally so you only hear NetMirror once! 🍿✨");
 
       stream.getVideoTracks()[0].onended = () => {
         stopScreenShareCinema();
@@ -359,7 +368,7 @@ function WatchTogether({ user, roomId, socket }) {
               autoPlay
               playsInline
               controls={isSharingScreen}
-              muted={isMuted}
+              muted={isSharingScreen}
               className="absolute top-0 left-0 w-full h-full object-contain"
             />
             {!isSharingScreen && (
