@@ -16,8 +16,8 @@ import LoveRoulette from '../components/LoveRoulette';
 import WatchTogether from '../components/WatchTogether';
 import Ludo from '../components/Ludo';
 import UniverseMap from '../components/UniverseMap';
-import CoupleQuiz from '../components/CoupleQuiz';
 import VirtualTouch from '../components/VirtualTouch';
+import NaughtyTruthOrDare from '../components/NaughtyTruthOrDare';
 
 const socket = io.connect(import.meta.env.VITE_API_URL);
 
@@ -531,21 +531,40 @@ function Dashboard() {
               <Ludo user={user} roomId={roomId} socket={socket} onBack={() => setCurrentGame(null)} />
             ) : currentGame === 'quiz' ? (
               <CoupleQuiz user={user} roomId={roomId} socket={socket} onBack={() => setCurrentGame(null)} />
+            ) : currentGame === 'naughty_tod' ? (
+              <NaughtyTruthOrDare user={user} roomId={roomId} socket={socket} onBack={() => setCurrentGame(null)} />
             ) : (
               <div className="space-y-10 animate-in slide-in-from-right duration-500">
 
                 <div className="text-center space-y-3">
 
                   <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-rose-100 rounded-full text-rose-500 font-black text-[10px] uppercase tracking-[0.2em]">
-                    <Zap size={14} className="fill-current" /> Live 1v1 Battle
+                    <Zap size={14} className="fill-current" /> Live 1v1 Battle & Romantic Games
                   </div>
                   <h3 className="text-4xl md:text-5xl font-black text-gray-800 italic flex items-center justify-center gap-4">
                     <Gamepad2 className="text-rose-500" size={48} /> Play Zone
                   </h3>
-                  <p className="text-gray-500 font-bold text-sm italic">"Chalo dekhte hain kaun jitta hai! ❤️"</p>
+                  <p className="text-gray-500 font-bold text-sm italic">"Chalo dekhte hain kaun jitta hai & romantic games khelte hain! ❤️"</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {/* NAUGHTY TRUTH OR DARE CARD */}
+                  <div className={`${glassStyle} group p-8 rounded-[3.5rem] hover:scale-[1.03] transition-all border-2 border-transparent hover:border-purple-300 relative overflow-hidden bg-gradient-to-br from-purple-50/60 via-rose-50/60 to-pink-50/60 shadow-rose-100/60`}>
+                    <div className="w-16 h-16 bg-gradient-to-tr from-purple-600 via-rose-500 to-pink-600 text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-purple-200">
+                      <span className="text-3xl">💋</span>
+                    </div>
+                    <h4 className="text-2xl font-black text-gray-800 mb-2">Naughty Truth or Dare 💋🔥</h4>
+                    <p className="text-xs text-purple-600 font-bold leading-relaxed mb-6 uppercase tracking-tighter">
+                      3D Spin Wheel • 3 Spicy Modes
+                    </p>
+                    <button
+                      onClick={() => setCurrentGame('naughty_tod')}
+                      className="w-full py-4 bg-gradient-to-r from-purple-600 via-rose-500 to-pink-600 text-white rounded-2xl font-black text-xs hover:shadow-xl hover:scale-105 transition-all shadow-lg flex items-center justify-center gap-2"
+                    >
+                      Spin Naughty Wheel 🔥
+                    </button>
+                  </div>
+
                   <div className={`${glassStyle} group p-8 rounded-[3.5rem] hover:scale-[1.03] transition-all border-2 border-transparent hover:border-blue-200 relative overflow-hidden`}>
                     <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 shadow-inner"><span className="text-3xl">♟️</span></div>
                     <h4 className="text-2xl font-black text-gray-800 mb-2">Grandmaster Chess</h4>
