@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PlaySquare, Link as LinkIcon, Search, Sparkles, Film, AlertCircle, Tv, Monitor, ExternalLink, Globe, Play, RefreshCw, Video, StopCircle, Maximize2, Volume2, VolumeX, Minimize2, Radio, Mic, MicOff, PhoneOff } from 'lucide-react';
+import { PlaySquare, Link as LinkIcon, Search, Sparkles, Film, AlertCircle, Tv, Monitor, ExternalLink, Globe, Play, RefreshCw, Video, StopCircle, Maximize2, Volume2, VolumeX, Minimize2, Radio, Mic, MicOff, PhoneOff, VideoOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Peer from 'peerjs';
 import AgoraRTC from 'agora-rtc-sdk-ng';
@@ -43,15 +43,18 @@ function WatchTogether({ user, roomId, socket }) {
   const [isMuted, setIsMuted] = useState(true);
   const [isTheaterMode, setIsTheaterMode] = useState(false);
 
-  // Live Voice Chat State inside Watch Together
+  // Live Voice & Camera State inside Watch Together
   const [isVoiceConnected, setIsVoiceConnected] = useState(false);
   const [isVoiceMicMuted, setIsVoiceMicMuted] = useState(false);
+  const [isCameraOn, setIsCameraOn] = useState(false);
+  const [hasRemoteVideo, setHasRemoteVideo] = useState(false);
 
   const screenVideoRef = useRef(null);
   const mediaStreamRef = useRef(null);
   const peerRef = useRef(null);
   const agoraVoiceClientRef = useRef(null);
   const localAudioTrackRef = useRef(null);
+  const localVideoTrackRef = useRef(null);
 
   const iframeRef = useRef(null);
   const videoRef = useRef(null);
@@ -98,12 +101,16 @@ function WatchTogether({ user, roomId, socket }) {
     };
   }, [userId]);
 
-  // Clean up Voice Chat on unmount
+  // Clean up Voice & Camera on unmount
   useEffect(() => {
     return () => {
       if (localAudioTrackRef.current) {
         localAudioTrackRef.current.stop();
         localAudioTrackRef.current.close();
+      }
+      if (localVideoTrackRef.current) {
+        localVideoTrackRef.current.stop();
+        localVideoTrackRef.current.close();
       }
       agoraVoiceClientRef.current?.leave();
     };
@@ -159,20 +166,27 @@ function WatchTogether({ user, roomId, socket }) {
     }
   }, [isSharingScreen, activeTab]);
 
-  // LIVE VOICE CHAT TOGGLE (AGORA RTC)
+  // LIVE VOICE & CAMERA CHAT TOGGLE (AGORA RTC)
   const toggleVoiceChatWatch = async () => {
     if (isVoiceConnected) {
-      // Leave Voice Chat
+      // Leave Voice & Camera Chat
       try {
         if (localAudioTrackRef.current) {
           localAudioTrackRef.current.stop();
           localAudioTrackRef.current.close();
           localAudioTrackRef.current = null;
         }
+        if (localVideoTrackRef.current) {
+          localVideoTrackRef.current.stop();
+          localVideoTrackRef.current.close();
+          localVideoTrackRef.current = null;
+        }
         await agoraVoiceClientRef.current?.leave();
         setIsVoiceConnected(false);
         setIsVoiceMicMuted(false);
-        toast.success("Voice Chat Disconnected 🎙️");
+        setIsCameraOn(false);
+        setHasRemoteVideo(false);
+        toast.success("Voice & Video Chat Disconnected 🎙️");
       } catch (err) {
         console.error("Voice leave error:", err);
       }
@@ -199,10 +213,18 @@ function WatchTogether({ user, roomId, socket }) {
             remoteUser.audioTrack?.play();
             toast.success("Partner Connected to Voice Chat! 🎙️✨");
           }
+          if (mediaType === 'video') {
+            setHasRemoteVideo(true);
+            setTimeout(() => {
+              remoteUser.videoTrack?.play('watch-remote-video', { fit: 'cover' });
+            }, 300);
+            toast.success("Partner Turned On Live Camera! 📹✨");
+          }
         });
 
         client.on('user-left', () => {
-          toast("Partner disconnected voice chat.");
+          setHasRemoteVideo(false);
+          toast("Partner disconnected voice/video.");
         });
 
         await client.join(appId, voiceChannel, data.token, uid);
@@ -212,7 +234,7 @@ function WatchTogether({ user, roomId, socket }) {
 
         setIsVoiceConnected(true);
         setIsVoiceMicMuted(false);
-        toast.success("Live Voice Chat Active! Talk while watching 🎙️🍿");
+        toast.success("Live Voice Chat Active! Talk & see each other while watching 🎙️📹🍿");
       } catch (err) {
         console.error("Voice chat error:", err);
         toast.error("Could not start Voice Chat. Check mic permission!");
@@ -225,6 +247,42 @@ function WatchTogether({ user, roomId, socket }) {
       localAudioTrackRef.current.setEnabled(isVoiceMicMuted);
       setIsVoiceMicMuted(!isVoiceMicMuted);
       toast.success(isVoiceMicMuted ? "Mic Unmuted 🎙️" : "Mic Muted 🔇");
+    }
+  };
+
+  const toggleCameraWatch = async () => {
+    if (!isVoiceConnected) {
+      toast.error("Please connect Live Voice Chat first! 🎙️");
+      return;
+    }
+
+    if (isCameraOn) {
+      try {
+        if (localVideoTrackRef.current) {
+          await agoraVoiceClientRef.current?.unpublish([localVideoTrackRef.current]);
+          localVideoTrackRef.current.stop();
+          localVideoTrackRef.current.close();
+          localVideoTrackRef.current = null;
+        }
+        setIsCameraOn(false);
+        toast.success("Camera Turned Off");
+      } catch (err) {
+        console.error("Camera turn off error:", err);
+      }
+    } else {
+      try {
+        const videoTrack = await AgoraRTC.createCameraVideoTrack();
+        localVideoTrackRef.current = videoTrack;
+        await agoraVoiceClientRef.current?.publish([videoTrack]);
+        setIsCameraOn(true);
+        setTimeout(() => {
+          videoTrack.play('watch-local-video', { fit: 'cover' });
+        }, 300);
+        toast.success("Live Camera Turned On! Partner can see your reactions 📹✨");
+      } catch (err) {
+        console.error("Camera turn on error:", err);
+        toast.error("Could not turn on camera. Check camera permissions!");
+      }
     }
   };
 
@@ -361,6 +419,39 @@ function WatchTogether({ user, roomId, socket }) {
       isTheaterMode ? 'max-w-none' : 'max-w-4xl'
     }`}>
       
+      {/* FLOATING PIP LIVE CAMERA OVERLAY */}
+      {isVoiceConnected && (isCameraOn || hasRemoteVideo) && (
+        <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2 animate-in fade-in zoom-in-95">
+          <style>{`
+            #watch-remote-video div, #watch-remote-video video, #watch-local-video div, #watch-local-video video {
+              width: 100% !important;
+              height: 100% !important;
+              object-fit: cover !important;
+              border-radius: 1.5rem !important;
+            }
+          `}</style>
+          
+          <div className="relative w-40 h-56 md:w-48 md:h-64 rounded-3xl overflow-hidden border-2 border-rose-500/80 shadow-2xl bg-slate-950">
+            {/* Remote Camera Feed */}
+            {hasRemoteVideo ? (
+              <div id="watch-remote-video" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center text-slate-400">
+                <VideoOff size={28} className="mb-2 text-slate-500" />
+                <p className="text-[10px] font-bold">Partner's camera off</p>
+              </div>
+            )}
+
+            {/* Local Camera Feed (Mini Thumbnail) */}
+            {isCameraOn && (
+              <div className="absolute bottom-2 right-2 w-16 h-22 md:w-20 md:h-28 rounded-2xl overflow-hidden border-2 border-white shadow-lg bg-black z-20">
+                <div id="watch-local-video" className="w-full h-full object-cover" />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-3">
@@ -410,7 +501,7 @@ function WatchTogether({ user, roomId, socket }) {
         </div>
       </div>
 
-      {/* LIVE VOICE CHAT FLOATING BAR */}
+      {/* LIVE VOICE & CAMERA CHAT FLOATING BAR */}
       <div className="flex flex-wrap items-center justify-between bg-gradient-to-r from-rose-500 via-pink-500 to-purple-600 p-3.5 rounded-3xl text-white shadow-xl gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center font-black">
@@ -418,26 +509,39 @@ function WatchTogether({ user, roomId, socket }) {
           </div>
           <div>
             <h4 className="text-xs font-black uppercase tracking-wider">
-              {isVoiceConnected ? 'Live Voice Chat Connected 🎙️' : 'Movie Voice Chat'}
+              {isVoiceConnected ? 'Live Voice & Video Chat Active 🎙️📹' : 'Movie Voice & Camera Chat'}
             </h4>
             <p className="text-[10px] text-rose-100 font-bold">
-              {isVoiceConnected ? 'Talk to partner in real-time while watching movies!' : 'Connect mic to talk with partner live during movie'}
+              {isVoiceConnected ? 'Talk & see live facial reactions while watching movies!' : 'Connect mic & camera to talk & see each other live during movie'}
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           {isVoiceConnected && (
-            <button
-              onClick={toggleMicMuteWatch}
-              className={`p-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
-                isVoiceMicMuted ? 'bg-red-600 text-white shadow-md' : 'bg-white/20 hover:bg-white/30 text-white'
-              }`}
-              title={isVoiceMicMuted ? "Unmute Mic" : "Mute Mic"}
-            >
-              {isVoiceMicMuted ? <MicOff size={16} /> : <Mic size={16} />}
-              <span>{isVoiceMicMuted ? 'Muted' : 'Mic On'}</span>
-            </button>
+            <>
+              <button
+                onClick={toggleMicMuteWatch}
+                className={`p-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
+                  isVoiceMicMuted ? 'bg-red-600 text-white shadow-md' : 'bg-white/20 hover:bg-white/30 text-white'
+                }`}
+                title={isVoiceMicMuted ? "Unmute Mic" : "Mute Mic"}
+              >
+                {isVoiceMicMuted ? <MicOff size={16} /> : <Mic size={16} />}
+                <span>{isVoiceMicMuted ? 'Muted' : 'Mic On'}</span>
+              </button>
+
+              <button
+                onClick={toggleCameraWatch}
+                className={`p-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
+                  isCameraOn ? 'bg-green-500 text-white shadow-md' : 'bg-white/20 hover:bg-white/30 text-white'
+                }`}
+                title={isCameraOn ? "Turn Off Camera" : "Turn On Camera"}
+              >
+                {isCameraOn ? <Video size={16} /> : <VideoOff size={16} />}
+                <span>{isCameraOn ? 'Camera On' : 'Turn On Cam 📹'}</span>
+              </button>
+            </>
           )}
 
           <button
@@ -447,7 +551,7 @@ function WatchTogether({ user, roomId, socket }) {
             }`}
           >
             {isVoiceConnected ? <PhoneOff size={14} /> : <Mic size={14} />}
-            <span>{isVoiceConnected ? 'Disconnect Voice' : 'Connect Live Voice 🎙️'}</span>
+            <span>{isVoiceConnected ? 'Disconnect' : 'Connect Voice & Video 🎙️📹'}</span>
           </button>
         </div>
       </div>
