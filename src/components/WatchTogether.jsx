@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PlaySquare, Link as LinkIcon, Search, Sparkles, Film, AlertCircle, Tv, Monitor, ExternalLink, Globe, Play, RefreshCw, Video, StopCircle, Maximize2, Volume2, VolumeX, Minimize2, Radio, Mic, MicOff, PhoneOff, VideoOff } from 'lucide-react';
+import { PlaySquare, Link as LinkIcon, Search, Sparkles, Film, AlertCircle, Tv, Monitor, ExternalLink, Globe, Play, RefreshCw, Video, StopCircle, Maximize2, Volume2, VolumeX, Minimize2, Radio, Mic, MicOff, PhoneOff, VideoOff, GripVertical } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Peer from 'peerjs';
 import AgoraRTC from 'agora-rtc-sdk-ng';
@@ -49,6 +49,12 @@ function WatchTogether({ user, roomId, socket }) {
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [hasRemoteVideo, setHasRemoteVideo] = useState(false);
 
+  // Draggable PIP Overlay State
+  const [pipPosition, setPipPosition] = useState({ x: 0, y: 0 });
+  const [isDraggingPip, setIsDraggingPip] = useState(false);
+  const dragStartRef = useRef({ x: 0, y: 0 });
+  const initialPosRef = useRef({ x: 0, y: 0 });
+
   const screenVideoRef = useRef(null);
   const cinemaContainerRef = useRef(null);
   const mediaStreamRef = useRef(null);
@@ -56,6 +62,52 @@ function WatchTogether({ user, roomId, socket }) {
   const agoraVoiceClientRef = useRef(null);
   const localAudioTrackRef = useRef(null);
   const localVideoTrackRef = useRef(null);
+
+  // Drag Event Handlers
+  const handleDragStart = (clientX, clientY) => {
+    setIsDraggingPip(true);
+    dragStartRef.current = { x: clientX, y: clientY };
+    initialPosRef.current = { ...pipPosition };
+  };
+
+  const handleDragMove = (clientX, clientY) => {
+    if (!isDraggingPip) return;
+    const deltaX = clientX - dragStartRef.current.x;
+    const deltaY = clientY - dragStartRef.current.y;
+    setPipPosition({
+      x: initialPosRef.current.x + deltaX,
+      y: initialPosRef.current.y + deltaY
+    });
+  };
+
+  const handleDragEnd = () => {
+    setIsDraggingPip(false);
+  };
+
+  useEffect(() => {
+    if (!isDraggingPip) return;
+
+    const onMouseMove = (e) => handleDragMove(e.clientX, e.clientY);
+    const onMouseUp = () => handleDragEnd();
+    const onTouchMove = (e) => {
+      if (e.touches && e.touches[0]) {
+        handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    };
+    const onTouchEnd = () => handleDragEnd();
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('touchmove', onTouchMove);
+    window.addEventListener('touchend', onTouchEnd);
+
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [isDraggingPip]);
 
   const iframeRef = useRef(null);
   const videoRef = useRef(null);
@@ -611,10 +663,25 @@ function WatchTogether({ user, roomId, socket }) {
                 className="absolute top-0 left-0 w-full h-full border-0"
               />
 
-              {/* YOUTUBE PIP LIVE CAMERA OVERLAY */}
+              {/* YOUTUBE DRAGGABLE PIP LIVE CAMERA OVERLAY */}
               {isVoiceConnected && (isCameraOn || hasRemoteVideo) && (
-                <div className="absolute bottom-6 right-6 z-50 flex flex-col items-end gap-2 animate-in fade-in zoom-in-95 pointer-events-auto">
-                  <div className="relative w-36 h-52 md:w-44 md:h-60 rounded-3xl overflow-hidden border-2 border-rose-500/80 shadow-2xl bg-slate-950">
+                <div
+                  style={{
+                    transform: `translate(${pipPosition.x}px, ${pipPosition.y}px)`
+                  }}
+                  className="absolute bottom-6 right-6 z-50 flex flex-col items-end gap-2 animate-in fade-in zoom-in-95 pointer-events-auto touch-none select-none"
+                >
+                  <div
+                    onMouseDown={(e) => handleDragStart(e.clientX, e.clientY)}
+                    onTouchStart={(e) => e.touches?.[0] && handleDragStart(e.touches[0].clientX, e.touches[0].clientY)}
+                    className="relative w-36 h-52 md:w-44 md:h-60 rounded-3xl overflow-hidden border-2 border-rose-500/80 shadow-2xl bg-slate-950 cursor-grab active:cursor-grabbing group hover:border-pink-400 transition-colors"
+                  >
+                    {/* Drag Handle Bar */}
+                    <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md px-2.5 py-0.5 rounded-full text-white/80 z-30 flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                      <GripVertical size={10} />
+                      <span className="text-[8px] font-black uppercase tracking-widest">Drag Me</span>
+                    </div>
+
                     {/* Remote Camera Feed */}
                     {hasRemoteVideo ? (
                       <div id="watch-remote-video" className="w-full h-full object-cover" />
@@ -719,10 +786,25 @@ function WatchTogether({ user, roomId, socket }) {
               className="absolute top-0 left-0 w-full h-full object-contain"
             />
 
-            {/* FULLSCREEN PIP LIVE CAMERA OVERLAY */}
+            {/* FULLSCREEN DRAGGABLE PIP LIVE CAMERA OVERLAY */}
             {isVoiceConnected && (isCameraOn || hasRemoteVideo) && (
-              <div className="absolute bottom-6 right-6 z-50 flex flex-col items-end gap-2 animate-in fade-in zoom-in-95 pointer-events-auto">
-                <div className="relative w-36 h-52 md:w-44 md:h-60 rounded-3xl overflow-hidden border-2 border-rose-500/80 shadow-2xl bg-slate-950">
+              <div
+                style={{
+                  transform: `translate(${pipPosition.x}px, ${pipPosition.y}px)`
+                }}
+                className="absolute bottom-6 right-6 z-50 flex flex-col items-end gap-2 animate-in fade-in zoom-in-95 pointer-events-auto touch-none select-none"
+              >
+                <div
+                  onMouseDown={(e) => handleDragStart(e.clientX, e.clientY)}
+                  onTouchStart={(e) => e.touches?.[0] && handleDragStart(e.touches[0].clientX, e.touches[0].clientY)}
+                  className="relative w-36 h-52 md:w-44 md:h-60 rounded-3xl overflow-hidden border-2 border-rose-500/80 shadow-2xl bg-slate-950 cursor-grab active:cursor-grabbing group hover:border-pink-400 transition-colors"
+                >
+                  {/* Drag Handle Bar */}
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md px-2.5 py-0.5 rounded-full text-white/80 z-30 flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                    <GripVertical size={10} />
+                    <span className="text-[8px] font-black uppercase tracking-widest">Drag Me</span>
+                  </div>
+
                   {/* Remote Camera Feed */}
                   {hasRemoteVideo ? (
                     <div id="watch-remote-video" className="w-full h-full object-cover" />
