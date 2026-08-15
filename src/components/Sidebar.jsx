@@ -74,7 +74,6 @@ const Sidebar = ({ activeTab, setActiveTab, user, handleLogout, sendNudge }) => 
                     </div>
                     <div className="space-y-1">
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-4 mb-2">Our Connection</p>
-                        <SidebarBtn icon={<Trophy size={20} />} label="Our Story & Badges" active={activeTab === 'our_story'} onClick={() => setActiveTab('our_story')} />
                         <SidebarBtn icon={<Radio size={20} />} label="Couple Beats Radio" active={activeTab === 'couple_beats'} onClick={() => setActiveTab('couple_beats')} />
                         <SidebarBtn icon={<Touchpad size={20} />} label="Virtual Touch" active={activeTab === 'virtual_touch'} onClick={() => setActiveTab('virtual_touch')} />
                         <SidebarBtn icon={<Zap size={20} />} label="Daily Routine" active={activeTab === 'routine'} onClick={() => setActiveTab('routine')} />
@@ -161,7 +160,6 @@ const Sidebar = ({ activeTab, setActiveTab, user, handleLogout, sendNudge }) => 
 
                         <div className="grid grid-cols-3 gap-3">
                             {[
-                                { icon: <Trophy size={20} />, label: "Our Story", tab: 'our_story' },
                                 { icon: <Radio size={20} />, label: "Beats Radio", tab: 'couple_beats' },
                                 { icon: <Touchpad size={20} />, label: "Virtual Touch", tab: 'virtual_touch' },
                                 { icon: <Zap size={20} />, label: "Routine", tab: 'routine' },

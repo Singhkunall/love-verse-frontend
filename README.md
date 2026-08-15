@@ -27,7 +27,6 @@
 
 | Category | Features Included |
 | :--- | :--- |
-| 🏆 **Our Story & Badges** | Animated relationship milestone timeline, couple achievement badge gallery & milestone creator. |
 | 🎶 **Couple Beats Radio** | Real-time synchronized lo-fi music player (play, pause, seek, track change) with 3D spinning vinyl visualizer. |
 | 💖 **Virtual Touch Canvas** | Real-time shared touch/pointer canvas with particle trails and simultaneous touch explosion event. |
 | 🌍 **3D Next-Gen Universe Globe** | Interactive 3D Earth (Three.js), OpenStreetMap city search, 3D animated love travel arcs, pin light beacons & memory photo spotlight. |

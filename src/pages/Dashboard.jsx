@@ -17,7 +17,6 @@ import WatchTogether from '../components/WatchTogether';
 import Ludo from '../components/Ludo';
 import UniverseMap from '../components/UniverseMap';
 import CoupleQuiz from '../components/CoupleQuiz';
-import OurStory from '../components/OurStory';
 import CoupleBeats from '../components/CoupleBeats';
 import VirtualTouch from '../components/VirtualTouch';
 
@@ -701,9 +700,6 @@ function Dashboard() {
         )}
         {activeTab === 'universe' && (
           <UniverseMap user={user} roomId={roomId} socket={socket} />
-        )}
-        {activeTab === 'our_story' && (
-          <OurStory user={user} daysTogether={daysTogether} />
         )}
         {activeTab === 'couple_beats' && (
           <CoupleBeats user={user} roomId={roomId} socket={socket} />
