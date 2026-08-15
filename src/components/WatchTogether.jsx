@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PlaySquare, Link as LinkIcon, Search, Sparkles, Film, AlertCircle, Tv, Monitor, ExternalLink, Globe, Play, RefreshCw } from 'lucide-react';
+import { PlaySquare, Link as LinkIcon, Search, Sparkles, Film, AlertCircle, Tv, Monitor, ExternalLink, Globe, Play, RefreshCw, Video, StopCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const PRESET_VIDEOS = [
@@ -28,13 +28,18 @@ const getYouTubeVideoId = (rawUrl) => {
 };
 
 function WatchTogether({ user, roomId, socket }) {
-  const [activeTab, setActiveTab] = useState('youtube'); // 'youtube' | 'web_streamer' | 'direct' | 'ott_guide'
+  const [activeTab, setActiveTab] = useState('youtube'); // 'youtube' | 'screen_share' | 'web_streamer' | 'direct' | 'ott_guide'
   const [videoId, setVideoId] = useState('jfKfPfyJRdk');
   const [webStreamUrl, setWebStreamUrl] = useState(NETMIRROR_DEFAULT_URL);
   const [directMovieUrl, setDirectMovieUrl] = useState('');
   const [inputUrl, setInputUrl] = useState('');
   const [syncedStatus, setSyncedStatus] = useState('Synced Live ✨');
   
+  // Screen Share State
+  const [isSharingScreen, setIsSharingScreen] = useState(false);
+  const screenVideoRef = useRef(null);
+  const mediaStreamRef = useRef(null);
+
   const iframeRef = useRef(null);
   const videoRef = useRef(null);
 
@@ -66,6 +71,42 @@ function WatchTogether({ user, roomId, socket }) {
       socket.off("video_changed", handleVideoChanged);
     };
   }, [socket, roomId]);
+
+  // Start Screen Share Virtual Cinema directly inside Watch Together
+  const startScreenShareCinema = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { cursor: "always" },
+        audio: true
+      });
+
+      mediaStreamRef.current = stream;
+      if (screenVideoRef.current) {
+        screenVideoRef.current.srcObject = stream;
+      }
+      setIsSharingScreen(true);
+      setActiveTab('screen_share');
+
+      toast.success("Virtual Cinema Active! Partner can see your NetMirror stream live inside Love-Verse! 📽️✨");
+
+      stream.getVideoTracks()[0].onended = () => {
+        stopScreenShareCinema();
+      };
+    } catch (err) {
+      console.error("Screen share error:", err);
+      toast.error("Could not start screen share. Please grant permission!");
+    }
+  };
+
+  const stopScreenShareCinema = () => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
+    }
+    setIsSharingScreen(false);
+    setActiveTab('youtube');
+    toast.success("Virtual Cinema Ended!");
+  };
 
   // Load new video URL
   const handleLoadVideo = (e) => {
@@ -128,20 +169,6 @@ function WatchTogether({ user, roomId, socket }) {
     toast.success(`Loaded ${preset.name}! 🍿`);
   };
 
-  const handleOpenNetMirror = () => {
-    setActiveTab('web_streamer');
-    setWebStreamUrl(NETMIRROR_DEFAULT_URL);
-    if (socket) {
-      socket.emit("change_video", {
-        roomId,
-        type: 'web_streamer',
-        url: NETMIRROR_DEFAULT_URL,
-        userName: user?.name || 'Partner'
-      });
-    }
-    toast.success("Loaded NetMirror Streamer (net77.cc)! 🍿");
-  };
-
   const glassStyle = "bg-white/80 backdrop-blur-2xl border border-white/60 shadow-xl rounded-[2.5rem]";
 
   return (
@@ -155,7 +182,7 @@ function WatchTogether({ user, roomId, socket }) {
           </div>
           <div>
             <h3 className="text-3xl font-black text-gray-800">Watch Together 🍿</h3>
-            <p className="text-xs text-gray-500 font-bold">YouTube, NetMirror, Direct Movies & OTT Guide</p>
+            <p className="text-xs text-gray-500 font-bold">YouTube, NetMirror Cinema, Direct Movies & OTT Guide</p>
           </div>
         </div>
 
@@ -170,12 +197,12 @@ function WatchTogether({ user, roomId, socket }) {
             🍿 YouTube
           </button>
           <button
-            onClick={handleOpenNetMirror}
+            onClick={() => setActiveTab('screen_share')}
             className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${
-              activeTab === 'web_streamer' ? 'bg-rose-500 text-white shadow-md' : 'text-gray-600'
+              activeTab === 'screen_share' ? 'bg-rose-500 text-white shadow-md' : 'text-gray-600'
             }`}
           >
-            🌐 NetMirror
+            📽️ Virtual Cinema (NetMirror)
           </button>
           <button
             onClick={() => setActiveTab('direct')}
@@ -191,19 +218,19 @@ function WatchTogether({ user, roomId, socket }) {
               activeTab === 'ott_guide' ? 'bg-rose-500 text-white shadow-md' : 'text-gray-600'
             }`}
           >
-            🎬 Netflix & Prime
+            🎬 OTT Guide
           </button>
         </div>
       </div>
 
       {/* URL Input Form */}
-      {activeTab !== 'ott_guide' && (
+      {activeTab !== 'ott_guide' && activeTab !== 'screen_share' && (
         <form onSubmit={handleLoadVideo} className={`${glassStyle} p-4 flex gap-3`}>
           <div className="flex-1 flex items-center gap-3 bg-gray-50 rounded-2xl px-4 py-3 border border-gray-100">
             <LinkIcon size={20} className="text-rose-400 shrink-0" />
             <input 
               type="text" 
-              placeholder="Paste NetMirror (net77.cc), YouTube, or Movie Link..." 
+              placeholder="Paste NetMirror, YouTube, or Movie Link..." 
               value={inputUrl}
               onChange={(e) => setInputUrl(e.target.value)}
               className="flex-1 bg-transparent border-none outline-none text-xs md:text-sm text-gray-800 font-bold"
@@ -251,34 +278,57 @@ function WatchTogether({ user, roomId, socket }) {
         </div>
       )}
 
-      {/* TAB 2: NETMIRROR & WEB STREAMER */}
-      {activeTab === 'web_streamer' && (
-        <div className={`${glassStyle} p-4 md:p-6 space-y-4`}>
+      {/* TAB 2: VIRTUAL CINEMA SCREEN SHARE PLAYER (FOR NETMIRROR / NETFLIX / PRIME) */}
+      {activeTab === 'screen_share' && (
+        <div className={`${glassStyle} p-6 space-y-6 text-center`}>
           <div className="flex justify-between items-center px-2">
             <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-green-500 animate-ping inline-block" />
-              <span className="text-xs font-black text-gray-800">NetMirror Live Portal ({webStreamUrl})</span>
+              <span className={`w-3.5 h-3.5 rounded-full ${isSharingScreen ? 'bg-green-500 animate-ping' : 'bg-gray-300'}`} />
+              <h4 className="text-base font-black text-gray-800">
+                {isSharingScreen ? 'Virtual Cinema Stream Active! 📽️' : 'Virtual Cinema Mode'}
+              </h4>
             </div>
-            <div className="flex items-center gap-2">
-              <a
-                href={webStreamUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-xs font-black transition-all flex items-center gap-1"
+
+            {!isSharingScreen ? (
+              <button
+                onClick={startScreenShareCinema}
+                className="px-6 py-2.5 bg-rose-500 text-white rounded-2xl font-black text-xs shadow-lg hover:bg-rose-600 transition-all flex items-center gap-2"
               >
-                Open in New Tab <ExternalLink size={12} />
-              </a>
-            </div>
+                <Video size={16} /> Start NetMirror Screen Stream 🍿
+              </button>
+            ) : (
+              <button
+                onClick={stopScreenShareCinema}
+                className="px-6 py-2.5 bg-gray-900 text-white rounded-2xl font-black text-xs shadow-lg hover:bg-black transition-all flex items-center gap-2"
+              >
+                <StopCircle size={16} /> End Cinema Stream
+              </button>
+            )}
           </div>
 
-          <div className="relative h-[620px] rounded-3xl overflow-hidden shadow-2xl bg-slate-900 border border-gray-800">
-            <iframe
-              src={`${import.meta.env.VITE_API_URL}/api/stream-proxy?url=${encodeURIComponent(webStreamUrl)}`}
-              title="NetMirror Web Streamer"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-              allowFullScreen
-              className="w-full h-full border-0"
+          {/* Screen Video Container */}
+          <div className="relative pt-[56.25%] rounded-3xl overflow-hidden shadow-2xl bg-slate-950 border border-gray-800">
+            <video
+              ref={screenVideoRef}
+              autoPlay
+              playsInline
+              className="absolute top-0 left-0 w-full h-full object-contain"
             />
+            {!isSharingScreen && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-white space-y-3 bg-slate-900/90 backdrop-blur-sm">
+                <Monitor size={48} className="text-rose-500" />
+                <h4 className="text-xl font-black">Watch NetMirror Together Inside Love-Verse 🍿</h4>
+                <p className="text-xs text-gray-300 max-w-md italic">
+                  Click "Start NetMirror Screen Stream" above, select your NetMirror (net77.cc) tab, and both partners can watch the movie live right inside Love-Verse!
+                </p>
+                <button
+                  onClick={startScreenShareCinema}
+                  className="px-8 py-3.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-2xl font-black text-xs shadow-xl hover:scale-105 transition-all flex items-center gap-2 mt-2"
+                >
+                  <Video size={18} /> Start Cinema Stream Now 📽️
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
