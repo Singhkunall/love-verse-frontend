@@ -271,12 +271,11 @@ function WatchTogether({ user, roomId, socket }) {
             </div>
           </div>
 
-          <div className="relative h-[600px] rounded-3xl overflow-hidden shadow-2xl bg-slate-900 border border-gray-800">
+          <div className="relative h-[620px] rounded-3xl overflow-hidden shadow-2xl bg-slate-900 border border-gray-800">
             <iframe
-              src={webStreamUrl}
+              src={`${import.meta.env.VITE_API_URL}/api/stream-proxy?url=${encodeURIComponent(webStreamUrl)}`}
               title="NetMirror Web Streamer"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-              sandbox="allow-forms allow-scripts allow-same-origin font-src allow-popups allow-presentation allow-modals"
               allowFullScreen
               className="w-full h-full border-0"
             />
