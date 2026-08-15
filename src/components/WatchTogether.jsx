@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PlaySquare, Link as LinkIcon, Search, Sparkles, Film, AlertCircle, Tv, Monitor, ExternalLink, Globe, Play, RefreshCw, Video, StopCircle, Maximize2, Volume2, VolumeX, Minimize2, Radio } from 'lucide-react';
+import { PlaySquare, Link as LinkIcon, Search, Sparkles, Film, AlertCircle, Tv, Monitor, ExternalLink, Globe, Play, RefreshCw, Video, StopCircle, Maximize2, Volume2, VolumeX, Minimize2, Radio, Mic, MicOff, PhoneOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Peer from 'peerjs';
+import AgoraRTC from 'agora-rtc-sdk-ng';
 
 const PRESET_VIDEOS = [
   { name: 'Lo-Fi Girl 🎧', id: 'jfKfPfyJRdk' },
@@ -42,9 +43,15 @@ function WatchTogether({ user, roomId, socket }) {
   const [isMuted, setIsMuted] = useState(true);
   const [isTheaterMode, setIsTheaterMode] = useState(false);
 
+  // Live Voice Chat State inside Watch Together
+  const [isVoiceConnected, setIsVoiceConnected] = useState(false);
+  const [isVoiceMicMuted, setIsVoiceMicMuted] = useState(false);
+
   const screenVideoRef = useRef(null);
   const mediaStreamRef = useRef(null);
   const peerRef = useRef(null);
+  const agoraVoiceClientRef = useRef(null);
+  const localAudioTrackRef = useRef(null);
 
   const iframeRef = useRef(null);
   const videoRef = useRef(null);
@@ -90,6 +97,17 @@ function WatchTogether({ user, roomId, socket }) {
       peer.destroy();
     };
   }, [userId]);
+
+  // Clean up Voice Chat on unmount
+  useEffect(() => {
+    return () => {
+      if (localAudioTrackRef.current) {
+        localAudioTrackRef.current.stop();
+        localAudioTrackRef.current.close();
+      }
+      agoraVoiceClientRef.current?.leave();
+    };
+  }, []);
 
   // Socket event listeners for stream signaling
   useEffect(() => {
@@ -140,6 +158,75 @@ function WatchTogether({ user, roomId, socket }) {
       screenVideoRef.current.muted = true;
     }
   }, [isSharingScreen, activeTab]);
+
+  // LIVE VOICE CHAT TOGGLE (AGORA RTC)
+  const toggleVoiceChatWatch = async () => {
+    if (isVoiceConnected) {
+      // Leave Voice Chat
+      try {
+        if (localAudioTrackRef.current) {
+          localAudioTrackRef.current.stop();
+          localAudioTrackRef.current.close();
+          localAudioTrackRef.current = null;
+        }
+        await agoraVoiceClientRef.current?.leave();
+        setIsVoiceConnected(false);
+        setIsVoiceMicMuted(false);
+        toast.success("Voice Chat Disconnected 🎙️");
+      } catch (err) {
+        console.error("Voice leave error:", err);
+      }
+    } else {
+      // Join Voice Chat
+      try {
+        const appId = import.meta.env.VITE_AGORA_APP_ID || "a5839042b3224b1a8d052b610c666579";
+        const uid = Math.floor(Math.random() * 100000);
+        const voiceChannel = `watch_voice_${roomId}`;
+
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/agora/token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ channelName: voiceChannel, uid })
+        });
+        const data = await res.json();
+
+        const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+        agoraVoiceClientRef.current = client;
+
+        client.on('user-published', async (remoteUser, mediaType) => {
+          await client.subscribe(remoteUser, mediaType);
+          if (mediaType === 'audio') {
+            remoteUser.audioTrack?.play();
+            toast.success("Partner Connected to Voice Chat! 🎙️✨");
+          }
+        });
+
+        client.on('user-left', () => {
+          toast("Partner disconnected voice chat.");
+        });
+
+        await client.join(appId, voiceChannel, data.token, uid);
+        const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+        localAudioTrackRef.current = audioTrack;
+        await client.publish([audioTrack]);
+
+        setIsVoiceConnected(true);
+        setIsVoiceMicMuted(false);
+        toast.success("Live Voice Chat Active! Talk while watching 🎙️🍿");
+      } catch (err) {
+        console.error("Voice chat error:", err);
+        toast.error("Could not start Voice Chat. Check mic permission!");
+      }
+    }
+  };
+
+  const toggleMicMuteWatch = () => {
+    if (localAudioTrackRef.current) {
+      localAudioTrackRef.current.setEnabled(isVoiceMicMuted);
+      setIsVoiceMicMuted(!isVoiceMicMuted);
+      toast.success(isVoiceMicMuted ? "Mic Unmuted 🎙️" : "Mic Muted 🔇");
+    }
+  };
 
   // Start Screen Share Virtual Cinema directly inside Watch Together
   const startScreenShareCinema = async () => {
@@ -319,6 +406,48 @@ function WatchTogether({ user, roomId, socket }) {
             }`}
           >
             🎬 OTT Guide
+          </button>
+        </div>
+      </div>
+
+      {/* LIVE VOICE CHAT FLOATING BAR */}
+      <div className="flex flex-wrap items-center justify-between bg-gradient-to-r from-rose-500 via-pink-500 to-purple-600 p-3.5 rounded-3xl text-white shadow-xl gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center font-black">
+            <Radio size={20} className={isVoiceConnected ? "animate-pulse text-green-300" : "text-white"} />
+          </div>
+          <div>
+            <h4 className="text-xs font-black uppercase tracking-wider">
+              {isVoiceConnected ? 'Live Voice Chat Connected 🎙️' : 'Movie Voice Chat'}
+            </h4>
+            <p className="text-[10px] text-rose-100 font-bold">
+              {isVoiceConnected ? 'Talk to partner in real-time while watching movies!' : 'Connect mic to talk with partner live during movie'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {isVoiceConnected && (
+            <button
+              onClick={toggleMicMuteWatch}
+              className={`p-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
+                isVoiceMicMuted ? 'bg-red-600 text-white shadow-md' : 'bg-white/20 hover:bg-white/30 text-white'
+              }`}
+              title={isVoiceMicMuted ? "Unmute Mic" : "Mute Mic"}
+            >
+              {isVoiceMicMuted ? <MicOff size={16} /> : <Mic size={16} />}
+              <span>{isVoiceMicMuted ? 'Muted' : 'Mic On'}</span>
+            </button>
+          )}
+
+          <button
+            onClick={toggleVoiceChatWatch}
+            className={`px-4 py-2 rounded-xl font-black text-xs transition-all shadow-lg flex items-center gap-1.5 ${
+              isVoiceConnected ? 'bg-gray-900 hover:bg-black text-white' : 'bg-white text-rose-600 hover:bg-rose-50'
+            }`}
+          >
+            {isVoiceConnected ? <PhoneOff size={14} /> : <Mic size={14} />}
+            <span>{isVoiceConnected ? 'Disconnect Voice' : 'Connect Live Voice 🎙️'}</span>
           </button>
         </div>
       </div>
