@@ -183,7 +183,11 @@ function Chat({ user }) {
 
       await agoraClientRef.current.join(appId, roomId, token, uid);
 
-      const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+      const audioTrack = await AgoraRTC.createMicrophoneAudioTrack({
+        AEC: true,
+        ANS: true,
+        AGC: true
+      });
       localTracksRef.current.audio = audioTrack;
 
       let videoTrack = null;
@@ -231,7 +235,11 @@ function Chat({ user }) {
 
       await agoraClientRef.current.join(appId, roomId, token, uid);
 
-      const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+      const audioTrack = await AgoraRTC.createMicrophoneAudioTrack({
+        AEC: true,
+        ANS: true,
+        AGC: true
+      });
       localTracksRef.current.audio = audioTrack;
 
       let videoTrack = null;

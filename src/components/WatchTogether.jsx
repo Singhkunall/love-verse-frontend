@@ -228,7 +228,11 @@ function WatchTogether({ user, roomId, socket }) {
         });
 
         await client.join(appId, voiceChannel, data.token, uid);
-        const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+        const audioTrack = await AgoraRTC.createMicrophoneAudioTrack({
+          AEC: true, // Acoustic Echo Cancellation (Stop audio echo reflection)
+          ANS: true, // Automatic Noise Suppression (Filter background noise)
+          AGC: true  // Automatic Gain Control (Balance voice levels)
+        });
         localAudioTrackRef.current = audioTrack;
         await client.publish([audioTrack]);
 
