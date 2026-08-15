@@ -229,6 +229,7 @@ function WatchTogether({ user, roomId, socket }) {
 
         await client.join(appId, voiceChannel, data.token, uid);
         const audioTrack = await AgoraRTC.createMicrophoneAudioTrack({
+          encoderConfig: "speech_low_quality", // Filters out high/low movie frequencies, isolating human voice!
           AEC: true, // Acoustic Echo Cancellation (Stop audio echo reflection)
           ANS: true, // Automatic Noise Suppression (Filter background noise)
           AGC: true  // Automatic Gain Control (Balance voice levels)
@@ -506,58 +507,78 @@ function WatchTogether({ user, roomId, socket }) {
       </div>
 
       {/* LIVE VOICE & CAMERA CHAT FLOATING BAR */}
-      <div className="flex flex-wrap items-center justify-between bg-gradient-to-r from-rose-500 via-pink-500 to-purple-600 p-3.5 rounded-3xl text-white shadow-xl gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center font-black">
-            <Radio size={20} className={isVoiceConnected ? "animate-pulse text-green-300" : "text-white"} />
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center justify-between bg-gradient-to-r from-rose-500 via-pink-500 to-purple-600 p-3.5 rounded-3xl text-white shadow-xl gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center font-black">
+              <Radio size={20} className={isVoiceConnected ? "animate-pulse text-green-300" : "text-white"} />
+            </div>
+            <div>
+              <h4 className="text-xs font-black uppercase tracking-wider">
+                {isVoiceConnected ? 'Live Voice & Video Chat Active 🎙️📹' : 'Movie Voice & Camera Chat'}
+              </h4>
+              <p className="text-[10px] text-rose-100 font-bold">
+                {isVoiceConnected ? 'Talk & see live facial reactions while watching movies!' : 'Connect mic & camera to talk & see each other live during movie'}
+              </p>
+            </div>
           </div>
-          <div>
-            <h4 className="text-xs font-black uppercase tracking-wider">
-              {isVoiceConnected ? 'Live Voice & Video Chat Active 🎙️📹' : 'Movie Voice & Camera Chat'}
-            </h4>
-            <p className="text-[10px] text-rose-100 font-bold">
-              {isVoiceConnected ? 'Talk & see live facial reactions while watching movies!' : 'Connect mic & camera to talk & see each other live during movie'}
-            </p>
+
+          <div className="flex items-center gap-2">
+            {isVoiceConnected && (
+              <>
+                <button
+                  onClick={toggleMuteCinema}
+                  className={`p-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
+                    isMuted ? 'bg-amber-500 text-white shadow-md' : 'bg-white/20 hover:bg-white/30 text-white'
+                  }`}
+                  title={isMuted ? "Unmute Movie Audio" : "Mute Movie Audio to Avoid Echo"}
+                >
+                  {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                  <span>{isMuted ? 'Movie Muted' : 'Movie Sound'}</span>
+                </button>
+
+                <button
+                  onClick={toggleMicMuteWatch}
+                  className={`p-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
+                    isVoiceMicMuted ? 'bg-red-600 text-white shadow-md' : 'bg-white/20 hover:bg-white/30 text-white'
+                  }`}
+                  title={isVoiceMicMuted ? "Unmute Mic" : "Mute Mic"}
+                >
+                  {isVoiceMicMuted ? <MicOff size={16} /> : <Mic size={16} />}
+                  <span>{isVoiceMicMuted ? 'Muted' : 'Mic On'}</span>
+                </button>
+
+                <button
+                  onClick={toggleCameraWatch}
+                  className={`p-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
+                    isCameraOn ? 'bg-green-500 text-white shadow-md' : 'bg-white/20 hover:bg-white/30 text-white'
+                  }`}
+                  title={isCameraOn ? "Turn Off Camera" : "Turn On Camera"}
+                >
+                  {isCameraOn ? <Video size={16} /> : <VideoOff size={16} />}
+                  <span>{isCameraOn ? 'Camera On' : 'Turn On Cam 📹'}</span>
+                </button>
+              </>
+            )}
+
+            <button
+              onClick={toggleVoiceChatWatch}
+              className={`px-4 py-2 rounded-xl font-black text-xs transition-all shadow-lg flex items-center gap-1.5 ${
+                isVoiceConnected ? 'bg-gray-900 hover:bg-black text-white' : 'bg-white text-rose-600 hover:bg-rose-50'
+              }`}
+            >
+              {isVoiceConnected ? <PhoneOff size={14} /> : <Mic size={14} />}
+              <span>{isVoiceConnected ? 'Disconnect' : 'Connect Voice & Video 🎙️📹'}</span>
+            </button>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {isVoiceConnected && (
-            <>
-              <button
-                onClick={toggleMicMuteWatch}
-                className={`p-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
-                  isVoiceMicMuted ? 'bg-red-600 text-white shadow-md' : 'bg-white/20 hover:bg-white/30 text-white'
-                }`}
-                title={isVoiceMicMuted ? "Unmute Mic" : "Mute Mic"}
-              >
-                {isVoiceMicMuted ? <MicOff size={16} /> : <Mic size={16} />}
-                <span>{isVoiceMicMuted ? 'Muted' : 'Mic On'}</span>
-              </button>
-
-              <button
-                onClick={toggleCameraWatch}
-                className={`p-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
-                  isCameraOn ? 'bg-green-500 text-white shadow-md' : 'bg-white/20 hover:bg-white/30 text-white'
-                }`}
-                title={isCameraOn ? "Turn Off Camera" : "Turn On Camera"}
-              >
-                {isCameraOn ? <Video size={16} /> : <VideoOff size={16} />}
-                <span>{isCameraOn ? 'Camera On' : 'Turn On Cam 📹'}</span>
-              </button>
-            </>
-          )}
-
-          <button
-            onClick={toggleVoiceChatWatch}
-            className={`px-4 py-2 rounded-xl font-black text-xs transition-all shadow-lg flex items-center gap-1.5 ${
-              isVoiceConnected ? 'bg-gray-900 hover:bg-black text-white' : 'bg-white text-rose-600 hover:bg-rose-50'
-            }`}
-          >
-            {isVoiceConnected ? <PhoneOff size={14} /> : <Mic size={14} />}
-            <span>{isVoiceConnected ? 'Disconnect' : 'Connect Voice & Video 🎙️📹'}</span>
-          </button>
-        </div>
+        {isVoiceConnected && (
+          <div className="px-4 py-2 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-between text-[11px] font-bold text-amber-700 animate-in fade-in">
+            <span>🎧 Pro Tip: Use Earphones / Headphones while watching movies with Voice Chat for 100% zero speaker echo!</span>
+            <span className="text-[10px] text-amber-600 font-normal italic">Echo Filter Active ✨</span>
+          </div>
+        )}
       </div>
 
       {/* URL Input Form */}
