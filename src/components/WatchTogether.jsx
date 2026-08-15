@@ -50,6 +50,7 @@ function WatchTogether({ user, roomId, socket }) {
   const [hasRemoteVideo, setHasRemoteVideo] = useState(false);
 
   const screenVideoRef = useRef(null);
+  const cinemaContainerRef = useRef(null);
   const mediaStreamRef = useRef(null);
   const peerRef = useRef(null);
   const agoraVoiceClientRef = useRef(null);
@@ -348,13 +349,14 @@ function WatchTogether({ user, roomId, socket }) {
 
   // Fullscreen helper
   const handleFullscreenCinema = () => {
-    if (screenVideoRef.current) {
-      if (screenVideoRef.current.requestFullscreen) {
-        screenVideoRef.current.requestFullscreen();
-      } else if (screenVideoRef.current.webkitRequestFullscreen) {
-        screenVideoRef.current.webkitRequestFullscreen();
-      } else if (screenVideoRef.current.msRequestFullscreen) {
-        screenVideoRef.current.msRequestFullscreen();
+    const target = cinemaContainerRef.current || screenVideoRef.current;
+    if (target) {
+      if (target.requestFullscreen) {
+        target.requestFullscreen();
+      } else if (target.webkitRequestFullscreen) {
+        target.webkitRequestFullscreen();
+      } else if (target.msRequestFullscreen) {
+        target.msRequestFullscreen();
       }
     }
   };
@@ -424,38 +426,15 @@ function WatchTogether({ user, roomId, socket }) {
       isTheaterMode ? 'max-w-none' : 'max-w-4xl'
     }`}>
       
-      {/* FLOATING PIP LIVE CAMERA OVERLAY */}
-      {isVoiceConnected && (isCameraOn || hasRemoteVideo) && (
-        <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2 animate-in fade-in zoom-in-95">
-          <style>{`
-            #watch-remote-video div, #watch-remote-video video, #watch-local-video div, #watch-local-video video {
-              width: 100% !important;
-              height: 100% !important;
-              object-fit: cover !important;
-              border-radius: 1.5rem !important;
-            }
-          `}</style>
-          
-          <div className="relative w-40 h-56 md:w-48 md:h-64 rounded-3xl overflow-hidden border-2 border-rose-500/80 shadow-2xl bg-slate-950">
-            {/* Remote Camera Feed */}
-            {hasRemoteVideo ? (
-              <div id="watch-remote-video" className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center text-slate-400">
-                <VideoOff size={28} className="mb-2 text-slate-500" />
-                <p className="text-[10px] font-bold">Partner's camera off</p>
-              </div>
-            )}
-
-            {/* Local Camera Feed (Mini Thumbnail) */}
-            {isCameraOn && (
-              <div className="absolute bottom-2 right-2 w-16 h-22 md:w-20 md:h-28 rounded-2xl overflow-hidden border-2 border-white shadow-lg bg-black z-20">
-                <div id="watch-local-video" className="w-full h-full object-cover" />
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Global CSS for PIP Camera Video Tags */}
+      <style>{`
+        #watch-remote-video div, #watch-remote-video video, #watch-local-video div, #watch-local-video video {
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: cover !important;
+          border-radius: 1.5rem !important;
+        }
+      `}</style>
 
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -631,6 +610,30 @@ function WatchTogether({ user, roomId, socket }) {
                 allowFullScreen
                 className="absolute top-0 left-0 w-full h-full border-0"
               />
+
+              {/* YOUTUBE PIP LIVE CAMERA OVERLAY */}
+              {isVoiceConnected && (isCameraOn || hasRemoteVideo) && (
+                <div className="absolute bottom-6 right-6 z-50 flex flex-col items-end gap-2 animate-in fade-in zoom-in-95 pointer-events-auto">
+                  <div className="relative w-36 h-52 md:w-44 md:h-60 rounded-3xl overflow-hidden border-2 border-rose-500/80 shadow-2xl bg-slate-950">
+                    {/* Remote Camera Feed */}
+                    {hasRemoteVideo ? (
+                      <div id="watch-remote-video" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center text-slate-400">
+                        <VideoOff size={24} className="mb-2 text-slate-500" />
+                        <p className="text-[10px] font-bold">Partner's camera off</p>
+                      </div>
+                    )}
+
+                    {/* Local Camera Feed (Mini Thumbnail) */}
+                    {isCameraOn && (
+                      <div className="absolute bottom-2 right-2 w-14 h-20 md:w-18 md:h-24 rounded-2xl overflow-hidden border-2 border-white shadow-lg bg-black z-20">
+                        <div id="watch-local-video" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -701,9 +704,12 @@ function WatchTogether({ user, roomId, socket }) {
           </div>
 
           {/* Screen Video Container */}
-          <div className={`relative rounded-3xl overflow-hidden shadow-2xl bg-slate-950 border border-gray-800 transition-all ${
-            isTheaterMode ? 'h-[75vh] md:h-[85vh]' : 'pt-[56.25%]'
-          }`}>
+          <div
+            ref={cinemaContainerRef}
+            className={`relative rounded-3xl overflow-hidden shadow-2xl bg-slate-950 border border-gray-800 transition-all ${
+              isTheaterMode ? 'h-[75vh] md:h-[85vh]' : 'pt-[56.25%]'
+            }`}
+          >
             <video
               ref={screenVideoRef}
               autoPlay
@@ -712,6 +718,30 @@ function WatchTogether({ user, roomId, socket }) {
               muted={isSharingScreen}
               className="absolute top-0 left-0 w-full h-full object-contain"
             />
+
+            {/* FULLSCREEN PIP LIVE CAMERA OVERLAY */}
+            {isVoiceConnected && (isCameraOn || hasRemoteVideo) && (
+              <div className="absolute bottom-6 right-6 z-50 flex flex-col items-end gap-2 animate-in fade-in zoom-in-95 pointer-events-auto">
+                <div className="relative w-36 h-52 md:w-44 md:h-60 rounded-3xl overflow-hidden border-2 border-rose-500/80 shadow-2xl bg-slate-950">
+                  {/* Remote Camera Feed */}
+                  {hasRemoteVideo ? (
+                    <div id="watch-remote-video" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center text-slate-400">
+                      <VideoOff size={24} className="mb-2 text-slate-500" />
+                      <p className="text-[10px] font-bold">Partner's camera off</p>
+                    </div>
+                  )}
+
+                  {/* Local Camera Feed (Mini Thumbnail) */}
+                  {isCameraOn && (
+                    <div className="absolute bottom-2 right-2 w-14 h-20 md:w-18 md:h-24 rounded-2xl overflow-hidden border-2 border-white shadow-lg bg-black z-20">
+                      <div id="watch-local-video" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {!isSharingScreen && !isReceivingStream && (
               <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-white space-y-3 bg-slate-900/90 backdrop-blur-sm">
