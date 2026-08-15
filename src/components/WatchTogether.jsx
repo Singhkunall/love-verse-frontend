@@ -83,13 +83,19 @@ function WatchTogether({ user, roomId, socket }) {
     initialPosRef.current = { ...pipPosition };
   };
 
+  const animFrameRef = useRef(null);
+
   const handleDragMove = (clientX, clientY) => {
     if (!isDraggingPip) return;
-    const deltaX = clientX - dragStartRef.current.x;
-    const deltaY = clientY - dragStartRef.current.y;
-    setPipPosition({
-      x: initialPosRef.current.x + deltaX,
-      y: initialPosRef.current.y + deltaY
+    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+
+    animFrameRef.current = requestAnimationFrame(() => {
+      const deltaX = clientX - dragStartRef.current.x;
+      const deltaY = clientY - dragStartRef.current.y;
+      setPipPosition({
+        x: initialPosRef.current.x + deltaX,
+        y: initialPosRef.current.y + deltaY
+      });
     });
   };
 
@@ -356,7 +362,7 @@ function WatchTogether({ user, roomId, socket }) {
         });
         const data = await res.json();
 
-        const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+        const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'h264' });
         agoraVoiceClientRef.current = client;
 
         client.on('user-published', async (remoteUser, mediaType) => {
@@ -448,8 +454,17 @@ function WatchTogether({ user, roomId, socket }) {
   const startScreenShareCinema = async () => {
     try {
       const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { cursor: "always" },
-        audio: true
+        video: {
+          cursor: "always",
+          frameRate: { max: 30, ideal: 24 },
+          width: { max: 1920 },
+          height: { max: 1080 }
+        },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
       });
 
       mediaStreamRef.current = stream;

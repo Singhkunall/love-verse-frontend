@@ -54,7 +54,7 @@ function Chat({ user }) {
     if (!userId) return;
     socket.emit("setup", userId);
 
-    const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+    const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'h264' });
     agoraClientRef.current = client;
 
     client.on('user-published', async (remoteUser, mediaType) => {
