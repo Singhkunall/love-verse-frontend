@@ -9,17 +9,6 @@ import Routine from './Routine';
 
 const socket = io.connect(import.meta.env.VITE_API_URL);
 
-const SNAP_FILTERS = [
-  { id: 'normal', name: 'Original HD', icon: '✨', css: 'none' },
-  { id: 'beauty', name: 'Ultra Beauty Glow', icon: '🌸', css: 'brightness(1.14) contrast(1.05) saturate(1.18) sepia(0.06)' },
-  { id: 'rose', name: 'Romantic Blush', icon: '💖', css: 'brightness(1.08) contrast(1.1) saturate(1.35) sepia(0.2) hue-rotate(-20deg)' },
-  { id: 'golden', name: 'Golden Sunset', icon: '🌅', css: 'contrast(1.12) brightness(1.12) saturate(1.4) sepia(0.35) hue-rotate(-10deg)' },
-  { id: 'neon', name: 'Cyber Neon', icon: '🔮', css: 'contrast(1.2) brightness(1.1) saturate(1.5) hue-rotate(180deg)' },
-  { id: 'vintage', name: 'Hollywood Film', icon: '🎞️', css: 'contrast(1.25) brightness(1.05) saturate(0.85) sepia(0.25)' },
-  { id: 'noir', name: 'Luxury Noir', icon: '🖤', css: 'grayscale(1) contrast(1.3) brightness(1.1)' },
-  { id: 'fresh', name: 'Natural Radiance', icon: '🌿', css: 'contrast(1.15) brightness(1.08) saturate(1.45) hue-rotate(10deg)' }
-];
-
 function Chat({ user }) {
   const [currentMessage, setCurrentMessage] = useState("");
   const [messageList, setMessageList] = useState([]);
@@ -38,9 +27,6 @@ function Chat({ user }) {
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [isVideoMuted, setIsVideoMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
-  const [myFilter, setMyFilter] = useState('beauty');
-  const [partnerFilter, setPartnerFilter] = useState('beauty');
-  const [showFilterBar, setShowFilterBar] = useState(false);
 
   const [showRoutine, setShowRoutine] = useState(false);
 
@@ -128,29 +114,6 @@ function Chat({ user }) {
     socket.on("receive_voice_note", handleVoiceNote);
     return () => socket.off("receive_voice_note", handleVoiceNote);
   }, []);
-
-  // Partner filter change listener
-  useEffect(() => {
-    const handlePartnerFilter = (data) => {
-      setPartnerFilter(data.filterId);
-      const filterName = SNAP_FILTERS.find(f => f.id === data.filterId)?.name || 'Filter';
-      toast(`Partner applied ${filterName} to their camera! ✨`, { icon: '🌸' });
-    };
-
-    socket.on("partner_filter_changed", handlePartnerFilter);
-    return () => socket.off("partner_filter_changed", handlePartnerFilter);
-  }, []);
-
-  const handleSelectFilter = (filterId) => {
-    setMyFilter(filterId);
-    socket.emit("change_filter", {
-      roomId,
-      filterId,
-      senderId: userId
-    });
-    const filterName = SNAP_FILTERS.find(f => f.id === filterId)?.name || 'Filter';
-    toast.success(`Applied ${filterName}! Both you & partner see it live ✨`);
-  };
 
   const cleanupCall = async () => {
     try {
@@ -507,19 +470,15 @@ function Chat({ user }) {
       {calling && (
         <div className="fixed inset-0 z-50 flex flex-col bg-slate-950 text-white animate-in fade-in overflow-hidden">
           
-          {/* CSS override for 2-Way Synchronized Studio Filters */}
+          {/* CSS override to force Agora video tags to object-fit: cover */}
           <style>{`
             #remote-video div, #remote-video video {
-              filter: ${SNAP_FILTERS.find(f => f.id === partnerFilter)?.css || 'none'} !important;
-              transition: filter 0.3s ease-in-out !important;
               width: 100% !important;
               height: 100% !important;
               object-fit: cover !important;
               border-radius: 0px !important;
             }
             #local-video div, #local-video video {
-              filter: ${SNAP_FILTERS.find(f => f.id === myFilter)?.css || 'none'} !important;
-              transition: filter 0.3s ease-in-out !important;
               width: 100% !important;
               height: 100% !important;
               object-fit: cover !important;
@@ -569,26 +528,6 @@ function Chat({ user }) {
               </div>
             )}
 
-            {/* SNAPCHAT LIVE FILTER CAROUSEL BAR */}
-            {callType === 'video' && showFilterBar && (
-              <div className="absolute bottom-24 left-1/2 -translate-x-1/2 p-2 bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-full flex items-center gap-2 shadow-2xl z-40 max-w-[90vw] overflow-x-auto animate-in slide-in-from-bottom-4">
-                {SNAP_FILTERS.map((filter) => (
-                  <button
-                    key={filter.id}
-                    onClick={() => handleSelectFilter(filter.id)}
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-black transition-all flex items-center gap-1.5 shrink-0 ${
-                      myFilter === filter.id
-                        ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-lg scale-105'
-                        : 'bg-white/10 hover:bg-white/20 text-slate-200'
-                    }`}
-                  >
-                    <span>{filter.icon}</span>
-                    <span>{filter.name}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-
             {/* Floating Glassmorphic Bottom Control Bar */}
             <div className="absolute bottom-8 left-1/2 -translate-x-1/2 px-8 py-3.5 bg-slate-900/80 backdrop-blur-2xl border border-white/10 rounded-full flex items-center gap-6 shadow-2xl z-30">
               <button
@@ -602,27 +541,15 @@ function Chat({ user }) {
               </button>
 
               {callType === 'video' && (
-                <>
-                  <button
-                    onClick={toggleVideo}
-                    className={`p-4 rounded-full transition-all hover:scale-110 ${
-                      isVideoMuted ? 'bg-red-500 text-white shadow-lg shadow-red-500/30' : 'bg-white/10 text-white hover:bg-white/20'
-                    }`}
-                    title={isVideoMuted ? "Turn On Camera" : "Turn Off Camera"}
-                  >
-                    {isVideoMuted ? <VideoOff size={20} /> : <Video size={20} />}
-                  </button>
-
-                  <button
-                    onClick={() => setShowFilterBar(!showFilterBar)}
-                    className={`p-4 rounded-full transition-all hover:scale-110 ${
-                      showFilterBar ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30 scale-105' : 'bg-white/10 text-white hover:bg-white/20'
-                    }`}
-                    title="Snapchat Live Camera Filters"
-                  >
-                    <Sparkles size={20} />
-                  </button>
-                </>
+                <button
+                  onClick={toggleVideo}
+                  className={`p-4 rounded-full transition-all hover:scale-110 ${
+                    isVideoMuted ? 'bg-red-500 text-white shadow-lg shadow-red-500/30' : 'bg-white/10 text-white hover:bg-white/20'
+                  }`}
+                  title={isVideoMuted ? "Turn On Camera" : "Turn Off Camera"}
+                >
+                  {isVideoMuted ? <VideoOff size={20} /> : <Video size={20} />}
+                </button>
               )}
 
               <button
