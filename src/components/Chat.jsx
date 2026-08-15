@@ -43,6 +43,12 @@ function Chat({ user }) {
   const partnerId = user.partnerId?._id || user.partnerId;
   const roomId = [userId, partnerId].sort().join("_");
 
+  const partnerName = (typeof user?.partnerId === 'object' && user.partnerId?.name) 
+    || user?.partnerName 
+    || (user?.partnerEmail ? user.partnerEmail.split('@')[0] : "Partner");
+
+  const partnerAvatar = (typeof user?.partnerId === 'object' && user.partnerId?.avatar) || user?.partnerAvatar;
+
   // Agora client initialization
   useEffect(() => {
     if (!userId) return;
@@ -421,7 +427,7 @@ function Chat({ user }) {
 
             <div>
               <h4 className="text-2xl font-black text-gray-800">Incoming {callType === 'video' ? 'Video' : 'Audio'} Call</h4>
-              <p className="text-xs font-bold text-rose-500 uppercase tracking-widest mt-1">Partner is calling...</p>
+              <p className="text-xs font-bold text-rose-500 uppercase tracking-widest mt-1">{partnerName} is calling...</p>
             </div>
 
             <div className="flex justify-center gap-4 pt-2">
@@ -530,13 +536,17 @@ function Chat({ user }) {
       <div className="p-6 bg-white/40 border-b border-rose-100 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="relative">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-rose-400 to-pink-500 text-white flex items-center justify-center font-black shadow-md">
-              {user.partnerName ? user.partnerName[0].toUpperCase() : 'P'}
+            <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-rose-400 to-pink-500 text-white flex items-center justify-center font-black shadow-md overflow-hidden">
+              {partnerAvatar ? (
+                <img src={partnerAvatar} alt={partnerName} className="w-full h-full object-cover" />
+              ) : (
+                partnerName ? partnerName[0].toUpperCase() : 'P'
+              )}
             </div>
             <div className="w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full absolute bottom-0 right-0" />
           </div>
           <div>
-            <h3 className="font-black text-gray-800 text-lg leading-tight">{user.partnerName || "Partner"}</h3>
+            <h3 className="font-black text-gray-800 text-lg leading-tight">{partnerName}</h3>
             <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">
               {isTyping ? "Typing..." : "Online in sanctuary"}
             </p>
