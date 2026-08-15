@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PlaySquare, Link as LinkIcon, Search, Sparkles, Film, AlertCircle, Tv, Monitor, ExternalLink, HelpCircle, Copy, Check } from 'lucide-react';
+import { PlaySquare, Link as LinkIcon, Search, Sparkles, Film, AlertCircle, Tv, Monitor, ExternalLink, Globe, Play, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const PRESET_VIDEOS = [
@@ -8,6 +8,8 @@ const PRESET_VIDEOS = [
   { name: 'Nature Relax 🌿', id: 'eKFTSSKCzWA' },
   { name: 'Movie Trailer 🍿', id: 'aWzlQ2N6qqg' }
 ];
+
+const NETMIRROR_DEFAULT_URL = 'https://net77.cc/home';
 
 // Helper to extract clean 11-character YouTube Video ID
 const getYouTubeVideoId = (rawUrl) => {
@@ -26,8 +28,9 @@ const getYouTubeVideoId = (rawUrl) => {
 };
 
 function WatchTogether({ user, roomId, socket }) {
-  const [activeTab, setActiveTab] = useState('youtube'); // 'youtube' | 'direct' | 'ott_guide'
+  const [activeTab, setActiveTab] = useState('youtube'); // 'youtube' | 'web_streamer' | 'direct' | 'ott_guide'
   const [videoId, setVideoId] = useState('jfKfPfyJRdk');
+  const [webStreamUrl, setWebStreamUrl] = useState(NETMIRROR_DEFAULT_URL);
   const [directMovieUrl, setDirectMovieUrl] = useState('');
   const [inputUrl, setInputUrl] = useState('');
   const [syncedStatus, setSyncedStatus] = useState('Synced Live ✨');
@@ -43,7 +46,10 @@ function WatchTogether({ user, roomId, socket }) {
 
     // 1. Video URL Change
     const handleVideoChanged = (data) => {
-      if (data.type === 'direct') {
+      if (data.type === 'web_streamer') {
+        setActiveTab('web_streamer');
+        setWebStreamUrl(data.url);
+      } else if (data.type === 'direct') {
         setActiveTab('direct');
         setDirectMovieUrl(data.url);
       } else {
@@ -51,7 +57,7 @@ function WatchTogether({ user, roomId, socket }) {
         const id = getYouTubeVideoId(data.url);
         setVideoId(id);
       }
-      toast(`${data.userName || 'Partner'} loaded a new video/movie! 🍿`, { icon: '🎬' });
+      toast(`${data.userName || 'Partner'} loaded a new stream/movie! 🍿`, { icon: '🎬' });
     };
 
     socket.on("video_changed", handleVideoChanged);
@@ -80,6 +86,17 @@ function WatchTogether({ user, roomId, socket }) {
           userName: user?.name || 'Partner'
         });
       }
+    } else if (trimmed.includes('net77') || trimmed.startsWith('http')) {
+      setActiveTab('web_streamer');
+      setWebStreamUrl(trimmed);
+      if (socket) {
+        socket.emit("change_video", {
+          roomId,
+          type: 'web_streamer',
+          url: trimmed,
+          userName: user?.name || 'Partner'
+        });
+      }
     } else {
       setActiveTab('direct');
       setDirectMovieUrl(trimmed);
@@ -94,7 +111,7 @@ function WatchTogether({ user, roomId, socket }) {
     }
 
     setInputUrl('');
-    toast.success("Loaded & Synced! 🎬");
+    toast.success("Loaded & Synced with Partner! 🎬");
   };
 
   const handleSelectPreset = (preset) => {
@@ -111,6 +128,20 @@ function WatchTogether({ user, roomId, socket }) {
     toast.success(`Loaded ${preset.name}! 🍿`);
   };
 
+  const handleOpenNetMirror = () => {
+    setActiveTab('web_streamer');
+    setWebStreamUrl(NETMIRROR_DEFAULT_URL);
+    if (socket) {
+      socket.emit("change_video", {
+        roomId,
+        type: 'web_streamer',
+        url: NETMIRROR_DEFAULT_URL,
+        userName: user?.name || 'Partner'
+      });
+    }
+    toast.success("Loaded NetMirror Streamer (net77.cc)! 🍿");
+  };
+
   const glassStyle = "bg-white/80 backdrop-blur-2xl border border-white/60 shadow-xl rounded-[2.5rem]";
 
   return (
@@ -124,23 +155,31 @@ function WatchTogether({ user, roomId, socket }) {
           </div>
           <div>
             <h3 className="text-3xl font-black text-gray-800">Watch Together 🍿</h3>
-            <p className="text-xs text-gray-500 font-bold">YouTube, Direct Movie Links & OTT Watch Guide</p>
+            <p className="text-xs text-gray-500 font-bold">YouTube, NetMirror, Direct Movies & OTT Guide</p>
           </div>
         </div>
 
         {/* Tab Selector */}
-        <div className="flex bg-white/70 backdrop-blur-xl p-1 rounded-full border border-gray-200 shadow-sm">
+        <div className="flex bg-white/70 backdrop-blur-xl p-1 rounded-full border border-gray-200 shadow-sm overflow-x-auto">
           <button
             onClick={() => setActiveTab('youtube')}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${
               activeTab === 'youtube' ? 'bg-rose-500 text-white shadow-md' : 'text-gray-600'
             }`}
           >
             🍿 YouTube
           </button>
           <button
+            onClick={handleOpenNetMirror}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${
+              activeTab === 'web_streamer' ? 'bg-rose-500 text-white shadow-md' : 'text-gray-600'
+            }`}
+          >
+            🌐 NetMirror
+          </button>
+          <button
             onClick={() => setActiveTab('direct')}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${
               activeTab === 'direct' ? 'bg-rose-500 text-white shadow-md' : 'text-gray-600'
             }`}
           >
@@ -148,7 +187,7 @@ function WatchTogether({ user, roomId, socket }) {
           </button>
           <button
             onClick={() => setActiveTab('ott_guide')}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${
               activeTab === 'ott_guide' ? 'bg-rose-500 text-white shadow-md' : 'text-gray-600'
             }`}
           >
@@ -164,7 +203,7 @@ function WatchTogether({ user, roomId, socket }) {
             <LinkIcon size={20} className="text-rose-400 shrink-0" />
             <input 
               type="text" 
-              placeholder="Paste YouTube, MP4, or Direct Movie Link..." 
+              placeholder="Paste NetMirror (net77.cc), YouTube, or Movie Link..." 
               value={inputUrl}
               onChange={(e) => setInputUrl(e.target.value)}
               className="flex-1 bg-transparent border-none outline-none text-xs md:text-sm text-gray-800 font-bold"
@@ -212,7 +251,39 @@ function WatchTogether({ user, roomId, socket }) {
         </div>
       )}
 
-      {/* TAB 2: DIRECT MOVIE PLAYER (MP4 / HLS) */}
+      {/* TAB 2: NETMIRROR & WEB STREAMER */}
+      {activeTab === 'web_streamer' && (
+        <div className={`${glassStyle} p-4 md:p-6 space-y-4`}>
+          <div className="flex justify-between items-center px-2">
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-green-500 animate-ping inline-block" />
+              <span className="text-xs font-black text-gray-800">NetMirror Live Portal ({webStreamUrl})</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <a
+                href={webStreamUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-xs font-black transition-all flex items-center gap-1"
+              >
+                Open in New Tab <ExternalLink size={12} />
+              </a>
+            </div>
+          </div>
+
+          <div className="relative h-[580px] rounded-3xl overflow-hidden shadow-2xl bg-slate-900 border border-gray-800">
+            <iframe
+              src={webStreamUrl}
+              title="NetMirror Web Streamer"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              className="w-full h-full border-0"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: DIRECT MOVIE PLAYER (MP4 / HLS) */}
       {activeTab === 'direct' && (
         <div className={`${glassStyle} p-4 md:p-6 space-y-4`}>
           <div className="relative pt-[56.25%] rounded-3xl overflow-hidden shadow-2xl bg-black border border-gray-900">
@@ -237,7 +308,7 @@ function WatchTogether({ user, roomId, socket }) {
         </div>
       )}
 
-      {/* TAB 3: NETFLIX & AMAZON PRIME GUIDE */}
+      {/* TAB 4: NETFLIX & AMAZON PRIME GUIDE */}
       {activeTab === 'ott_guide' && (
         <div className={`${glassStyle} p-8 space-y-6 animate-in zoom-in-95`}>
           <div className="flex items-center gap-3">
