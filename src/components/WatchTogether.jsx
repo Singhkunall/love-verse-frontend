@@ -158,7 +158,12 @@ function WatchTogether({ user, roomId, socket }) {
           if (screenVideoRef.current) {
             screenVideoRef.current.srcObject = remoteStream;
             screenVideoRef.current.muted = false;
-            screenVideoRef.current.play().catch(e => console.error("Auto-play error:", e));
+            screenVideoRef.current.play().then(() => {
+              if (screenVideoRef.current.buffered && screenVideoRef.current.buffered.length > 0) {
+                const liveEnd = screenVideoRef.current.buffered.end(screenVideoRef.current.buffered.length - 1);
+                screenVideoRef.current.currentTime = liveEnd - 0.05;
+              }
+            }).catch(e => console.error("Auto-play error:", e));
           }
         }, 200);
 
@@ -170,6 +175,24 @@ function WatchTogether({ user, roomId, socket }) {
       peer.destroy();
     };
   }, [userId]);
+
+  // Low Latency Live Edge Buffer Sync (Eliminates stream delay & lag accumulation)
+  useEffect(() => {
+    if (!isReceivingStream) return;
+
+    const syncInterval = setInterval(() => {
+      const vid = screenVideoRef.current;
+      if (vid && vid.buffered && vid.buffered.length > 0) {
+        const liveEnd = vid.buffered.end(vid.buffered.length - 1);
+        const delay = liveEnd - vid.currentTime;
+        if (delay > 0.4) {
+          vid.currentTime = liveEnd - 0.05;
+        }
+      }
+    }, 1500);
+
+    return () => clearInterval(syncInterval);
+  }, [isReceivingStream]);
 
   // Clean up Voice & Camera on unmount
   useEffect(() => {
