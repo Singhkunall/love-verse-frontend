@@ -10,13 +10,14 @@ import Routine from './Routine';
 const socket = io.connect(import.meta.env.VITE_API_URL);
 
 const SNAP_FILTERS = [
-  { id: 'normal', name: 'Original', icon: '✨', css: 'none' },
-  { id: 'beauty', name: 'Soft Glow', icon: '🌸', css: 'brightness(1.15) contrast(1.05) saturate(1.1)' },
-  { id: 'rose', name: 'Romantic Rose', icon: '💖', css: 'sepia(0.25) hue-rotate(-15deg) brightness(1.1) saturate(1.3)' },
-  { id: 'golden', name: 'Golden Hour', icon: '🌅', css: 'sepia(0.3) saturate(1.4) brightness(1.1) contrast(1.1)' },
-  { id: 'neon', name: 'Cyber Neon', icon: '🔮', css: 'hue-rotate(240deg) saturate(1.6) contrast(1.2)' },
-  { id: 'vintage', name: 'B&W Vintage', icon: '🖤', css: 'grayscale(1) contrast(1.2) brightness(1.05)' },
-  { id: 'fresh', name: 'Natural Fresh', icon: '🌿', css: 'saturate(1.4) contrast(1.15) brightness(1.05)' }
+  { id: 'normal', name: 'Original HD', icon: '✨', css: 'none' },
+  { id: 'beauty', name: 'Ultra Beauty Glow', icon: '🌸', css: 'brightness(1.14) contrast(1.05) saturate(1.18) sepia(0.06)' },
+  { id: 'rose', name: 'Romantic Blush', icon: '💖', css: 'brightness(1.08) contrast(1.1) saturate(1.35) sepia(0.2) hue-rotate(-20deg)' },
+  { id: 'golden', name: 'Golden Sunset', icon: '🌅', css: 'contrast(1.12) brightness(1.12) saturate(1.4) sepia(0.35) hue-rotate(-10deg)' },
+  { id: 'neon', name: 'Cyber Neon', icon: '🔮', css: 'contrast(1.2) brightness(1.1) saturate(1.5) hue-rotate(180deg)' },
+  { id: 'vintage', name: 'Hollywood Film', icon: '🎞️', css: 'contrast(1.25) brightness(1.05) saturate(0.85) sepia(0.25)' },
+  { id: 'noir', name: 'Luxury Noir', icon: '🖤', css: 'grayscale(1) contrast(1.3) brightness(1.1)' },
+  { id: 'fresh', name: 'Natural Radiance', icon: '🌿', css: 'contrast(1.15) brightness(1.08) saturate(1.45) hue-rotate(10deg)' }
 ];
 
 function Chat({ user }) {
@@ -37,7 +38,8 @@ function Chat({ user }) {
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [isVideoMuted, setIsVideoMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
-  const [selectedFilter, setSelectedFilter] = useState('beauty'); // Default to Soft Glow Beauty Filter!
+  const [myFilter, setMyFilter] = useState('beauty');
+  const [partnerFilter, setPartnerFilter] = useState('beauty');
   const [showFilterBar, setShowFilterBar] = useState(false);
 
   const [showRoutine, setShowRoutine] = useState(false);
@@ -126,6 +128,29 @@ function Chat({ user }) {
     socket.on("receive_voice_note", handleVoiceNote);
     return () => socket.off("receive_voice_note", handleVoiceNote);
   }, []);
+
+  // Partner filter change listener
+  useEffect(() => {
+    const handlePartnerFilter = (data) => {
+      setPartnerFilter(data.filterId);
+      const filterName = SNAP_FILTERS.find(f => f.id === data.filterId)?.name || 'Filter';
+      toast(`Partner applied ${filterName} to their camera! ✨`, { icon: '🌸' });
+    };
+
+    socket.on("partner_filter_changed", handlePartnerFilter);
+    return () => socket.off("partner_filter_changed", handlePartnerFilter);
+  }, []);
+
+  const handleSelectFilter = (filterId) => {
+    setMyFilter(filterId);
+    socket.emit("change_filter", {
+      roomId,
+      filterId,
+      senderId: userId
+    });
+    const filterName = SNAP_FILTERS.find(f => f.id === filterId)?.name || 'Filter';
+    toast.success(`Applied ${filterName}! Both you & partner see it live ✨`);
+  };
 
   const cleanupCall = async () => {
     try {
@@ -482,19 +507,19 @@ function Chat({ user }) {
       {calling && (
         <div className="fixed inset-0 z-50 flex flex-col bg-slate-950 text-white animate-in fade-in overflow-hidden">
           
-          {/* CSS override to force Agora video tags to object-fit: cover and apply Snapchat Live Filter */}
+          {/* CSS override for 2-Way Synchronized Studio Filters */}
           <style>{`
-            #remote-video div, #remote-video video, #local-video div, #local-video video {
-              filter: ${SNAP_FILTERS.find(f => f.id === selectedFilter)?.css || 'none'} !important;
-              transition: filter 0.3s ease-in-out !important;
-            }
             #remote-video div, #remote-video video {
+              filter: ${SNAP_FILTERS.find(f => f.id === partnerFilter)?.css || 'none'} !important;
+              transition: filter 0.3s ease-in-out !important;
               width: 100% !important;
               height: 100% !important;
               object-fit: cover !important;
               border-radius: 0px !important;
             }
             #local-video div, #local-video video {
+              filter: ${SNAP_FILTERS.find(f => f.id === myFilter)?.css || 'none'} !important;
+              transition: filter 0.3s ease-in-out !important;
               width: 100% !important;
               height: 100% !important;
               object-fit: cover !important;
@@ -550,9 +575,9 @@ function Chat({ user }) {
                 {SNAP_FILTERS.map((filter) => (
                   <button
                     key={filter.id}
-                    onClick={() => setSelectedFilter(filter.id)}
+                    onClick={() => handleSelectFilter(filter.id)}
                     className={`px-3.5 py-1.5 rounded-full text-xs font-black transition-all flex items-center gap-1.5 shrink-0 ${
-                      selectedFilter === filter.id
+                      myFilter === filter.id
                         ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-lg scale-105'
                         : 'bg-white/10 hover:bg-white/20 text-slate-200'
                     }`}
