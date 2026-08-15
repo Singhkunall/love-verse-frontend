@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactPlayer from 'react-player';
-import { PlaySquare, Link as LinkIcon, Search, Film, Music, Tv, Sparkles, AlertCircle } from 'lucide-react';
+import { PlaySquare, Link as LinkIcon, Search, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const PRESET_VIDEOS = [
@@ -18,6 +18,29 @@ function WatchTogether({ user, roomId, socket }) {
 
   const playerRef = useRef(null);
   const isRemoteActionRef = useRef(false);
+
+  // Safe helper to get current time without crashing
+  const getSafeTime = () => {
+    try {
+      if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
+        return playerRef.current.getCurrentTime() || 0;
+      }
+    } catch (err) {
+      console.warn("getCurrentTime safe guard caught:", err);
+    }
+    return 0;
+  };
+
+  // Safe helper to seek without crashing
+  const safeSeekTo = (time) => {
+    try {
+      if (playerRef.current && typeof playerRef.current.seekTo === 'function') {
+        playerRef.current.seekTo(time, 'seconds');
+      }
+    } catch (err) {
+      console.warn("seekTo safe guard caught:", err);
+    }
+  };
 
   useEffect(() => {
     if (!socket) return;
@@ -38,10 +61,10 @@ function WatchTogether({ user, roomId, socket }) {
     const handleVideoPlayed = (data) => {
       isRemoteActionRef.current = true;
       setPlaying(true);
-      if (playerRef.current && data?.time !== undefined) {
-        const currentTime = playerRef.current.getCurrentTime();
+      if (data?.time !== undefined) {
+        const currentTime = getSafeTime();
         if (Math.abs(currentTime - data.time) > 1.5) {
-          playerRef.current.seekTo(data.time, 'seconds');
+          safeSeekTo(data.time);
         }
       }
       setSyncedStatus('Playing Together 🎶');
@@ -59,8 +82,8 @@ function WatchTogether({ user, roomId, socket }) {
     // 4. Video Seek
     const handleVideoSeeked = (data) => {
       isRemoteActionRef.current = true;
-      if (playerRef.current && data?.time !== undefined) {
-        playerRef.current.seekTo(data.time, 'seconds');
+      if (data?.time !== undefined) {
+        safeSeekTo(data.time);
       }
       setTimeout(() => { isRemoteActionRef.current = false; }, 800);
     };
@@ -109,11 +132,11 @@ function WatchTogether({ user, roomId, socket }) {
     toast.success(`Loaded ${preset.name}! 🍿`);
   };
 
-  // ReactPlayer Callbacks with Infinite Loop Protection
+  // ReactPlayer Callbacks with Infinite Loop Protection & Safe Guards
   const handlePlay = () => {
     if (isRemoteActionRef.current) return;
     setPlaying(true);
-    const currentTime = playerRef.current ? playerRef.current.getCurrentTime() : 0;
+    const currentTime = getSafeTime();
     if (socket) {
       socket.emit("play_video", { roomId, time: currentTime });
     }
