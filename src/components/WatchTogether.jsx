@@ -373,16 +373,17 @@ function WatchTogether({ user, roomId, socket }) {
             />
             {!isSharingScreen && (
               <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-white space-y-3 bg-slate-900/90 backdrop-blur-sm">
-                <Monitor size={48} className="text-rose-500" />
+                <Monitor size={48} className="text-rose-500 animate-pulse" />
                 <h4 className="text-xl font-black">Watch NetMirror Together Inside Love-Verse 🍿</h4>
-                <p className="text-xs text-gray-300 max-w-md italic">
-                  Click "Start NetMirror Screen Stream" above, select your NetMirror (net77.cc) tab, and both partners can watch the movie live right inside Love-Verse!
+                <p className="text-xs text-gray-300 max-w-md italic leading-relaxed">
+                  <strong>If you are playing the movie:</strong> Click below to share your NetMirror tab.<br />
+                  <strong>If your partner is streaming:</strong> Just sit back & enjoy! The movie will stream right here automatically.
                 </p>
                 <button
                   onClick={startScreenShareCinema}
                   className="px-8 py-3.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-2xl font-black text-xs shadow-xl hover:scale-105 transition-all flex items-center gap-2 mt-2"
                 >
-                  <Video size={18} /> Start Cinema Stream Now 📽️
+                  <Video size={18} /> I Want to Stream NetMirror 📽️
                 </button>
               </div>
             )}
