@@ -1,69 +1,38 @@
 import React, { useState, useEffect, useRef } from 'react';
-import ReactPlayer from 'react-player';
-import { PlaySquare, Link as LinkIcon, Search, Sparkles, AlertCircle } from 'lucide-react';
+import { PlaySquare, Link as LinkIcon, Search, Sparkles, Film, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const PRESET_VIDEOS = [
-  { name: 'Lo-Fi Girl 🎧', url: 'https://www.youtube.com/watch?v=jfKfPfyJRdk' },
-  { name: 'Romantic Piano 🎹', url: 'https://www.youtube.com/watch?v=77ZozI0rw7w' },
-  { name: 'Nature Relax 🌿', url: 'https://www.youtube.com/watch?v=eKFTSSKCzWA' },
-  { name: 'Movie Trailer 🍿', url: 'https://www.youtube.com/watch?v=aWzlQ2N6qqg' }
+  { name: 'Lo-Fi Girl 🎧', id: 'jfKfPfyJRdk' },
+  { name: 'Romantic Piano 🎹', id: '77ZozI0rw7w' },
+  { name: 'Nature Relax 🌿', id: 'eKFTSSKCzWA' },
+  { name: 'Movie Trailer 🍿', id: 'aWzlQ2N6qqg' }
 ];
 
-// Helper to normalize any YouTube link (Shorts, Shortened, Mobile) into standard YouTube Watch URL
-const normalizeYouTubeUrl = (rawUrl) => {
-  if (!rawUrl) return '';
-  let cleaned = rawUrl.trim();
-  
-  // Handle YouTube Shorts: youtube.com/shorts/VIDEO_ID
-  if (cleaned.includes('/shorts/')) {
-    const parts = cleaned.split('/shorts/');
-    const videoId = parts[1].split('?')[0].split('&')[0];
-    return `https://www.youtube.com/watch?v=${videoId}`;
-  }
-  
-  // Handle Shortened Links: youtu.be/VIDEO_ID
-  if (cleaned.includes('youtu.be/')) {
-    const parts = cleaned.split('youtu.be/');
-    const videoId = parts[1].split('?')[0].split('&')[0];
-    return `https://www.youtube.com/watch?v=${videoId}`;
+// Helper to extract clean 11-character YouTube Video ID from any link format (Shorts, Shortened, Standard)
+const getYouTubeVideoId = (rawUrl) => {
+  if (!rawUrl) return 'jfKfPfyJRdk';
+  const cleaned = rawUrl.trim();
+
+  // Match 11-char YouTube Video ID
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|shorts\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = cleaned.match(regExp);
+
+  if (match && match[2] && match[2].length === 11) {
+    return match[2];
   }
 
-  return cleaned;
+  // Fallback if plain ID was passed
+  if (cleaned.length === 11) return cleaned;
+
+  return 'jfKfPfyJRdk';
 };
 
 function WatchTogether({ user, roomId, socket }) {
-  const [url, setUrl] = useState('https://www.youtube.com/watch?v=jfKfPfyJRdk');
+  const [videoId, setVideoId] = useState('jfKfPfyJRdk');
   const [inputUrl, setInputUrl] = useState('');
-  const [playing, setPlaying] = useState(true);
   const [syncedStatus, setSyncedStatus] = useState('Synced Live ✨');
-  const [hasError, setHasError] = useState(false);
-
-  const playerRef = useRef(null);
-  const isRemoteActionRef = useRef(false);
-
-  // Safe helper to get current time without crashing
-  const getSafeTime = () => {
-    try {
-      if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
-        return playerRef.current.getCurrentTime() || 0;
-      }
-    } catch (err) {
-      console.warn("getCurrentTime safe guard caught:", err);
-    }
-    return 0;
-  };
-
-  // Safe helper to seek without crashing
-  const safeSeekTo = (time) => {
-    try {
-      if (playerRef.current && typeof playerRef.current.seekTo === 'function') {
-        playerRef.current.seekTo(time, 'seconds');
-      }
-    } catch (err) {
-      console.warn("seekTo safe guard caught:", err);
-    }
-  };
+  const iframeRef = useRef(null);
 
   useEffect(() => {
     if (!socket) return;
@@ -73,56 +42,29 @@ function WatchTogether({ user, roomId, socket }) {
 
     // 1. Video URL Change
     const handleVideoChanged = (data) => {
-      isRemoteActionRef.current = true;
-      const normalized = normalizeYouTubeUrl(data.url);
-      setUrl(normalized);
-      setPlaying(true);
-      setHasError(false);
+      const id = getYouTubeVideoId(data.url);
+      setVideoId(id);
       toast(`${data.userName || 'Partner'} loaded a new video! 🍿`, { icon: '🎬' });
-      setTimeout(() => { isRemoteActionRef.current = false; }, 800);
     };
 
-    // 2. Video Play
-    const handleVideoPlayed = (data) => {
-      isRemoteActionRef.current = true;
-      setPlaying(true);
-      if (data?.time !== undefined) {
-        const currentTime = getSafeTime();
-        if (Math.abs(currentTime - data.time) > 1.5) {
-          safeSeekTo(data.time);
-        }
-      }
+    // 2. Play Trigger
+    const handleVideoPlayed = () => {
       setSyncedStatus('Playing Together 🎶');
-      setTimeout(() => { isRemoteActionRef.current = false; }, 800);
     };
 
-    // 3. Video Pause
+    // 3. Pause Trigger
     const handleVideoPaused = () => {
-      isRemoteActionRef.current = true;
-      setPlaying(false);
       setSyncedStatus('Paused ⏸️');
-      setTimeout(() => { isRemoteActionRef.current = false; }, 800);
-    };
-
-    // 4. Video Seek
-    const handleVideoSeeked = (data) => {
-      isRemoteActionRef.current = true;
-      if (data?.time !== undefined) {
-        safeSeekTo(data.time);
-      }
-      setTimeout(() => { isRemoteActionRef.current = false; }, 800);
     };
 
     socket.on("video_changed", handleVideoChanged);
     socket.on("video_played", handleVideoPlayed);
     socket.on("video_paused", handleVideoPaused);
-    socket.on("video_seeked", handleVideoSeeked);
 
     return () => {
       socket.off("video_changed", handleVideoChanged);
       socket.off("video_played", handleVideoPlayed);
       socket.off("video_paused", handleVideoPaused);
-      socket.off("video_seeked", handleVideoSeeked);
     };
   }, [socket, roomId]);
 
@@ -131,19 +73,13 @@ function WatchTogether({ user, roomId, socket }) {
     e.preventDefault();
     if (!inputUrl) return;
 
-    const normalized = normalizeYouTubeUrl(inputUrl);
-    if (!ReactPlayer.canPlay(normalized)) {
-      return toast.error("Invalid YouTube URL! Please paste a valid YouTube video link.");
-    }
-
-    setHasError(false);
-    setUrl(normalized);
-    setPlaying(true);
+    const id = getYouTubeVideoId(inputUrl);
+    setVideoId(id);
 
     if (socket) {
       socket.emit("change_video", {
         roomId,
-        url: normalized,
+        url: inputUrl,
         userName: user?.name || 'Partner'
       });
     }
@@ -152,49 +88,15 @@ function WatchTogether({ user, roomId, socket }) {
   };
 
   const handleSelectPreset = (preset) => {
-    const normalized = normalizeYouTubeUrl(preset.url);
-    setHasError(false);
-    setUrl(normalized);
-    setPlaying(true);
+    setVideoId(preset.id);
     if (socket) {
       socket.emit("change_video", {
         roomId,
-        url: normalized,
+        url: `https://www.youtube.com/watch?v=${preset.id}`,
         userName: user?.name || 'Partner'
       });
     }
     toast.success(`Loaded ${preset.name}! 🍿`);
-  };
-
-  // ReactPlayer Callbacks with Infinite Loop Protection & Safe Guards
-  const handlePlay = () => {
-    if (isRemoteActionRef.current) return;
-    setPlaying(true);
-    const currentTime = getSafeTime();
-    if (socket) {
-      socket.emit("play_video", { roomId, time: currentTime });
-    }
-  };
-
-  const handlePause = () => {
-    if (isRemoteActionRef.current) return;
-    setPlaying(false);
-    if (socket) {
-      socket.emit("pause_video", { roomId });
-    }
-  };
-
-  const handleSeek = (seconds) => {
-    if (isRemoteActionRef.current) return;
-    if (socket) {
-      socket.emit("seek_video", { roomId, time: seconds });
-    }
-  };
-
-  const handleError = (e) => {
-    console.error("ReactPlayer Error:", e);
-    setHasError(true);
-    toast.error("Error playing video. YouTube may restrict embedding for this video.");
   };
 
   const glassStyle = "bg-white/80 backdrop-blur-2xl border border-white/60 shadow-xl rounded-[2.5rem]";
@@ -255,44 +157,24 @@ function WatchTogether({ user, roomId, socket }) {
         ))}
       </div>
 
-      {/* Video Player Box */}
+      {/* Native Official YouTube Player Box */}
       <div className={`${glassStyle} p-4 md:p-6`}>
         <div className="relative pt-[56.25%] rounded-3xl overflow-hidden shadow-2xl bg-black border border-gray-900">
-          {hasError ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-white space-y-3 bg-slate-900">
-              <AlertCircle size={40} className="text-rose-500" />
-              <h4 className="text-lg font-black">Playback Restricted</h4>
-              <p className="text-xs text-gray-400 max-w-sm">
-                This YouTube video cannot be embedded. Try pasting another YouTube video or choose from Quick Picks!
-              </p>
-            </div>
-          ) : (
-            <ReactPlayer 
-              ref={playerRef}
-              url={url} 
-              playing={playing}
-              controls={true}
-              onPlay={handlePlay}
-              onPause={handlePause}
-              onSeek={handleSeek}
-              onError={handleError}
-              width="100%"
-              height="100%"
-              className="absolute top-0 left-0"
-              config={{
-                youtube: {
-                  playerVars: { autoplay: 1, disablekb: 1 }
-                }
-              }}
-            />
-          )}
+          <iframe
+            ref={iframeRef}
+            src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&enablejsapi=1&rel=0`}
+            title="Watch Together YouTube Player"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            className="absolute top-0 left-0 w-full h-full border-0"
+          />
         </div>
 
         <div className="flex justify-between items-center mt-4 px-2 text-xs font-bold text-gray-400">
           <span className="flex items-center gap-1.5 text-rose-500">
             <Sparkles size={14} /> Real-Time Sync Active
           </span>
-          <span className="truncate max-w-xs">{url}</span>
+          <span className="truncate max-w-xs font-mono text-[11px]">ID: {videoId}</span>
         </div>
       </div>
     </div>
