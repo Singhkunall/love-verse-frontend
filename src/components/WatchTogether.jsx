@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PlaySquare, Link as LinkIcon, Search, Sparkles, Film, AlertCircle, Tv, Monitor, ExternalLink, Globe, Play, RefreshCw, Video, StopCircle, Maximize2, Volume2, VolumeX, Minimize2, Radio, Mic, MicOff, PhoneOff, VideoOff, GripVertical, MessageSquare, Send, Heart, Flame, Smile, ThumbsUp } from 'lucide-react';
+import { PlaySquare, Link as LinkIcon, Search, Sparkles, Film, AlertCircle, Tv, Monitor, ExternalLink, Globe, Play, RefreshCw, Video, StopCircle, Maximize2, Volume2, VolumeX, Minimize2, Radio, Mic, MicOff, PhoneOff, VideoOff, GripVertical, MessageSquare, Send, Heart, Flame, Smile, ThumbsUp, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Peer from 'peerjs';
 import AgoraRTC from 'agora-rtc-sdk-ng';
@@ -44,6 +44,7 @@ function WatchTogether({ user, roomId, socket }) {
   const [streamerName, setStreamerName] = useState('');
   const [isMuted, setIsMuted] = useState(true);
   const [isTheaterMode, setIsTheaterMode] = useState(false);
+  const [isCinemaFullscreen, setIsCinemaFullscreen] = useState(false);
 
   // Live Voice & Camera State inside Watch Together
   const [isVoiceConnected, setIsVoiceConnected] = useState(false);
@@ -130,7 +131,6 @@ function WatchTogether({ user, roomId, socket }) {
   useEffect(() => {
     if (!userId) return;
 
-    // Initialize PeerJS Peer instance for WebRTC screen stream transfer
     const peer = new Peer(`loveverse_stream_${userId}`, {
       host: '0.peerjs.com',
       port: 443,
@@ -139,9 +139,8 @@ function WatchTogether({ user, roomId, socket }) {
 
     peerRef.current = peer;
 
-    // Listen for incoming screen video stream from partner!
     peer.on('call', (call) => {
-      call.answer(); // Answer incoming screen video stream call
+      call.answer();
       call.on('stream', (remoteStream) => {
         setActiveTab('screen_share');
         setIsReceivingStream(true);
@@ -151,7 +150,7 @@ function WatchTogether({ user, roomId, socket }) {
         setTimeout(() => {
           if (screenVideoRef.current) {
             screenVideoRef.current.srcObject = remoteStream;
-            screenVideoRef.current.muted = false; // Unmuted for viewer!
+            screenVideoRef.current.muted = false;
             screenVideoRef.current.play().catch(e => console.error("Auto-play error:", e));
           }
         }, 200);
@@ -248,6 +247,7 @@ function WatchTogether({ user, roomId, socket }) {
       setCinemaMessages(prev => [...prev, msg]);
       setTimeout(() => {
         chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+        overlayChatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
     };
 
@@ -275,7 +275,7 @@ function WatchTogether({ user, roomId, socket }) {
   // Trigger floating emoji reaction
   const triggerEmojiReaction = (emoji) => {
     const reactionId = Date.now() + Math.random();
-    const leftPos = Math.floor(Math.random() * 70) + 15; // 15% to 85% width
+    const leftPos = Math.floor(Math.random() * 70) + 15;
 
     setFloatingReactions(prev => [...prev, { id: reactionId, emoji, leftPos }]);
 
@@ -312,13 +312,13 @@ function WatchTogether({ user, roomId, socket }) {
 
     setTimeout(() => {
       chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      overlayChatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, 100);
   };
 
   // LIVE VOICE & CAMERA CHAT TOGGLE (AGORA RTC)
   const toggleVoiceChatWatch = async () => {
     if (isVoiceConnected) {
-      // Leave Voice & Camera Chat
       try {
         if (localAudioTrackRef.current) {
           localAudioTrackRef.current.stop();
@@ -340,7 +340,6 @@ function WatchTogether({ user, roomId, socket }) {
         console.error("Voice leave error:", err);
       }
     } else {
-      // Join Voice Chat
       try {
         const appId = import.meta.env.VITE_AGORA_APP_ID || "a5839042b3224b1a8d052b610c666579";
         const uid = Math.floor(Math.random() * 100000);
@@ -380,10 +379,10 @@ function WatchTogether({ user, roomId, socket }) {
 
         await client.join(appId, voiceChannel, data.token, uid);
         const audioTrack = await AgoraRTC.createMicrophoneAudioTrack({
-          encoderConfig: "speech_low_quality", // Filters out high/low movie frequencies, isolating human voice!
-          AEC: true, // Acoustic Echo Cancellation (Stop audio echo reflection)
-          ANS: true, // Automatic Noise Suppression (Filter background noise)
-          AGC: true  // Automatic Gain Control (Balance voice levels)
+          encoderConfig: "speech_low_quality",
+          AEC: true,
+          ANS: true,
+          AGC: true
         });
         localAudioTrackRef.current = audioTrack;
         await client.publish([audioTrack]);
@@ -442,7 +441,6 @@ function WatchTogether({ user, roomId, socket }) {
     }
   };
 
-  // Start Screen Share Virtual Cinema directly inside Watch Together
   const startScreenShareCinema = async () => {
     try {
       const stream = await navigator.mediaDevices.getDisplayMedia({
@@ -456,12 +454,10 @@ function WatchTogether({ user, roomId, socket }) {
       setIsReceivingStream(false);
       setIsMuted(true);
 
-      // Call Partner via PeerJS WebRTC to transmit live video stream!
       if (peerRef.current && partnerId) {
         peerRef.current.call(`loveverse_stream_${partnerId}`, stream);
       }
 
-      // Notify Partner via Socket
       socket.emit("start_cinema_stream", {
         roomId,
         userName: user.name || 'Partner'
@@ -470,7 +466,7 @@ function WatchTogether({ user, roomId, socket }) {
       setTimeout(() => {
         if (screenVideoRef.current) {
           screenVideoRef.current.srcObject = stream;
-          screenVideoRef.current.muted = true; // Mute locally for streamer to prevent double sound!
+          screenVideoRef.current.muted = true;
         }
       }, 100);
 
@@ -497,21 +493,12 @@ function WatchTogether({ user, roomId, socket }) {
     toast.success("Virtual Cinema Ended!");
   };
 
-  // Fullscreen helper
+  // Fullscreen helper - Toggle Full-Viewport Cinema Fullscreen Mode safely without breaking video tracks!
   const handleFullscreenCinema = () => {
-    const target = cinemaContainerRef.current || screenVideoRef.current;
-    if (target) {
-      if (target.requestFullscreen) {
-        target.requestFullscreen();
-      } else if (target.webkitRequestFullscreen) {
-        target.webkitRequestFullscreen();
-      } else if (target.msRequestFullscreen) {
-        target.msRequestFullscreen();
-      }
-    }
+    setIsCinemaFullscreen(!isCinemaFullscreen);
+    toast(isCinemaFullscreen ? "Exited Fullscreen Cinema 🎬" : "Entered Fullscreen Cinema 🍿✨");
   };
 
-  // Toggle local mute state
   const toggleMuteCinema = () => {
     if (screenVideoRef.current) {
       screenVideoRef.current.muted = !isMuted;
@@ -519,7 +506,6 @@ function WatchTogether({ user, roomId, socket }) {
     }
   };
 
-  // Load new video URL
   const handleLoadVideo = (e) => {
     e.preventDefault();
     if (!inputUrl) return;
@@ -604,6 +590,45 @@ function WatchTogether({ user, roomId, socket }) {
           animation: floatUpEmoji 2.8s ease-out forwards;
         }
       `}</style>
+
+      {/* SINGLE GLOBAL PERSISTENT DRAGGABLE PIP LIVE CAMERA OVERLAY */}
+      {isVoiceConnected && (isCameraOn || hasRemoteVideo) && (
+        <div
+          style={{
+            transform: `translate(${pipPosition.x}px, ${pipPosition.y}px)`
+          }}
+          className="fixed bottom-6 right-6 z-[100] flex flex-col items-end gap-2 animate-in fade-in zoom-in-95 pointer-events-auto touch-none select-none"
+        >
+          <div
+            onMouseDown={(e) => handleDragStart(e.clientX, e.clientY)}
+            onTouchStart={(e) => e.touches?.[0] && handleDragStart(e.touches[0].clientX, e.touches[0].clientY)}
+            className="relative w-36 h-52 md:w-44 md:h-60 rounded-3xl overflow-hidden border-2 border-rose-500/80 shadow-2xl bg-slate-950 cursor-grab active:cursor-grabbing group hover:border-pink-400 transition-colors"
+          >
+            {/* Drag Handle Bar */}
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md px-2.5 py-0.5 rounded-full text-white/80 z-30 flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+              <GripVertical size={10} />
+              <span className="text-[8px] font-black uppercase tracking-widest">Drag Me</span>
+            </div>
+
+            {/* Remote Camera Feed */}
+            {hasRemoteVideo ? (
+              <div id="watch-remote-video" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center text-slate-400">
+                <VideoOff size={24} className="mb-2 text-slate-500" />
+                <p className="text-[10px] font-bold">Partner's camera off</p>
+              </div>
+            )}
+
+            {/* Local Camera Feed (Mini Thumbnail) */}
+            {isCameraOn && (
+              <div className="absolute bottom-2 right-2 w-14 h-20 md:w-18 md:h-24 rounded-2xl overflow-hidden border-2 border-white shadow-lg bg-black z-20">
+                <div id="watch-local-video" className="w-full h-full object-cover" />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -776,7 +801,9 @@ function WatchTogether({ user, roomId, socket }) {
               </div>
 
               <div className={`${glassStyle} p-4 md:p-6`}>
-                <div className="relative pt-[56.25%] rounded-3xl overflow-hidden shadow-2xl bg-black border border-gray-900">
+                <div className={`relative rounded-3xl overflow-hidden shadow-2xl bg-black border border-gray-900 transition-all ${
+                  isCinemaFullscreen ? 'fixed inset-0 z-40 rounded-none border-none bg-black flex items-center justify-center' : 'pt-[56.25%]'
+                }`}>
                   <iframe
                     ref={iframeRef}
                     src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&enablejsapi=1&rel=0`}
@@ -815,7 +842,6 @@ function WatchTogether({ user, roomId, socket }) {
                         </button>
                       </div>
 
-                      {/* Messages List */}
                       <div className="flex-1 overflow-y-auto max-h-40 space-y-2 pr-1 text-xs">
                         {cinemaMessages.length === 0 ? (
                           <p className="text-[10px] text-gray-300 font-bold italic text-center py-4">
@@ -839,7 +865,6 @@ function WatchTogether({ user, roomId, socket }) {
                         <div ref={overlayChatBottomRef} />
                       </div>
 
-                      {/* Message Input Form */}
                       <form onSubmit={handleSendChatMessage} className="flex gap-1.5 pt-1">
                         <input
                           type="text"
@@ -865,45 +890,6 @@ function WatchTogether({ user, roomId, socket }) {
                       <span>Open Movie Chat 💬</span>
                     </button>
                   )}
-
-                  {/* YOUTUBE DRAGGABLE PIP LIVE CAMERA OVERLAY */}
-                  {isVoiceConnected && (isCameraOn || hasRemoteVideo) && (
-                    <div
-                      style={{
-                        transform: `translate(${pipPosition.x}px, ${pipPosition.y}px)`
-                      }}
-                      className="absolute bottom-6 right-6 z-50 flex flex-col items-end gap-2 animate-in fade-in zoom-in-95 pointer-events-auto touch-none select-none"
-                    >
-                      <div
-                        onMouseDown={(e) => handleDragStart(e.clientX, e.clientY)}
-                        onTouchStart={(e) => e.touches?.[0] && handleDragStart(e.touches[0].clientX, e.touches[0].clientY)}
-                        className="relative w-36 h-52 md:w-44 md:h-60 rounded-3xl overflow-hidden border-2 border-rose-500/80 shadow-2xl bg-slate-950 cursor-grab active:cursor-grabbing group hover:border-pink-400 transition-colors"
-                      >
-                        {/* Drag Handle Bar */}
-                        <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md px-2.5 py-0.5 rounded-full text-white/80 z-30 flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
-                          <GripVertical size={10} />
-                          <span className="text-[8px] font-black uppercase tracking-widest">Drag Me</span>
-                        </div>
-
-                        {/* Remote Camera Feed */}
-                        {hasRemoteVideo ? (
-                          <div id="watch-remote-video" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center text-slate-400">
-                            <VideoOff size={24} className="mb-2 text-slate-500" />
-                            <p className="text-[10px] font-bold">Partner's camera off</p>
-                          </div>
-                        )}
-
-                        {/* Local Camera Feed (Mini Thumbnail) */}
-                        {isCameraOn && (
-                          <div className="absolute bottom-2 right-2 w-14 h-20 md:w-18 md:h-24 rounded-2xl overflow-hidden border-2 border-white shadow-lg bg-black z-20">
-                            <div id="watch-local-video" className="w-full h-full object-cover" />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -925,7 +911,6 @@ function WatchTogether({ user, roomId, socket }) {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {/* Fullscreen & Controls */}
                   {(isSharingScreen || isReceivingStream) && (
                     <>
                       {isSharingScreen && (
@@ -939,6 +924,14 @@ function WatchTogether({ user, roomId, socket }) {
                       )}
 
                       <button
+                        onClick={() => setIsTranslucentChatOpen(!isTranslucentChatOpen)}
+                        className="p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold text-xs transition-all flex items-center gap-1"
+                        title="Toggle In-Movie Chat Overlay"
+                      >
+                        <MessageSquare size={16} className={isTranslucentChatOpen ? "text-rose-500" : "text-gray-500"} />
+                      </button>
+
+                      <button
                         onClick={() => setIsTheaterMode(!isTheaterMode)}
                         className="p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold text-xs transition-all flex items-center gap-1"
                         title="Toggle Theater Mode"
@@ -950,7 +943,8 @@ function WatchTogether({ user, roomId, socket }) {
                         onClick={handleFullscreenCinema}
                         className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl font-black text-xs transition-all flex items-center gap-1.5"
                       >
-                        <Maximize2 size={14} /> Fullscreen
+                        {isCinemaFullscreen ? <X size={14} /> : <Maximize2 size={14} />}
+                        <span>{isCinemaFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
                       </button>
                     </>
                   )}
@@ -977,7 +971,7 @@ function WatchTogether({ user, roomId, socket }) {
               <div
                 ref={cinemaContainerRef}
                 className={`relative rounded-3xl overflow-hidden shadow-2xl bg-slate-950 border border-gray-800 transition-all ${
-                  isTheaterMode ? 'h-[75vh] md:h-[85vh]' : 'pt-[56.25%]'
+                  isCinemaFullscreen ? 'fixed inset-0 z-40 rounded-none border-none bg-black flex items-center justify-center' : isTheaterMode ? 'h-[75vh] md:h-[85vh]' : 'pt-[56.25%]'
                 }`}
               >
                 <video
@@ -1004,7 +998,7 @@ function WatchTogether({ user, roomId, socket }) {
 
                 {/* TRANSLUCENT FLOATING IN-MOVIE CHAT OVERLAY */}
                 {isTranslucentChatOpen ? (
-                  <div className="absolute bottom-6 left-6 z-50 w-72 md:w-80 max-h-72 bg-black/50 backdrop-blur-xl border border-white/20 rounded-3xl p-3.5 shadow-2xl flex flex-col gap-2 text-white animate-in fade-in zoom-in-95 pointer-events-auto">
+                  <div className="absolute bottom-6 left-6 z-50 w-72 md:w-80 max-h-72 bg-black/50 backdrop-blur-xl border border-white/20 rounded-3xl p-3.5 shadow-2xl flex flex-col gap-2 text-white animate-in fade-in zoom-in-95 pointer-events-auto text-left">
                     <div className="flex items-center justify-between border-b border-white/10 pb-2">
                       <div className="flex items-center gap-1.5">
                         <MessageSquare size={14} className="text-rose-400" />
@@ -1018,7 +1012,6 @@ function WatchTogether({ user, roomId, socket }) {
                       </button>
                     </div>
 
-                    {/* Messages List */}
                     <div className="flex-1 overflow-y-auto max-h-40 space-y-2 pr-1 text-xs">
                       {cinemaMessages.length === 0 ? (
                         <p className="text-[10px] text-gray-300 font-bold italic text-center py-4">
@@ -1042,7 +1035,6 @@ function WatchTogether({ user, roomId, socket }) {
                       <div ref={overlayChatBottomRef} />
                     </div>
 
-                    {/* Message Input Form */}
                     <form onSubmit={handleSendChatMessage} className="flex gap-1.5 pt-1">
                       <input
                         type="text"
@@ -1067,45 +1059,6 @@ function WatchTogether({ user, roomId, socket }) {
                     <MessageSquare size={14} className="text-rose-400" />
                     <span>Open Movie Chat 💬</span>
                   </button>
-                )}
-
-                {/* FULLSCREEN DRAGGABLE PIP LIVE CAMERA OVERLAY */}
-                {isVoiceConnected && (isCameraOn || hasRemoteVideo) && (
-                  <div
-                    style={{
-                      transform: `translate(${pipPosition.x}px, ${pipPosition.y}px)`
-                    }}
-                    className="absolute bottom-6 right-6 z-50 flex flex-col items-end gap-2 animate-in fade-in zoom-in-95 pointer-events-auto touch-none select-none"
-                  >
-                    <div
-                      onMouseDown={(e) => handleDragStart(e.clientX, e.clientY)}
-                      onTouchStart={(e) => e.touches?.[0] && handleDragStart(e.touches[0].clientX, e.touches[0].clientY)}
-                      className="relative w-36 h-52 md:w-44 md:h-60 rounded-3xl overflow-hidden border-2 border-rose-500/80 shadow-2xl bg-slate-950 cursor-grab active:cursor-grabbing group hover:border-pink-400 transition-colors"
-                    >
-                      {/* Drag Handle Bar */}
-                      <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md px-2.5 py-0.5 rounded-full text-white/80 z-30 flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
-                        <GripVertical size={10} />
-                        <span className="text-[8px] font-black uppercase tracking-widest">Drag Me</span>
-                      </div>
-
-                      {/* Remote Camera Feed */}
-                      {hasRemoteVideo ? (
-                        <div id="watch-remote-video" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center text-slate-400">
-                          <VideoOff size={24} className="mb-2 text-slate-500" />
-                          <p className="text-[10px] font-bold">Partner's camera off</p>
-                        </div>
-                      )}
-
-                      {/* Local Camera Feed (Mini Thumbnail) */}
-                      {isCameraOn && (
-                        <div className="absolute bottom-2 right-2 w-14 h-20 md:w-18 md:h-24 rounded-2xl overflow-hidden border-2 border-white shadow-lg bg-black z-20">
-                          <div id="watch-local-video" className="w-full h-full object-cover" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
                 )}
 
                 {!isSharingScreen && !isReceivingStream && (
