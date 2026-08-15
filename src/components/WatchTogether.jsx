@@ -4,6 +4,10 @@ import toast from 'react-hot-toast';
 import Peer from 'peerjs';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 
+// Disable telemetry & stats collector to prevent AdBlocker ERR_BLOCKED_BY_CLIENT console spam
+AgoraRTC.disableLogUpload();
+AgoraRTC.setLogLevel(4);
+
 const PRESET_VIDEOS = [
   { name: 'Lo-Fi Girl 🎧', id: 'jfKfPfyJRdk' },
   { name: 'Romantic Piano 🎹', id: '77ZozI0rw7w' },

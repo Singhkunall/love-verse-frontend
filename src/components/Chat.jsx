@@ -4,6 +4,10 @@ import axios from 'axios';
 import { Send, CheckCheck, Smile, Phone, Video, MoreVertical, Plus, Loader2, PhoneOff, ListTodo, Mic, MicOff, Play, Pause, VideoOff, Volume2, Sparkles, X, Image as ImageIcon, Film } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
+
+// Disable telemetry & stats collector to prevent AdBlocker ERR_BLOCKED_BY_CLIENT console spam
+AgoraRTC.disableLogUpload();
+AgoraRTC.setLogLevel(4);
 import toast, { Toaster } from 'react-hot-toast';
 import Routine from './Routine';
 
