@@ -64,7 +64,7 @@ function Chat({ user }) {
       }
       if (mediaType === 'video') {
         setTimeout(() => {
-          remoteUser.videoTrack?.play('remote-video');
+          remoteUser.videoTrack?.play('remote-video', { fit: 'cover' });
         }, 300);
       }
     });
@@ -191,7 +191,7 @@ function Chat({ user }) {
         videoTrack = await AgoraRTC.createCameraVideoTrack();
         localTracksRef.current.video = videoTrack;
         setTimeout(() => {
-          videoTrack.play('local-video');
+          videoTrack.play('local-video', { fit: 'cover' });
         }, 300);
       }
 
@@ -239,7 +239,7 @@ function Chat({ user }) {
         videoTrack = await AgoraRTC.createCameraVideoTrack();
         localTracksRef.current.video = videoTrack;
         setTimeout(() => {
-          videoTrack.play('local-video');
+          videoTrack.play('local-video', { fit: 'cover' });
         }, 300);
       }
 
