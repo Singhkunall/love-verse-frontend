@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import io from 'socket.io-client';
 import axios from 'axios';
-import { Send, CheckCheck, Smile, Phone, Video, MoreVertical, Plus, Loader2, PhoneOff, ListTodo, Mic, MicOff, Play, Pause, VideoOff, Volume2, Sparkles, X } from 'lucide-react';
+import { Send, CheckCheck, Smile, Phone, Video, MoreVertical, Plus, Loader2, PhoneOff, ListTodo, Mic, MicOff, Play, Pause, VideoOff, Volume2, Sparkles, X, Image as ImageIcon, Film } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 import toast, { Toaster } from 'react-hot-toast';
@@ -362,28 +362,33 @@ function Chat({ user }) {
     }
   };
 
-  const handleImageUpload = async (e) => {
+  const handleMediaUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setIsUploading(true);
+    const isVideo = file.type.startsWith('video/');
+    const resourceType = isVideo ? 'video' : 'image';
+
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', 'love_verse');
     try {
-      const res = await axios.post(`https://api.cloudinary.com/v1_1/dppwz6x0y/image/upload`, formData);
+      const res = await axios.post(`https://api.cloudinary.com/v1_1/dppwz6x0y/${resourceType}/upload`, formData);
       const messageData = {
         room: roomId,
         sender: userId,
         senderName: user.name,
         message: res.data.secure_url,
-        isImage: true,
+        isImage: !isVideo,
+        isVideo: isVideo,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
       await socket.emit("send_message", messageData);
       setMessageList((list) => [...list, messageData]);
-      toast.success("Photo Bhej Di! 📸");
+      toast.success(isVideo ? "Video Bhej Di! 🎬" : "Photo Bhej Di! 📸");
     } catch (err) {
-      toast.error("Photo Upload Fail Hua!");
+      console.error("Media upload error:", err);
+      toast.error("Media Upload Fail Hua!");
     } finally {
       setIsUploading(false);
     }
@@ -598,7 +603,9 @@ function Chat({ user }) {
                   ? 'bg-gradient-to-tr from-rose-500 to-pink-500 text-white rounded-tr-none'
                   : 'bg-white border border-rose-100 text-gray-800 rounded-tl-none'
               }`}>
-                {msg.isImage ? (
+                {msg.isVideo ? (
+                  <video src={msg.message} controls className="rounded-2xl max-h-60 object-cover" />
+                ) : msg.isImage ? (
                   <img src={msg.message} alt="Shared photo" className="rounded-2xl max-h-60 object-cover" />
                 ) : msg.isVoiceNote ? (
                   <div className="flex items-center gap-3 min-w-[200px]">
@@ -643,9 +650,13 @@ function Chat({ user }) {
           </div>
         )}
         <div className="bg-white/80 backdrop-blur-2xl p-2 rounded-[2.5rem] flex items-center gap-2 border border-white shadow-xl shadow-rose-200/20 focus-within:ring-2 ring-rose-100 transition-all">
-          <label className="p-3 text-rose-400 hover:bg-rose-50 rounded-full cursor-pointer transition-all">
-            {isUploading ? <Loader2 size={22} className="animate-spin" /> : <Plus size={22} />}
-            <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={isUploading} />
+          <label className="p-3 text-rose-400 hover:bg-rose-50 rounded-full cursor-pointer transition-all" title="Send Photo 📸">
+            {isUploading ? <Loader2 size={22} className="animate-spin" /> : <ImageIcon size={22} />}
+            <input type="file" className="hidden" accept="image/*" onChange={handleMediaUpload} disabled={isUploading} />
+          </label>
+          <label className="p-3 text-rose-400 hover:bg-rose-50 rounded-full cursor-pointer transition-all" title="Send Video 🎬">
+            {isUploading ? <Loader2 size={22} className="animate-spin" /> : <Film size={22} />}
+            <input type="file" className="hidden" accept="video/*" onChange={handleMediaUpload} disabled={isUploading} />
           </label>
           <button onClick={() => setShowEmoji(!showEmoji)} className={`p-3 rounded-full transition-all ${showEmoji ? 'bg-rose-100 text-rose-600' : 'text-rose-400 hover:bg-rose-50'}`}>
             <Smile size={22} />
