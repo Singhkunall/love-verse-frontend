@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import io from 'socket.io-client';
 import axios from 'axios';
-import { Send, CheckCheck, Smile, Phone, Video, MoreVertical, Plus, Loader2, PhoneOff, ListTodo, Mic, MicOff, Play, Pause } from 'lucide-react';
+import { Send, CheckCheck, Smile, Phone, Video, MoreVertical, Plus, Loader2, PhoneOff, ListTodo, Mic, MicOff, Play, Pause, VideoOff, Volume2, Sparkles, X } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 import toast, { Toaster } from 'react-hot-toast';
@@ -19,15 +19,22 @@ function Chat({ user }) {
   const [recordingTime, setRecordingTime] = useState(0);
   const [sendingVoice, setSendingVoice] = useState(false);
   const [playingId, setPlayingId] = useState(null);
+
+  // Call States
   const [calling, setCalling] = useState(false);
   const [incomingCall, setIncomingCall] = useState(false);
   const [callType, setCallType] = useState("video");
+  const [isMicMuted, setIsMicMuted] = useState(false);
+  const [isVideoMuted, setIsVideoMuted] = useState(false);
+  const [callDuration, setCallDuration] = useState(0);
+
   const [showRoutine, setShowRoutine] = useState(false);
 
   const scrollRef = useRef();
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
   const timerRef = useRef(null);
+  const callTimerRef = useRef(null);
   const audioRefs = useRef({});
   const agoraClientRef = useRef(null);
   const localTracksRef = useRef({ audio: null, video: null });
@@ -36,7 +43,7 @@ function Chat({ user }) {
   const partnerId = user.partnerId?._id || user.partnerId;
   const roomId = [userId, partnerId].sort().join("_");
 
-  // Agora initialize
+  // Agora client initialization
   useEffect(() => {
     if (!userId) return;
     socket.emit("setup", userId);
@@ -50,15 +57,14 @@ function Chat({ user }) {
         remoteUser.audioTrack?.play();
       }
       if (mediaType === 'video') {
-        remoteUser.videoTrack?.play('remote-video');
+        setTimeout(() => {
+          remoteUser.videoTrack?.play('remote-video');
+        }, 300);
       }
     });
 
-    client.on('user-unpublished', () => {
-      console.log('Remote user unpublished');
-    });
-
     client.on('user-left', () => {
+      toast.error("Partner disconnected call.");
       cleanupCall();
     });
 
@@ -72,24 +78,31 @@ function Chat({ user }) {
     const handleSignal = (data) => {
       setCallType(data.type);
       setIncomingCall(true);
-      toast(`Incoming ${data.type} call...`, { icon: '📞' });
+      toast(`Incoming ${data.type} call from partner! 📞`, {
+        icon: '📞',
+        duration: 5000
+      });
     };
-    const handleEndSignal = () => cleanupCall();
+    const handleEndSignal = () => {
+      toast("Call ended.");
+      cleanupCall();
+    };
+
     socket.on("incoming_call_signal", handleSignal);
     socket.on("call_ended_signal", handleEndSignal);
+
     return () => {
       socket.off("incoming_call_signal", handleSignal);
       socket.off("call_ended_signal", handleEndSignal);
     };
   }, []);
 
-  // Voice note received
+  // Voice note listener
   useEffect(() => {
     const handleVoiceNote = (data) => {
       setMessageList(prev => [...prev, { ...data, isVoiceNote: true }]);
-      toast(`${data.senderName} ne Voice Note bheja! 🎙️`, {
-        icon: '🎙️',
-        style: { background: '#fff0f3', color: '#e11d48', border: '2px solid #fb7185' }
+      toast(`${data.senderName} sent a Voice Note! 🎙️`, {
+        icon: '🎙️'
       });
     };
     socket.on("receive_voice_note", handleVoiceNote);
@@ -98,6 +111,7 @@ function Chat({ user }) {
 
   const cleanupCall = async () => {
     try {
+      if (callTimerRef.current) clearInterval(callTimerRef.current);
       localTracksRef.current.audio?.stop();
       localTracksRef.current.audio?.close();
       localTracksRef.current.video?.stop();
@@ -109,13 +123,18 @@ function Chat({ user }) {
     }
     setCalling(false);
     setIncomingCall(false);
+    setIsMicMuted(false);
+    setIsVideoMuted(false);
+    setCallDuration(0);
   };
 
   const fetchChatHistory = async () => {
     try {
       const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/chat/history/${roomId}`);
       setMessageList(res.data);
-    } catch (err) { console.error("History fetch error:", err); }
+    } catch (err) {
+      console.error("History fetch error:", err);
+    }
   };
 
   useEffect(() => {
@@ -144,11 +163,11 @@ function Chat({ user }) {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messageList, isTyping]);
 
-  // --- AGORA CALL FUNCTIONS ---
+  // --- START CALL FUNCTION ---
   const startCall = async (isVideo) => {
     setCallType(isVideo ? "video" : "audio");
     try {
-      const appId = import.meta.env.VITE_AGORA_APP_ID;
+      const appId = import.meta.env.VITE_AGORA_APP_ID || "a5839042b3224b1a8d052b610c666579";
       const uid = Math.floor(Math.random() * 100000);
 
       const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/agora/token`, {
@@ -165,13 +184,19 @@ function Chat({ user }) {
       if (isVideo) {
         videoTrack = await AgoraRTC.createCameraVideoTrack();
         localTracksRef.current.video = videoTrack;
-        videoTrack.play('local-video');
+        setTimeout(() => {
+          videoTrack.play('local-video');
+        }, 300);
       }
 
       const tracksToPublish = isVideo ? [audioTrack, videoTrack] : [audioTrack];
       await agoraClientRef.current.publish(tracksToPublish);
 
       setCalling(true);
+      setCallDuration(0);
+      callTimerRef.current = setInterval(() => {
+        setCallDuration(prev => prev + 1);
+      }, 1000);
 
       socket.emit("send_call_signal", {
         to: partnerId,
@@ -181,15 +206,16 @@ function Chat({ user }) {
 
     } catch (err) {
       console.error("Call error:", err);
-      toast.error("Call start nahi ho paya!");
+      toast.error("Could not start call. Check mic & camera permissions!");
     }
   };
 
+  // --- ANSWER CALL FUNCTION ---
   const answerCall = async () => {
     setIncomingCall(false);
     setCalling(true);
     try {
-      const appId = import.meta.env.VITE_AGORA_APP_ID;
+      const appId = import.meta.env.VITE_AGORA_APP_ID || "a5839042b3224b1a8d052b610c666579";
       const uid = Math.floor(Math.random() * 100000);
 
       const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/agora/token`, {
@@ -206,15 +232,22 @@ function Chat({ user }) {
       if (callType === 'video') {
         videoTrack = await AgoraRTC.createCameraVideoTrack();
         localTracksRef.current.video = videoTrack;
-        videoTrack.play('local-video');
+        setTimeout(() => {
+          videoTrack.play('local-video');
+        }, 300);
       }
 
       const tracksToPublish = callType === 'video' ? [audioTrack, videoTrack] : [audioTrack];
       await agoraClientRef.current.publish(tracksToPublish);
 
+      setCallDuration(0);
+      callTimerRef.current = setInterval(() => {
+        setCallDuration(prev => prev + 1);
+      }, 1000);
+
     } catch (err) {
       console.error("Answer error:", err);
-      toast.error("Call answer nahi ho paya!");
+      toast.error("Could not answer call.");
     }
   };
 
@@ -223,7 +256,25 @@ function Chat({ user }) {
     cleanupCall();
   };
 
-  // --- VOICE NOTE ---
+  const toggleMic = () => {
+    if (localTracksRef.current.audio) {
+      const currentMuted = isMicMuted;
+      localTracksRef.current.audio.setEnabled(currentMuted);
+      setIsMicMuted(!currentMuted);
+      toast.success(!currentMuted ? "Microphone Muted" : "Microphone Active");
+    }
+  };
+
+  const toggleVideo = () => {
+    if (localTracksRef.current.video) {
+      const currentMuted = isVideoMuted;
+      localTracksRef.current.video.setEnabled(currentMuted);
+      setIsVideoMuted(!currentMuted);
+      toast.success(!currentMuted ? "Camera Turned Off" : "Camera Active");
+    }
+  };
+
+  // Voice note functions
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -260,172 +311,306 @@ function Chat({ user }) {
   const uploadAndSendVoiceNote = async (blob) => {
     setSendingVoice(true);
     try {
-      const reader = new FileReader();
-      reader.readAsDataURL(blob);
-      reader.onloadend = async () => {
-        const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/voice-notes/upload`, {
-          roomId, senderId: userId, senderName: user.name,
-          audio: reader.result, duration: recordingTime,
-        });
-        const msgData = { ...res.data, isVoiceNote: true, sender: userId, senderName: user.name, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
-        socket.emit("new_voice_note", { ...res.data, roomId, senderName: user.name });
-        setMessageList(prev => [...prev, msgData]);
-        toast.success("Voice note bheja! 🎙️");
+      const formData = new FormData();
+      formData.append('voice', blob, 'voicenote.webm');
+      formData.append('sender', userId);
+      formData.append('senderName', user.name);
+
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/voice-notes/upload`, formData);
+      const voiceUrl = res.data.audioUrl;
+
+      const messageData = {
+        room: roomId,
+        sender: userId,
+        senderName: user.name,
+        message: voiceUrl,
+        isVoiceNote: true,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
+
+      socket.emit("send_message", messageData);
+      socket.emit("send_voice_note", { roomId, ...messageData });
+      setMessageList(prev => [...prev, messageData]);
+      toast.success("Voice note sent! 🎙️");
     } catch (err) {
-      toast.error("Send failed!");
-    }
-    setSendingVoice(false);
-  };
-
-  const handlePlay = (id, url) => {
-    if (playingId === id) {
-      audioRefs.current[id]?.pause();
-      setPlayingId(null);
-    } else {
-      if (playingId && audioRefs.current[playingId]) audioRefs.current[playingId].pause();
-      if (!audioRefs.current[id]) {
-        audioRefs.current[id] = new Audio(url);
-        audioRefs.current[id].onended = () => setPlayingId(null);
-      }
-      audioRefs.current[id].play();
-      setPlayingId(id);
+      toast.error("Voice note fail hua!");
+    } finally {
+      setSendingVoice(false);
     }
   };
 
-  const formatTime = (secs) => `${Math.floor(secs / 60)}:${(secs % 60).toString().padStart(2, '0')}`;
+  const sendMessage = async () => {
+    if (currentMessage.trim() !== "") {
+      const messageData = {
+        room: roomId,
+        sender: userId,
+        senderName: user.name,
+        message: currentMessage,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+      await socket.emit("send_message", messageData);
+      setMessageList((list) => [...list, messageData]);
+      setCurrentMessage("");
+      setShowEmoji(false);
+      socket.emit("typing", { room: roomId, userId, typing: false });
+    }
+  };
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setIsUploading(true);
     const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", "love_verse");
+    formData.append('file', file);
+    formData.append('upload_preset', 'love_verse');
     try {
-      const res = await axios.post("https://api.cloudinary.com/v1_1/dxd7kirki/upload", formData);
-      const messageData = { room: roomId, sender: userId, senderName: user.name, message: res.data.secure_url, isImage: true, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
-      socket.emit("send_message", messageData);
-      setMessageList(list => [...list, messageData]);
-    } catch (err) { toast.error("Upload error"); } finally { setIsUploading(false); }
+      const res = await axios.post(`https://api.cloudinary.com/v1_1/dppwz6x0y/image/upload`, formData);
+      const messageData = {
+        room: roomId,
+        sender: userId,
+        senderName: user.name,
+        message: res.data.secure_url,
+        isImage: true,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      await socket.emit("send_message", messageData);
+      setMessageList((list) => [...list, messageData]);
+      toast.success("Photo Bhej Di! 📸");
+    } catch (err) {
+      toast.error("Photo Upload Fail Hua!");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
-  const sendMessage = async () => {
-    if (currentMessage !== "" && partnerId) {
-      const messageData = { room: roomId, sender: userId, senderName: user.name, message: currentMessage, isImage: false, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
-      socket.emit("send_message", messageData);
-      socket.emit("typing", { room: roomId, userId, typing: false });
-      setMessageList(list => [...list, messageData]);
-      setCurrentMessage(""); setShowEmoji(false);
+  const formatTime = (secs) => {
+    const mins = Math.floor(secs / 60);
+    const remainingSecs = secs % 60;
+    return `${mins}:${remainingSecs < 10 ? '0' : ''}${remainingSecs}`;
+  };
+
+  const toggleVoiceNotePlay = (msgId, url) => {
+    if (playingId === msgId) {
+      audioRefs.current[msgId]?.pause();
+      setPlayingId(null);
+    } else {
+      if (playingId && audioRefs.current[playingId]) {
+        audioRefs.current[playingId].pause();
+      }
+      if (!audioRefs.current[msgId]) {
+        const audio = new Audio(url);
+        audio.onended = () => setPlayingId(null);
+        audioRefs.current[msgId] = audio;
+      }
+      audioRefs.current[msgId].play();
+      setPlayingId(msgId);
     }
   };
 
   return (
-    <div className="flex flex-col h-full max-h-[85vh] bg-white/40 backdrop-blur-xl rounded-[3rem] overflow-hidden shadow-2xl border border-white/50 relative">
+    <div className="flex flex-col h-full bg-white/70 backdrop-blur-2xl rounded-[3rem] shadow-2xl border border-white/60 overflow-hidden relative">
       <Toaster position="top-center" />
 
-      {/* CALL OVERLAY */}
-      {calling && (
-        <div className="absolute inset-0 z-[100] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4">
-          <div className="relative w-full h-[80%] rounded-[2rem] overflow-hidden bg-gray-800 shadow-2xl">
-            {/* Remote video — Agora inject karega yahan */}
-            <div id="remote-video" className="w-full h-full" />
-            {/* Local video */}
-            <div id="local-video" className="absolute bottom-4 right-4 w-28 h-40 rounded-xl border-2 border-white/20 shadow-2xl overflow-hidden" />
-            <div className="absolute top-6 left-6 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
-              <p className="text-white text-xs font-bold uppercase tracking-widest">{callType} Call Active</p>
+      {/* INCOMING CALL DIALOG MODAL */}
+      {incomingCall && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in">
+          <div className="bg-white rounded-[2.5rem] p-8 max-w-sm w-full text-center space-y-6 shadow-2xl border border-rose-100 relative">
+            <div className="w-20 h-20 bg-gradient-to-tr from-rose-500 to-pink-600 rounded-full flex items-center justify-center text-white mx-auto shadow-xl animate-bounce">
+              {callType === 'video' ? <Video size={36} /> : <Phone size={36} />}
+            </div>
+
+            <div>
+              <h4 className="text-2xl font-black text-gray-800">Incoming {callType === 'video' ? 'Video' : 'Audio'} Call</h4>
+              <p className="text-xs font-bold text-rose-500 uppercase tracking-widest mt-1">Partner is calling...</p>
+            </div>
+
+            <div className="flex justify-center gap-4 pt-2">
+              <button
+                onClick={cleanupCall}
+                className="w-14 h-14 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all"
+                title="Decline Call"
+              >
+                <PhoneOff size={24} />
+              </button>
+
+              <button
+                onClick={answerCall}
+                className="w-14 h-14 bg-green-500 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all animate-pulse"
+                title="Accept Call"
+              >
+                <Phone size={24} />
+              </button>
             </div>
           </div>
-          <button onClick={endCall} className="mt-6 p-6 bg-red-500 text-white rounded-full shadow-2xl hover:bg-red-600 hover:scale-110 transition-all">
-            <PhoneOff size={32} />
-          </button>
         </div>
       )}
 
-      {/* INCOMING CALL */}
-      {incomingCall && !calling && (
-        <div className="absolute top-10 left-1/2 -translate-x-1/2 z-[110] bg-white p-6 rounded-[2.5rem] shadow-2xl border-2 border-rose-400 flex flex-col items-center gap-4">
-          <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center animate-pulse">
-            <Phone className="text-rose-500" size={30} />
+      {/* ACTIVE CALL OVERLAY MODAL */}
+      {calling && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-slate-950 text-white animate-in fade-in">
+          {/* Top Bar */}
+          <div className="p-6 flex justify-between items-center bg-slate-900/60 backdrop-blur-md border-b border-slate-800 z-20">
+            <div className="flex items-center gap-3">
+              <span className="w-3 h-3 rounded-full bg-green-500 animate-ping" />
+              <div>
+                <h4 className="text-lg font-black">{callType === 'video' ? 'HD Video Call 📹' : 'HD Audio Call 📞'}</h4>
+                <p className="text-xs text-rose-400 font-bold">{formatTime(callDuration)}</p>
+              </div>
+            </div>
+
+            <button
+              onClick={endCall}
+              className="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-full font-black text-xs shadow-lg flex items-center gap-2"
+            >
+              <PhoneOff size={16} /> End Call
+            </button>
           </div>
-          <p className="text-rose-500 font-black text-xl">Incoming {callType} Call...</p>
-          <div className="flex gap-4 w-full">
-            <button onClick={answerCall} className="flex-1 bg-green-500 text-white py-3 rounded-2xl font-bold">Answer</button>
-            <button onClick={() => setIncomingCall(false)} className="flex-1 bg-gray-100 text-gray-500 py-3 rounded-2xl font-bold">Ignore</button>
+
+          {/* Call Viewport Display */}
+          <div className="flex-1 relative flex items-center justify-center p-4 bg-slate-950">
+            {/* Remote Video Display */}
+            {callType === 'video' ? (
+              <div id="remote-video" className="w-full h-full rounded-3xl overflow-hidden shadow-2xl border border-slate-800 relative bg-slate-900 flex items-center justify-center">
+                <p className="text-xs text-slate-500 font-bold italic">Waiting for partner's video feed...</p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center space-y-4">
+                <div className="w-32 h-32 rounded-full bg-gradient-to-tr from-rose-500 to-pink-600 flex items-center justify-center shadow-2xl animate-pulse">
+                  <Volume2 size={56} className="text-white" />
+                </div>
+                <h3 className="text-2xl font-black">Connected in Audio Call 💖</h3>
+                <p className="text-xs text-slate-400 font-bold">{formatTime(callDuration)}</p>
+              </div>
+            )}
+
+            {/* Local Video PIP Box */}
+            {callType === 'video' && (
+              <div className="absolute bottom-6 right-6 w-40 h-56 md:w-48 md:h-64 rounded-2xl overflow-hidden border-2 border-rose-500 shadow-2xl bg-black z-30">
+                <div id="local-video" className="w-full h-full object-cover" />
+              </div>
+            )}
+          </div>
+
+          {/* Call Controls Bar */}
+          <div className="p-6 bg-slate-900/80 backdrop-blur-xl border-t border-slate-800 flex justify-center items-center gap-6 z-20">
+            <button
+              onClick={toggleMic}
+              className={`p-4 rounded-full transition-all ${
+                isMicMuted ? 'bg-red-500 text-white' : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
+              }`}
+              title={isMicMuted ? "Unmute Mic" : "Mute Mic"}
+            >
+              {isMicMuted ? <MicOff size={22} /> : <Mic size={22} />}
+            </button>
+
+            {callType === 'video' && (
+              <button
+                onClick={toggleVideo}
+                className={`p-4 rounded-full transition-all ${
+                  isVideoMuted ? 'bg-red-500 text-white' : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
+                }`}
+                title={isVideoMuted ? "Turn On Camera" : "Turn Off Camera"}
+              >
+                {isVideoMuted ? <VideoOff size={22} /> : <Video size={22} />}
+              </button>
+            )}
+
+            <button
+              onClick={endCall}
+              className="w-16 h-16 bg-red-500 text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-all"
+              title="End Call"
+            >
+              <PhoneOff size={28} />
+            </button>
           </div>
         </div>
       )}
 
-      {showRoutine && <Routine user={user} onClose={() => setShowRoutine(false)} />}
-
-      {/* Header */}
-      <div className="bg-white/60 backdrop-blur-md p-5 flex items-center justify-between border-b border-rose-50/50">
+      {/* Chat Top Header */}
+      <div className="p-6 bg-white/40 border-b border-rose-100 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="relative">
-            <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-lg">
-              {user.partnerId?.avatar ? (
-                <img src={user.partnerId.avatar} alt={user.partnerId.name} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full bg-rose-500 flex items-center justify-center font-black text-white">
-                  {user.partnerId?.name?.charAt(0).toUpperCase() || 'P'}
-                </div>
-              )}
+            <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-rose-400 to-pink-500 text-white flex items-center justify-center font-black shadow-md">
+              {user.partnerName ? user.partnerName[0].toUpperCase() : 'P'}
             </div>
-            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+            <div className="w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full absolute bottom-0 right-0" />
           </div>
           <div>
-            <h3 className="text-gray-800 font-black">{user.partnerId?.name || "My Universe"} ❤️</h3>
-            <p className="text-[10px] text-green-500 font-bold uppercase tracking-widest italic">Always Yours</p>
+            <h3 className="font-black text-gray-800 text-lg leading-tight">{user.partnerName || "Partner"}</h3>
+            <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">
+              {isTyping ? "Typing..." : "Online in sanctuary"}
+            </p>
           </div>
         </div>
-        <div className="flex items-center gap-3 text-gray-400">
-          <button onClick={() => setShowRoutine(!showRoutine)} className={`p-3 rounded-2xl transition-all ${showRoutine ? 'bg-rose-500 text-white' : 'bg-rose-50 text-rose-400'}`}>
-            <ListTodo size={20} />
+
+        {/* Call Action Buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => startCall(false)}
+            className="p-3 bg-white text-rose-500 hover:bg-rose-50 rounded-2xl border border-rose-100 shadow-sm hover:scale-105 transition-all"
+            title="Start HD Audio Call"
+          >
+            <Phone size={18} />
           </button>
-          <button onClick={() => startCall(false)} className="p-3 bg-rose-50 text-rose-400 rounded-2xl"><Phone size={20} /></button>
-          <button onClick={() => startCall(true)} className="p-3 bg-rose-50 text-rose-400 rounded-2xl"><Video size={20} /></button>
-          <button className="p-2 hover:text-rose-500"><MoreVertical size={20} /></button>
+          <button
+            onClick={() => startCall(true)}
+            className="p-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-2xl shadow-md hover:scale-105 transition-all"
+            title="Start HD Video Call"
+          >
+            <Video size={18} />
+          </button>
+          <button
+            onClick={() => setShowRoutine(!showRoutine)}
+            className={`p-3 rounded-2xl border shadow-sm transition-all ${
+              showRoutine ? 'bg-rose-500 text-white border-rose-500' : 'bg-white text-gray-600 border-rose-100 hover:bg-rose-50'
+            }`}
+            title="Toggle Routines"
+          >
+            <ListTodo size={18} />
+          </button>
         </div>
       </div>
 
-      {/* Message List */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar bg-gradient-to-b from-transparent to-rose-50/30">
+      {showRoutine && (
+        <div className="p-4 bg-rose-50/60 border-b border-rose-100 animate-in slide-in-from-top-4">
+          <Routine user={user} />
+        </div>
+      )}
+
+      {/* Messages Feed */}
+      <div className="flex-1 p-6 overflow-y-auto space-y-4">
         {messageList.map((msg, index) => {
-          const isMine = msg.sender === userId || msg.sender?._id === userId;
+          const isMe = msg.sender === userId;
           return (
-            <div key={index} className={`flex ${isMine ? "justify-end" : "justify-start"} animate-in slide-in-from-bottom-2`}>
-              <div className={`max-w-[70%] flex flex-col ${isMine ? "items-end" : "items-start"}`}>
-                {msg.isVoiceNote ? (
-                  <button
-                    onClick={() => handlePlay(msg._id, msg.audioUrl)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-[2rem] shadow-sm ${isMine ? 'bg-rose-500 rounded-tr-none' : 'bg-white rounded-tl-none border border-rose-50'}`}
-                  >
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center ${isMine ? 'bg-white/20' : 'bg-rose-500'}`}>
-                      {playingId === msg._id ? <Pause size={16} className="text-white" /> : <Play size={16} className="text-white" />}
+            <div key={index} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+              <div className={`max-w-[75%] p-4 rounded-[2rem] shadow-sm ${
+                isMe
+                  ? 'bg-gradient-to-tr from-rose-500 to-pink-500 text-white rounded-tr-none'
+                  : 'bg-white border border-rose-100 text-gray-800 rounded-tl-none'
+              }`}>
+                {msg.isImage ? (
+                  <img src={msg.message} alt="Shared photo" className="rounded-2xl max-h-60 object-cover" />
+                ) : msg.isVoiceNote ? (
+                  <div className="flex items-center gap-3 min-w-[200px]">
+                    <button
+                      onClick={() => toggleVoiceNotePlay(index, msg.message)}
+                      className={`p-3 rounded-full ${isMe ? 'bg-white text-rose-500' : 'bg-rose-500 text-white'}`}
+                    >
+                      {playingId === index ? <Pause size={18} /> : <Play size={18} />}
+                    </button>
+                    <div className="flex-1">
+                      <p className={`text-xs font-black ${isMe ? 'text-white' : 'text-gray-800'}`}>Voice Note 🎙️</p>
+                      <div className={`h-1.5 rounded-full mt-1.5 ${isMe ? 'bg-white/40' : 'bg-gray-200'}`}>
+                        <div className={`h-full rounded-full ${isMe ? 'bg-white' : 'bg-rose-500'} ${playingId === index ? 'animate-pulse w-full' : 'w-0'}`} />
+                      </div>
                     </div>
-                    <div className="flex gap-0.5 items-center h-6">
-                      {Array.from({ length: 18 }).map((_, i) => (
-                        <div key={i} className={`rounded-full w-1 ${isMine ? 'bg-white/70' : 'bg-rose-300'}`}
-                          style={{ height: `${Math.random() * 18 + 6}px` }} />
-                      ))}
-                    </div>
-                    <span className={`text-xs font-bold ${isMine ? 'text-rose-100' : 'text-gray-400'}`}>
-                      {formatTime(msg.duration || 0)}
-                    </span>
-                  </button>
-                ) : (
-                  <div className={`shadow-sm ${isMine ? "bg-rose-500 text-white rounded-[2rem] rounded-tr-none" : "bg-white text-gray-700 rounded-[2rem] rounded-tl-none border border-rose-50"} ${msg.isImage ? "p-1" : "px-5 py-3.5"}`}>
-                    {msg.isImage || (msg.message && msg.message.startsWith("http")) ? (
-                      <img src={msg.message} alt="media" className="rounded-2xl max-h-60 object-cover cursor-pointer" onClick={() => window.open(msg.message)} />
-                    ) : (
-                      <p className="text-[14px] font-medium leading-relaxed">{msg.message}</p>
-                    )}
                   </div>
+                ) : (
+                  <p className="text-sm font-bold leading-relaxed">{msg.message}</p>
                 )}
-                <div className={`flex items-center gap-1.5 mt-1.5 px-2 ${isMine ? "flex-row-reverse" : "flex-row"}`}>
-                  <span className="text-[9px] font-bold text-gray-400">{msg.time}</span>
-                  {isMine && <CheckCheck size={12} className="text-rose-400" />}
-                </div>
+                <span className={`text-[9px] font-bold block mt-1.5 text-right ${isMe ? 'text-rose-100' : 'text-gray-400'}`}>
+                  {msg.time}
+                </span>
               </div>
             </div>
           );
@@ -461,7 +646,7 @@ function Chat({ user }) {
             placeholder={recording ? "Recording..." : sendingVoice ? "Sending..." : "Type your love..."}
             onChange={(e) => { setCurrentMessage(e.target.value); socket.emit("typing", { room: roomId, userId, typing: e.target.value.length > 0 }); }}
             onKeyPress={(e) => e.key === "Enter" && sendMessage()}
-            className="flex-1 bg-transparent border-none outline-none text-sm text-gray-700 font-medium px-2"
+            className="flex-1 bg-transparent border-none outline-none text-xs md:text-sm text-gray-700 font-bold px-2"
             disabled={recording || sendingVoice}
           />
           {currentMessage.length === 0 ? (
