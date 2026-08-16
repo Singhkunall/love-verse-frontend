@@ -128,10 +128,16 @@ function WatchTogether({ user, roomId, socket }) {
   const dragStartRef = useRef({ x: 0, y: 0 });
   const initialPosRef = useRef({ x: 0, y: 0 });
 
+  // Stream & Autoplay State
+  const [hasRemoteStream, setHasRemoteStream] = useState(false);
+  const [autoplayBlocked, setAutoplayBlocked] = useState(false);
+
   const screenVideoRef = useRef(null);
   const cinemaContainerRef = useRef(null);
   const youtubeContainerRef = useRef(null);
   const mediaStreamRef = useRef(null);
+  const remoteStreamRef = useRef(null);
+  const streamerPeerIdRef = useRef(null);
   const peerRef = useRef(null);
   const agoraVoiceClientRef = useRef(null);
   const localAudioTrackRef = useRef(null);
@@ -211,25 +217,17 @@ function WatchTogether({ user, roomId, socket }) {
     peerRef.current = peer;
 
     peer.on('call', (call) => {
+      console.log("PeerJS call received from:", call.peer);
       call.answer();
       call.on('stream', (remoteStream) => {
+        console.log("PeerJS remoteStream attached successfully!", remoteStream);
+        remoteStreamRef.current = remoteStream;
+        setHasRemoteStream(true);
         setActiveTab('screen_share');
         setIsReceivingStream(true);
         setIsSharingScreen(false);
         setIsMuted(false);
-
-        setTimeout(() => {
-          if (screenVideoRef.current) {
-            screenVideoRef.current.srcObject = remoteStream;
-            screenVideoRef.current.muted = false;
-            screenVideoRef.current.play().then(() => {
-              if (screenVideoRef.current.buffered && screenVideoRef.current.buffered.length > 0) {
-                const liveEnd = screenVideoRef.current.buffered.end(screenVideoRef.current.buffered.length - 1);
-                screenVideoRef.current.currentTime = liveEnd - 0.05;
-              }
-            }).catch(e => console.error("Auto-play error:", e));
-          }
-        }, 200);
+        setAutoplayBlocked(false);
 
         toast.success("Partner's NetMirror Stream Connected Live! 🍿✨", { duration: 5000 });
       });
@@ -240,7 +238,32 @@ function WatchTogether({ user, roomId, socket }) {
     };
   }, [userId]);
 
-  // Low Latency Live Edge Buffer Sync (Only for receiver, NOT for local streamer!)
+  // Screen stream binding effect (attaches local streamer preview or remote stream, handles browser autoplay blocking)
+  useEffect(() => {
+    if (activeTab !== 'screen_share' || !screenVideoRef.current) return;
+
+    const vid = screenVideoRef.current;
+    const targetStream = isSharingScreen ? mediaStreamRef.current : (isReceivingStream ? remoteStreamRef.current : null);
+
+    if (!targetStream) return;
+
+    if (vid.srcObject !== targetStream) {
+      vid.srcObject = targetStream;
+      vid.muted = isSharingScreen;
+
+      const playPromise = vid.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          setAutoplayBlocked(false);
+        }).catch((err) => {
+          console.warn("Autoplay blocked by browser policy:", err);
+          setAutoplayBlocked(true);
+        });
+      }
+    }
+  }, [activeTab, isSharingScreen, isReceivingStream, hasRemoteStream]);
+
+  // Low Latency Live Edge Buffer Sync (Only for receiver)
   useEffect(() => {
     if (!isReceivingStream || isSharingScreen) return;
 
@@ -321,11 +344,37 @@ function WatchTogether({ user, roomId, socket }) {
       setActiveTab('screen_share');
       setIsReceivingStream(true);
       setStreamerName(data.userName || 'Partner');
+      if (data.streamerPeerId) {
+        streamerPeerIdRef.current = data.streamerPeerId;
+      }
+
+      // Request stream retry from streamer via socket if stream not yet received
+      if (socket && peerRef.current) {
+        setTimeout(() => {
+          if (!remoteStreamRef.current) {
+            socket.emit("request_cinema_stream", {
+              roomId,
+              receiverPeerId: peerRef.current?.id || `loveverse_stream_${userId}`
+            });
+          }
+        }, 400);
+      }
+
       toast(`${data.userName || 'Partner'} started streaming NetMirror! 🍿`, { icon: '📽️', duration: 5000 });
+    };
+
+    const handleCinemaRequested = (data) => {
+      if (isSharingScreen && mediaStreamRef.current && peerRef.current && data.receiverPeerId) {
+        console.log("Re-sending screen share call to receiver:", data.receiverPeerId);
+        peerRef.current.call(data.receiverPeerId, mediaStreamRef.current);
+      }
     };
 
     const handleCinemaEnded = () => {
       setIsReceivingStream(false);
+      remoteStreamRef.current = null;
+      setHasRemoteStream(false);
+      setAutoplayBlocked(false);
       if (screenVideoRef.current) {
         screenVideoRef.current.srcObject = null;
       }
@@ -351,6 +400,7 @@ function WatchTogether({ user, roomId, socket }) {
 
     socket.on("video_changed", handleVideoChanged);
     socket.on("cinema_stream_started", handleCinemaStarted);
+    socket.on("cinema_stream_requested", handleCinemaRequested);
     socket.on("cinema_stream_ended", handleCinemaEnded);
     socket.on("receive_cinema_reaction", handleCinemaReaction);
     socket.on("receive_message", handleReceiveMessage);
@@ -358,11 +408,12 @@ function WatchTogether({ user, roomId, socket }) {
     return () => {
       socket.off("video_changed", handleVideoChanged);
       socket.off("cinema_stream_started", handleCinemaStarted);
+      socket.off("cinema_stream_requested", handleCinemaRequested);
       socket.off("cinema_stream_ended", handleCinemaEnded);
       socket.off("receive_cinema_reaction", handleCinemaReaction);
       socket.off("receive_message", handleReceiveMessage);
     };
-  }, [socket, roomId]);
+  }, [socket, roomId, isSharingScreen, userId]);
 
   useEffect(() => {
     if (isSharingScreen && screenVideoRef.current) {
@@ -670,21 +721,17 @@ function WatchTogether({ user, roomId, socket }) {
       setIsReceivingStream(false);
       setIsMuted(true);
 
+      const myPeerId = peerRef.current?.id || `loveverse_stream_${userId}`;
+
       if (peerRef.current && partnerId) {
         peerRef.current.call(`loveverse_stream_${partnerId}`, stream);
       }
 
       socket.emit("start_cinema_stream", {
         roomId,
-        userName: user.name || 'Partner'
+        userName: user?.name || 'Partner',
+        streamerPeerId: myPeerId
       });
-
-      setTimeout(() => {
-        if (screenVideoRef.current) {
-          screenVideoRef.current.srcObject = stream;
-          screenVideoRef.current.muted = true;
-        }
-      }, 100);
 
       toast.success("Virtual Cinema Active! Streaming Live to Partner! 🍿✨");
 
@@ -1426,6 +1473,40 @@ function WatchTogether({ user, roomId, socket }) {
                   muted={isSharingScreen}
                   className="absolute top-0 left-0 w-full h-full object-contain"
                 />
+
+                {/* AUTOPLAY BLOCKED OVERLAY FOR RECEIVER */}
+                {autoplayBlocked && isReceivingStream && (
+                  <div className="absolute inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center space-y-4 animate-in fade-in">
+                    <div className="w-16 h-16 bg-rose-500 text-white rounded-full flex items-center justify-center animate-bounce shadow-2xl">
+                      <Play size={32} className="ml-1" />
+                    </div>
+                    <h4 className="text-xl font-black text-white">Partner's Stream is Ready! 🍿</h4>
+                    <p className="text-xs text-gray-300 max-w-sm font-bold leading-relaxed">
+                      Browser Autoplay Policy requires 1 tap to start live video & audio stream!
+                    </p>
+                    <button
+                      onClick={() => {
+                        if (screenVideoRef.current) {
+                          screenVideoRef.current.play().then(() => setAutoplayBlocked(false)).catch(e => console.error(e));
+                        }
+                      }}
+                      className="px-8 py-3.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-2xl font-black text-sm shadow-xl hover:scale-105 transition-all flex items-center gap-2"
+                    >
+                      <Play size={18} /> Tap to Play Live Stream 🍿
+                    </button>
+                  </div>
+                )}
+
+                {/* CONNECTING SPINNER OVERLAY */}
+                {isReceivingStream && !hasRemoteStream && !autoplayBlocked && (
+                  <div className="absolute inset-0 z-40 bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center text-white space-y-3">
+                    <RefreshCw size={36} className="text-rose-500 animate-spin" />
+                    <h4 className="text-lg font-black">{streamerName || 'Partner'}'s Cinema Connecting...</h4>
+                    <p className="text-xs text-gray-400 font-bold max-w-xs">
+                      Connecting live WebRTC stream. Video will start automatically!
+                    </p>
+                  </div>
+                )}
 
                 {/* FLOATING EMOJI ANIMATION OVERLAY */}
                 <div className="absolute inset-0 pointer-events-none overflow-hidden z-40">
