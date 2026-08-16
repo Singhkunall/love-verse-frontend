@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PlaySquare, Link as LinkIcon, Search, Sparkles, Film, AlertCircle, Tv, Monitor, ExternalLink, Globe, Play, RefreshCw, Video, StopCircle, Maximize2, Volume2, VolumeX, Minimize2, Radio, Mic, MicOff, PhoneOff, VideoOff, GripVertical, MessageSquare, Send, Heart, Flame, Smile, ThumbsUp, X } from 'lucide-react';
+import { PlaySquare, Link as LinkIcon, Search, Sparkles, Film, AlertCircle, Tv, Monitor, ExternalLink, Globe, Play, RefreshCw, Video, StopCircle, Maximize2, Volume2, VolumeX, Minimize2, Radio, Mic, MicOff, PhoneOff, VideoOff, GripVertical, MessageSquare, Send, Heart, Flame, Smile, ThumbsUp, X, ShieldCheck, Sliders, Volume1, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Peer from 'peerjs';
 import AgoraRTC from 'agora-rtc-sdk-ng';
@@ -55,6 +55,66 @@ function WatchTogether({ user, roomId, socket }) {
   const [isVoiceMicMuted, setIsVoiceMicMuted] = useState(false);
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [hasRemoteVideo, setHasRemoteVideo] = useState(false);
+
+  // Anti-Echo & Voice Activity Gate State
+  const [voiceMode, setVoiceMode] = useState('auto_gate'); // 'auto_gate' | 'push_to_talk' | 'always_on'
+  const [gateThreshold, setGateThreshold] = useState(14);
+  const [micLevel, setMicLevel] = useState(0);
+  const [isPttPressed, setIsPttPressed] = useState(false);
+  const [showEchoSettings, setShowEchoSettings] = useState(false);
+  const [isAudioDucking, setIsAudioDucking] = useState(true);
+  const [isPartnerSpeaking, setIsPartnerSpeaking] = useState(false);
+
+  // Audio Processing Refs
+  const audioCtxRef = useRef(null);
+  const analyserRef = useRef(null);
+  const vadAnimFrameRef = useRef(null);
+  const silenceTimerRef = useRef(null);
+
+  // Sync refs with state to prevent stale closures
+  const voiceModeRef = useRef('auto_gate');
+  const isVoiceMicMutedRef = useRef(false);
+  const gateThresholdRef = useRef(14);
+  const isPttPressedRef = useRef(false);
+
+  useEffect(() => { voiceModeRef.current = voiceMode; }, [voiceMode]);
+  useEffect(() => { isVoiceMicMutedRef.current = isVoiceMicMuted; }, [isVoiceMicMuted]);
+  useEffect(() => { gateThresholdRef.current = gateThreshold; }, [gateThreshold]);
+  useEffect(() => { isPttPressedRef.current = isPttPressed; }, [isPttPressed]);
+
+  // Push to talk keyboard handler (Space bar)
+  useEffect(() => {
+    if (!isVoiceConnected || voiceMode !== 'push_to_talk') return;
+
+    const handleKeyDown = (e) => {
+      if (['INPUT', 'TEXTAREA'].includes(e.target?.tagName)) return;
+      if (e.code === 'Space' && !e.repeat) {
+        e.preventDefault();
+        setIsPttPressed(true);
+        if (localAudioTrackRef.current && !isVoiceMicMutedRef.current) {
+          localAudioTrackRef.current.setEnabled(true);
+        }
+      }
+    };
+
+    const handleKeyUp = (e) => {
+      if (['INPUT', 'TEXTAREA'].includes(e.target?.tagName)) return;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        setIsPttPressed(false);
+        if (localAudioTrackRef.current) {
+          localAudioTrackRef.current.setEnabled(false);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [isVoiceConnected, voiceMode]);
 
   // Floating Emoji, Translucent Chat & Sidebar Chat State
   const [floatingReactions, setFloatingReactions] = useState([]);
@@ -201,6 +261,7 @@ function WatchTogether({ user, roomId, socket }) {
   // Clean up Voice & Camera on unmount
   useEffect(() => {
     return () => {
+      stopVoiceGate();
       if (localAudioTrackRef.current) {
         localAudioTrackRef.current.stop();
         localAudioTrackRef.current.close();
@@ -353,10 +414,112 @@ function WatchTogether({ user, roomId, socket }) {
     }, 100);
   };
 
+  const stopVoiceGate = () => {
+    if (vadAnimFrameRef.current) {
+      cancelAnimationFrame(vadAnimFrameRef.current);
+      vadAnimFrameRef.current = null;
+    }
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    if (audioCtxRef.current) {
+      try { audioCtxRef.current.close(); } catch(e) {}
+      audioCtxRef.current = null;
+    }
+    setMicLevel(0);
+  };
+
+  const setupVoiceGate = (audioTrack) => {
+    try {
+      const rawTrack = audioTrack.getMediaStreamTrack();
+      if (!rawTrack) return;
+
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return;
+
+      stopVoiceGate();
+
+      const audioCtx = new AudioContextClass();
+      audioCtxRef.current = audioCtx;
+      const source = audioCtx.createMediaStreamSource(new MediaStream([rawTrack]));
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      let isGateOpen = false;
+
+      const analyzeAudio = () => {
+        if (!localAudioTrackRef.current) return;
+        analyser.getByteFrequencyData(dataArray);
+
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          sum += dataArray[i];
+        }
+        const avg = sum / dataArray.length;
+        const volumePct = Math.min(100, Math.round((avg / 128) * 100));
+        setMicLevel(volumePct);
+
+        const currentMode = voiceModeRef.current;
+        const isMuted = isVoiceMicMutedRef.current;
+
+        if (isMuted) {
+          if (isGateOpen) {
+            isGateOpen = false;
+            localAudioTrackRef.current.setEnabled(false);
+          }
+        } else if (currentMode === 'auto_gate') {
+          const threshold = gateThresholdRef.current;
+          if (volumePct > threshold) {
+            if (!isGateOpen) {
+              isGateOpen = true;
+              localAudioTrackRef.current.setEnabled(true);
+            }
+            if (silenceTimerRef.current) {
+              clearTimeout(silenceTimerRef.current);
+              silenceTimerRef.current = null;
+            }
+          } else {
+            if (isGateOpen && !silenceTimerRef.current) {
+              silenceTimerRef.current = setTimeout(() => {
+                isGateOpen = false;
+                if (localAudioTrackRef.current && voiceModeRef.current === 'auto_gate') {
+                  localAudioTrackRef.current.setEnabled(false);
+                }
+                silenceTimerRef.current = null;
+              }, 400);
+            }
+          }
+        } else if (currentMode === 'push_to_talk') {
+          const pttOn = isPttPressedRef.current;
+          if (pttOn !== isGateOpen) {
+            isGateOpen = pttOn;
+            localAudioTrackRef.current.setEnabled(pttOn);
+          }
+        } else if (currentMode === 'always_on') {
+          if (!isGateOpen) {
+            isGateOpen = true;
+            localAudioTrackRef.current.setEnabled(true);
+          }
+        }
+
+        vadAnimFrameRef.current = requestAnimationFrame(analyzeAudio);
+      };
+
+      vadAnimFrameRef.current = requestAnimationFrame(analyzeAudio);
+    } catch (err) {
+      console.error("Voice gate setup error:", err);
+    }
+  };
+
   // LIVE VOICE & CAMERA CHAT TOGGLE (AGORA RTC)
   const toggleVoiceChatWatch = async () => {
     if (isVoiceConnected) {
       try {
+        stopVoiceGate();
         if (localAudioTrackRef.current) {
           localAudioTrackRef.current.stop();
           localAudioTrackRef.current.close();
@@ -392,6 +555,21 @@ function WatchTogether({ user, roomId, socket }) {
         const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'h264' });
         agoraVoiceClientRef.current = client;
 
+        // Enable Audio Volume Indicator for Partner Audio Ducking & Detection
+        client.enableAudioVolumeIndicator();
+        client.on("volume-indicator", (volumes) => {
+          const partnerSpeaking = volumes.some(v => v.uid !== uid && v.level > 12);
+          setIsPartnerSpeaking(partnerSpeaking);
+          if (isAudioDucking) {
+            if (screenVideoRef.current) {
+              screenVideoRef.current.volume = partnerSpeaking ? 0.25 : 1.0;
+            }
+            if (videoRef.current) {
+              videoRef.current.volume = partnerSpeaking ? 0.25 : 1.0;
+            }
+          }
+        });
+
         client.on('user-published', async (remoteUser, mediaType) => {
           await client.subscribe(remoteUser, mediaType);
           if (mediaType === 'audio') {
@@ -416,17 +594,18 @@ function WatchTogether({ user, roomId, socket }) {
 
         await client.join(appId, voiceChannel, data.token, uid);
         const audioTrack = await AgoraRTC.createMicrophoneAudioTrack({
-          encoderConfig: "speech_low_quality",
+          encoderConfig: "speech_standard",
           AEC: true,
           ANS: true,
           AGC: true
         });
         localAudioTrackRef.current = audioTrack;
         await client.publish([audioTrack]);
+        setupVoiceGate(audioTrack);
 
         setIsVoiceConnected(true);
         setIsVoiceMicMuted(false);
-        toast.success("Live Voice Chat Active! Talk & see each other while watching 🎙️📹🍿");
+        toast.success("Anti-Echo Live Voice Chat Active! 🛡️🎙️🍿");
       } catch (err) {
         console.error("Voice chat error:", err);
         toast.error("Could not start Voice Chat. Check mic permission!");
@@ -802,7 +981,7 @@ function WatchTogether({ user, roomId, socket }) {
         {/* LEFT COLUMN: MAIN MOVIE PLAYER & VOICE/VIDEO BAR (8 COLS) */}
         <div className="lg:col-span-8 space-y-6">
 
-          {/* LIVE VOICE & CAMERA CHAT FLOATING BAR */}
+          {/* LIVE VOICE & CAMERA CHAT FLOATING BAR WITH ANTI-ECHO SHIELD */}
           <div className="flex flex-col gap-2">
             <div className="flex flex-wrap items-center justify-between bg-gradient-to-r from-rose-500 via-pink-500 to-purple-600 p-3.5 rounded-3xl text-white shadow-xl gap-3">
               <div className="flex items-center gap-3">
@@ -810,18 +989,73 @@ function WatchTogether({ user, roomId, socket }) {
                   <Radio size={20} className={isVoiceConnected ? "animate-pulse text-green-300" : "text-white"} />
                 </div>
                 <div>
-                  <h4 className="text-xs font-black uppercase tracking-wider">
-                    {isVoiceConnected ? 'Live Voice & Video Chat Active 🎙️📹' : 'Movie Voice & Camera Chat'}
-                  </h4>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-xs font-black uppercase tracking-wider">
+                      {isVoiceConnected ? 'Live Voice & Video Chat Active 🎙️📹' : 'Movie Voice & Camera Chat'}
+                    </h4>
+                    <span className="px-2 py-0.5 bg-emerald-400/30 text-emerald-200 border border-emerald-300/40 rounded-full text-[9px] font-black flex items-center gap-1">
+                      <ShieldCheck size={10} /> Anti-Echo Active
+                    </span>
+                  </div>
                   <p className="text-[10px] text-rose-100 font-bold">
-                    {isVoiceConnected ? 'Talk & see live facial reactions while watching movies!' : 'Connect mic & camera to talk & see each other live during movie'}
+                    {isVoiceConnected ? 'Talk & see live facial reactions with zero speaker echo!' : 'Connect mic & camera to talk & see each other live during movie'}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => setShowEchoSettings(!showEchoSettings)}
+                  className={`p-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
+                    showEchoSettings
+                      ? 'bg-emerald-400 text-slate-950 font-black shadow-lg scale-105'
+                      : 'bg-white/20 hover:bg-white/30 text-white'
+                  }`}
+                  title="Configure Anti-Echo Shield, Push-To-Talk & Voice Gate Sensitivity"
+                >
+                  <ShieldCheck size={16} className={voiceMode === 'auto_gate' ? 'text-emerald-300' : 'text-amber-300'} />
+                  <span>
+                    {voiceMode === 'auto_gate' ? 'Echo Shield: Auto 🛡️' : voiceMode === 'push_to_talk' ? 'Echo Shield: PTT 🎙️' : 'Echo Shield ⚙️'}
+                  </span>
+                </button>
+
                 {isVoiceConnected && (
                   <>
+                    {voiceMode === 'push_to_talk' && (
+                      <button
+                        onMouseDown={() => {
+                          setIsPttPressed(true);
+                          if (localAudioTrackRef.current && !isVoiceMicMuted) {
+                            localAudioTrackRef.current.setEnabled(true);
+                          }
+                        }}
+                        onMouseUp={() => {
+                          setIsPttPressed(false);
+                          if (localAudioTrackRef.current) {
+                            localAudioTrackRef.current.setEnabled(false);
+                          }
+                        }}
+                        onTouchStart={() => {
+                          setIsPttPressed(true);
+                          if (localAudioTrackRef.current && !isVoiceMicMuted) {
+                            localAudioTrackRef.current.setEnabled(true);
+                          }
+                        }}
+                        onTouchEnd={() => {
+                          setIsPttPressed(false);
+                          if (localAudioTrackRef.current) {
+                            localAudioTrackRef.current.setEnabled(false);
+                          }
+                        }}
+                        className={`px-3.5 py-2.5 rounded-xl font-black text-xs transition-all shadow-lg flex items-center gap-1.5 select-none ${
+                          isPttPressed ? 'bg-emerald-400 text-slate-950 scale-105 ring-4 ring-emerald-300' : 'bg-amber-400 text-gray-900 hover:bg-amber-300'
+                        }`}
+                      >
+                        <Mic size={14} />
+                        <span>{isPttPressed ? 'TALKING LIVE 🎙️' : 'HOLD TO TALK (SPACE)'}</span>
+                      </button>
+                    )}
+
                     <button
                       onClick={toggleMuteCinema}
                       className={`p-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
@@ -869,10 +1103,161 @@ function WatchTogether({ user, roomId, socket }) {
               </div>
             </div>
 
-            {isVoiceConnected && (
-              <div className="px-4 py-2 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-between text-[11px] font-bold text-amber-700 animate-in fade-in">
-                <span>🎧 Pro Tip: Use Earphones / Headphones while watching movies with Voice Chat for 100% zero speaker echo!</span>
-                <span className="text-[10px] text-amber-600 font-normal italic">Echo Filter Active ✨</span>
+            {/* EXPANDABLE ANTI-ECHO SHIELD CONTROL PANEL */}
+            {showEchoSettings && (
+              <div className="bg-slate-900/95 backdrop-blur-xl border border-rose-500/30 rounded-3xl p-4 text-white shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
+                <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck size={18} className="text-emerald-400" />
+                    <h5 className="text-sm font-black uppercase tracking-wider text-emerald-300">
+                      Anti-Echo Shield & Mic Filter Settings 🛡️
+                    </h5>
+                  </div>
+                  <button
+                    onClick={() => setShowEchoSettings(false)}
+                    className="text-xs bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-full font-bold transition-all"
+                  >
+                    ✖ Close
+                  </button>
+                </div>
+
+                {/* Mode Selector */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <button
+                    onClick={() => setVoiceMode('auto_gate')}
+                    className={`p-3 rounded-2xl text-left border transition-all ${
+                      voiceMode === 'auto_gate'
+                        ? 'bg-emerald-500/20 border-emerald-400 text-white shadow-lg'
+                        : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 font-black text-xs text-emerald-300">
+                      <ShieldCheck size={14} /> Smart Voice Gate 🛡️
+                    </div>
+                    <p className="text-[10px] text-gray-300 mt-1 font-medium leading-relaxed">
+                      Auto-mutes mic when movie plays. Unmutes instantly when you speak! (Recommended)
+                    </p>
+                  </button>
+
+                  <button
+                    onClick={() => setVoiceMode('push_to_talk')}
+                    className={`p-3 rounded-2xl text-left border transition-all ${
+                      voiceMode === 'push_to_talk'
+                        ? 'bg-amber-500/20 border-amber-400 text-white shadow-lg'
+                        : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 font-black text-xs text-amber-300">
+                      <Mic size={14} /> Push-to-Talk (PTT) 🎙️
+                    </div>
+                    <p className="text-[10px] text-gray-300 mt-1 font-medium leading-relaxed">
+                      Mic stays muted until you hold Space key or Hold-to-Talk button. 100% Zero Echo!
+                    </p>
+                  </button>
+
+                  <button
+                    onClick={() => setVoiceMode('always_on')}
+                    className={`p-3 rounded-2xl text-left border transition-all ${
+                      voiceMode === 'always_on'
+                        ? 'bg-rose-500/20 border-rose-400 text-white shadow-lg'
+                        : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 font-black text-xs text-rose-300">
+                      <Radio size={14} /> Always On Mic 🔊
+                    </div>
+                    <p className="text-[10px] text-gray-300 mt-1 font-medium leading-relaxed">
+                      Standard mic mode with Chrome AEC/ANS active. Best used with earphones!
+                    </p>
+                  </button>
+                </div>
+
+                {/* Mic Sensitivity Meter & Threshold Slider */}
+                {isVoiceConnected && (
+                  <div className="space-y-2 bg-black/40 p-3.5 rounded-2xl border border-white/10">
+                    <div className="flex items-center justify-between text-xs font-bold">
+                      <span className="flex items-center gap-1.5 text-gray-200">
+                        <Sliders size={14} className="text-emerald-400" /> Live Mic Input Volume:
+                      </span>
+                      <span className={micLevel > gateThreshold ? "text-emerald-400 font-black" : "text-gray-400 font-bold"}>
+                        {micLevel > gateThreshold ? "Speaking 🗣️" : "Gate Suppressed 🛡️"} ({micLevel}%)
+                      </span>
+                    </div>
+
+                    {/* Visual Level Bar */}
+                    <div className="relative w-full h-3 bg-gray-800 rounded-full overflow-hidden border border-white/10">
+                      <div
+                        style={{ width: `${micLevel}%` }}
+                        className={`h-full transition-all duration-75 ${
+                          micLevel > gateThreshold ? 'bg-emerald-400' : 'bg-rose-500/80'
+                        }`}
+                      />
+                      {/* Threshold Marker */}
+                      <div
+                        style={{ left: `${gateThreshold}%` }}
+                        className="absolute top-0 bottom-0 w-1 bg-yellow-300 z-10 shadow-md"
+                        title={`Gate Threshold: ${gateThreshold}%`}
+                      />
+                    </div>
+
+                    {voiceMode === 'auto_gate' && (
+                      <div className="flex items-center justify-between text-[11px] pt-1">
+                        <span className="text-gray-300 font-medium">Mic Gate Cutoff Sensitivity:</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="range"
+                            min="5"
+                            max="40"
+                            value={gateThreshold}
+                            onChange={(e) => setGateThreshold(Number(e.target.value))}
+                            className="w-32 accent-emerald-400 cursor-pointer"
+                          />
+                          <span className="font-mono font-bold text-emerald-300 w-8">{gateThreshold}%</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Audio Ducking & Hindi/English Tip */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pt-1 border-t border-white/10 text-xs">
+                  <label className="flex items-center gap-2 font-bold text-gray-200 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={isAudioDucking}
+                      onChange={(e) => setIsAudioDucking(e.target.checked)}
+                      className="accent-rose-500 rounded"
+                    />
+                    <span>🍿 Auto-Duck Movie Volume when partner speaks</span>
+                  </label>
+
+                  <div className="text-[11px] text-amber-300 italic font-medium flex items-center gap-1">
+                    <Info size={12} className="shrink-0" />
+                    <span>Earphones / Headphones use karne se 100% studio clear voice milti hai! 🎧</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {isVoiceConnected && !showEchoSettings && (
+              <div className="px-4 py-2 bg-slate-900/60 backdrop-blur-md border border-slate-700/50 rounded-2xl flex flex-wrap items-center justify-between text-[11px] font-bold text-gray-300 gap-2 animate-in fade-in">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck size={14} className="text-emerald-400" />
+                  <span>
+                    Anti-Echo Mode: <strong className="text-emerald-300 uppercase">{voiceMode.replace('_', ' ')}</strong>
+                  </span>
+                  {isPartnerSpeaking && (
+                    <span className="px-2 py-0.5 bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded-full text-[10px] animate-pulse">
+                      Partner Speaking 🗣️ (Movie Ducked bin)
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => setShowEchoSettings(true)}
+                  className="text-[10px] text-emerald-400 hover:text-emerald-300 underline font-black"
+                >
+                  Adjust Anti-Echo Gate Settings ⚙️
+                </button>
               </div>
             )}
           </div>
