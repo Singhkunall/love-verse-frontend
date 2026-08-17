@@ -56,10 +56,9 @@ const Login = () => {
       return;
     }
 
-    const loadId = toast.loading('Entering Love-Verse...');
+    const loadId = toast.loading('Connecting to Love-Verse... (Waking up server 🚀)');
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://love-verse-backend.onrender.com';
-      const backendUrl = apiUrl.startsWith('http://localhost') ? 'https://love-verse-backend.onrender.com' : apiUrl;
+      const backendUrl = 'https://love-verse-backend.onrender.com';
 
       const res = await axios.post(
         `${backendUrl}/api/auth/google-login`,
@@ -67,6 +66,10 @@ const Login = () => {
           name: name.trim(), 
           email: email.trim().toLowerCase(), 
           picture: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}` 
+        },
+        {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 25000
         }
       );
 
@@ -76,7 +79,8 @@ const Login = () => {
       navigate('/dashboard');
     } catch (error) {
       console.error('Direct Login Error:', error);
-      toast.error('Login failed! Please check backend connection.', { id: loadId });
+      const errMsg = error.response?.data?.message || (error.code === 'ECONNABORTED' ? 'Server waking up, tap button again!' : error.message);
+      toast.error(`Login issue: ${errMsg}`, { id: loadId, duration: 6000 });
     }
   };
 
