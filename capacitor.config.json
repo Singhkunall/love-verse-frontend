@@ -3,6 +3,9 @@
   "appName": "LoveVerse",
   "webDir": "dist",
   "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    },
     "GoogleAuth": {
       "scopes": ["profile", "email"],
       "serverClientId": "36124091072-k7t809qm7ttdvjf0c306qmblbvlqo622.apps.googleusercontent.com",
