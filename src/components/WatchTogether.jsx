@@ -780,9 +780,19 @@ function WatchTogether({ user, roomId, socket }) {
 
   const startScreenShareCinema = async () => {
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+        toast.error("Screen Share streaming is supported on Laptop/Desktop browsers. On Mobile, you can stream NetMirror, YouTube, or Direct Movie links!", { duration: 6000 });
+        return;
+      }
+
       const stream = await navigator.mediaDevices.getDisplayMedia({
         video: { cursor: "always" },
         audio: true
+      }).catch(async () => {
+        // Fallback for browsers that don't support audio track in displayMedia
+        return await navigator.mediaDevices.getDisplayMedia({
+          video: { cursor: "always" }
+        });
       });
 
       mediaStreamRef.current = stream;
@@ -810,7 +820,11 @@ function WatchTogether({ user, roomId, socket }) {
       };
     } catch (err) {
       console.error("Screen share error:", err);
-      toast.error("Could not start screen share. Please grant permission!");
+      if (err.name === 'NotAllowedError' || err.message?.includes('Permission denied')) {
+        toast.error("Screen share permission denied. Please grant permission when browser asks!");
+      } else {
+        toast.error("Screen Share streaming is supported on Laptop/Desktop browsers. On Mobile, you can stream NetMirror, YouTube, or Direct Video links!", { duration: 6000 });
+      }
     }
   };
 
