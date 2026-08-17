@@ -13,6 +13,8 @@ const tasks = [
   { text: "Plan a date for next weekend 🗓️", icon: <RotateCw size={20}/>, difficulty: 'Medium', xp: 50 }
 ];
 
+const API_URL = import.meta.env.VITE_API_URL || 'https://love-verse-backend.onrender.com';
+
 function LoveRoulette({ user, roomId, socket }) {
   const [spinning, setSpinning] = useState(false);
   const [currentTask, setCurrentTask] = useState(null);
@@ -42,33 +44,30 @@ function LoveRoulette({ user, roomId, socket }) {
 
   const fetchTodayTask = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/roulette/${roomId}`);
+      const res = await axios.get(`${API_URL}/api/roulette/${roomId}`);
       if (res.data) setCurrentTask(res.data);
     } catch (err) { console.error(err); }
   };
 
   const spinWheel = async () => {
-    if (currentTask || spinning) return;
+    if (spinning || currentTask) return;
     setSpinning(true);
-
-    await controls.start({
-      rotate: [0, 1800],
-      transition: { duration: 4, ease: "circOut" }
-    });
-
-    const randomTask = tasks[Math.floor(Math.random() * tasks.length)];
     
-    try {
-      await axios.post(`${import.meta.env.VITE_API_URL}/api/roulette/spin`, {
-        roomId, userId: user._id || user.id, task: randomTask.text
-      });
-      socket.emit("spin_wheel", { roomId, task: randomTask.text, userName: user.name });
-      setCurrentTask({ lastTask: randomTask.text, spunBy: { name: user.name }, isCompleted: false });
-      toast.success("Task Assigned! 🎯");
-    } catch (err) {
-      toast.error("Error spinning!");
-    }
-    setSpinning(false);
+    setTimeout(async () => {
+      const randomIdx = Math.floor(Math.random() * tasks.length);
+      const selected = tasks[randomIdx];
+      setCurrentTask({ taskText: selected.text, xp: selected.xp, completed: false });
+      setSpinning(false);
+      
+      try {
+        await axios.post(`${API_URL}/api/roulette/spin`, {
+          roomId,
+          taskText: selected.text,
+          xp: selected.xp
+        });
+        socket.emit("update_task", { roomId });
+      } catch (err) { console.error(err); }
+    }, 3000);
   };
 
   const handlePhotoChange = (e) => {

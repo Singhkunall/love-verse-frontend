@@ -15,7 +15,8 @@ function ChessGame({ user, roomId, onBack, isWhite }) {
   const socketRef = useRef(null);
 
   useEffect(() => {
-    socketRef.current = io(import.meta.env.VITE_API_URL);
+    const backendUrl = import.meta.env.VITE_API_URL || 'https://love-verse-backend.onrender.com';
+    socketRef.current = io(backendUrl);
     const socket = socketRef.current;
     socket.emit("join_chat", roomId);
 

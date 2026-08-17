@@ -3,7 +3,8 @@ import { Trash2, Plus, CheckCircle2, Circle, Calendar, Heart } from 'lucide-reac
 import io from 'socket.io-client';
 import axios from 'axios';
 
-const socket = io.connect(import.meta.env.VITE_API_URL);
+const API_URL = import.meta.env.VITE_API_URL || 'https://love-verse-backend.onrender.com';
+const socket = io.connect(API_URL);
 function Routine({ user, onClose }) {
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState("");

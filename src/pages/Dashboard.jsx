@@ -17,8 +17,9 @@ import WatchTogether from '../components/WatchTogether';
 import Ludo from '../components/Ludo';
 import UniverseMap from '../components/UniverseMap';
 import VirtualTouch from '../components/VirtualTouch';
+import API_URL from '../utils/config';
 
-const socket = io.connect(import.meta.env.VITE_API_URL);
+const socket = io.connect(API_URL);
 
 function Dashboard() {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')));
@@ -225,6 +226,7 @@ function Dashboard() {
       } catch (err) { console.log("Offline nudge check failed", err); }
     };
 
+    fetchUserProfile();
     fetchTasks();
     fetchMemories();
     checkOfflineNudges(); // Check for missed hugs on mount

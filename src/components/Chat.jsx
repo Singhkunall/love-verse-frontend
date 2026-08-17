@@ -11,7 +11,8 @@ AgoraRTC.setLogLevel(4);
 import toast, { Toaster } from 'react-hot-toast';
 import Routine from './Routine';
 
-const socket = io.connect(import.meta.env.VITE_API_URL);
+const API_URL = import.meta.env.VITE_API_URL || 'https://love-verse-backend.onrender.com';
+const socket = io.connect(API_URL);
 
 function Chat({ user }) {
   const [currentMessage, setCurrentMessage] = useState("");

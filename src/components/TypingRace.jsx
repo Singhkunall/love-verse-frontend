@@ -3,7 +3,8 @@ import { Trophy, Zap, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import io from 'socket.io-client';
 
-const socket = io.connect(import.meta.env.VITE_API_URL);
+const API_URL = import.meta.env.VITE_API_URL || 'https://love-verse-backend.onrender.com';
+const socket = io.connect(API_URL);
 
 // Iska naam fix kar diya hai taaki niche error na aaye
 const BACKUP_SENTENCES = [
