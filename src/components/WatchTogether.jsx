@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PlaySquare, Link as LinkIcon, Search, Sparkles, Film, AlertCircle, Tv, Monitor, ExternalLink, Globe, Play, RefreshCw, Video, StopCircle, Maximize2, Volume2, VolumeX, Minimize2, Radio, Mic, MicOff, PhoneOff, VideoOff, GripVertical, MessageSquare, Send, Heart, Flame, Smile, ThumbsUp, X, ShieldCheck, Sliders, Volume1, Info } from 'lucide-react';
+import { PlaySquare, Link as LinkIcon, Search, Sparkles, Film, AlertCircle, Tv, Monitor, ExternalLink, Globe, Play, RefreshCw, Video, StopCircle, Maximize2, Volume2, VolumeX, Minimize2, Radio, Mic, MicOff, PhoneOff, VideoOff, GripVertical, MessageSquare, Send, Heart, Flame, Smile, ThumbsUp, X, ShieldCheck, Sliders, Volume1, Info, Bell } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Peer from 'peerjs';
 import AgoraRTC from 'agora-rtc-sdk-ng';
+import { mobileService } from '../utils/mobileService';
 
 // Disable telemetry & stats collector to prevent AdBlocker ERR_BLOCKED_BY_CLIENT console spam
 AgoraRTC.disableLogUpload();
@@ -132,6 +133,11 @@ function WatchTogether({ user, roomId, socket }) {
   const [hasRemoteStream, setHasRemoteStream] = useState(false);
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
 
+  // Native Mobile Features & PiP State
+  const [isPiPActive, setIsPiPActive] = useState(false);
+  const [autoPiPEnabled, setAutoPiPEnabled] = useState(true);
+  const [isWakeLockActive, setIsWakeLockActive] = useState(false);
+
   const screenVideoRef = useRef(null);
   const cinemaContainerRef = useRef(null);
   const youtubeContainerRef = useRef(null);
@@ -145,6 +151,59 @@ function WatchTogether({ user, roomId, socket }) {
   const remoteUserRef = useRef(null);
   const chatBottomRef = useRef(null);
   const overlayChatBottomRef = useRef(null);
+
+  // PiP toggle function
+  const handleTogglePiP = async () => {
+    const videoElem = screenVideoRef.current || videoRef.current;
+    if (!videoElem) {
+      toast.error("No active video stream to pop out!");
+      return;
+    }
+    const pipActive = await mobileService.togglePictureInPicture(videoElem);
+    setIsPiPActive(pipActive);
+  };
+
+  // Auto-PiP on tab blur/visibilitychange
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && autoPiPEnabled && (isSharingScreen || isReceivingStream)) {
+        const vid = screenVideoRef.current || videoRef.current;
+        if (vid && !document.pictureInPictureElement) {
+          mobileService.togglePictureInPicture(vid).catch(() => {});
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [autoPiPEnabled, isSharingScreen, isReceivingStream]);
+
+  // Screen Wake Lock while watching streams
+  useEffect(() => {
+    if (isSharingScreen || isReceivingStream || activeTab === 'direct') {
+      mobileService.requestWakeLock().then(active => setIsWakeLockActive(active));
+    } else {
+      mobileService.releaseWakeLock();
+      setIsWakeLockActive(false);
+    }
+    return () => {
+      mobileService.releaseWakeLock();
+    };
+  }, [isSharingScreen, isReceivingStream, activeTab]);
+
+  // Media Session Lockscreen Controls
+  useEffect(() => {
+    if (isSharingScreen || isReceivingStream) {
+      mobileService.setupMediaSession({
+        title: isSharingScreen ? 'Streaming Cinema Live 📽️' : `${streamerName || 'Partner'}'s NetMirror Stream 🍿`,
+        artist: 'Love-Verse Watch Party',
+        onPlay: () => screenVideoRef.current?.play(),
+        onPause: () => screenVideoRef.current?.pause()
+      });
+    }
+  }, [isSharingScreen, isReceivingStream, streamerName]);
 
   // Drag Event Handlers
   const handleDragStart = (clientX, clientY) => {
@@ -360,6 +419,11 @@ function WatchTogether({ user, roomId, socket }) {
         }, 400);
       }
 
+      mobileService.sendNotification(
+        "Virtual Cinema Live! 🍿",
+        `${data.userName || 'Partner'} started streaming NetMirror live!`
+      );
+
       toast(`${data.userName || 'Partner'} started streaming NetMirror! 🍿`, { icon: '📽️', duration: 5000 });
     };
 
@@ -392,6 +456,12 @@ function WatchTogether({ user, roomId, socket }) {
 
     const handleReceiveMessage = (msg) => {
       setCinemaMessages(prev => [...prev, msg]);
+      if (msg.sender !== userId && document.hidden) {
+        mobileService.sendNotification(
+          "In-Movie Chat 💬",
+          `${msg.senderName || 'Partner'}: ${msg.message}`
+        );
+      }
       setTimeout(() => {
         chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
         overlayChatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -1428,6 +1498,17 @@ function WatchTogether({ user, roomId, socket }) {
                         title="Toggle Theater Mode"
                       >
                         {isTheaterMode ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                      </button>
+
+                      <button
+                        onClick={handleTogglePiP}
+                        className={`px-3.5 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 ${
+                          isPiPActive ? 'bg-emerald-500 text-white shadow-md' : 'bg-rose-50 hover:bg-rose-100 text-rose-600'
+                        }`}
+                        title="Pop video into a floating window over all apps"
+                      >
+                        <Tv size={14} />
+                        <span>{isPiPActive ? 'Exit PiP' : 'Floating PiP 📺'}</span>
                       </button>
 
                       <button
