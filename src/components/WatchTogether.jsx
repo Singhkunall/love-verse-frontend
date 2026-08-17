@@ -1473,11 +1473,11 @@ function WatchTogether({ user, roomId, socket }) {
 
           {/* TAB 2: VIRTUAL CINEMA SCREEN SHARE PLAYER (FOR NETMIRROR / NETFLIX / PRIME) */}
           {activeTab === 'screen_share' && (
-            <div className={`${glassStyle} p-6 space-y-6 text-center`}>
+            <div className="bg-slate-950 p-6 space-y-6 text-center rounded-3xl text-white border border-slate-800 shadow-2xl">
               <div className="flex flex-wrap justify-between items-center gap-3 px-2">
                 <div className="flex items-center gap-2">
-                  <span className={`w-3.5 h-3.5 rounded-full ${isSharingScreen || isReceivingStream ? 'bg-green-500 animate-ping' : 'bg-gray-300'}`} />
-                  <h4 className="text-base font-black text-gray-800">
+                  <span className={`w-3.5 h-3.5 rounded-full ${isSharingScreen || isReceivingStream ? 'bg-green-500 animate-ping' : 'bg-gray-400'}`} />
+                  <h4 className="text-base font-black text-white">
                     {isSharingScreen
                       ? 'Virtual Cinema Stream Active! 📽️'
                       : isReceivingStream
@@ -1492,24 +1492,24 @@ function WatchTogether({ user, roomId, socket }) {
                       {isSharingScreen && (
                         <button
                           onClick={toggleMuteCinema}
-                          className="p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold text-xs transition-all flex items-center gap-1"
+                          className="p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-xs transition-all flex items-center gap-1"
                           title={isMuted ? "Unmute Local Audio" : "Mute Local Audio to Prevent Echo"}
                         >
-                          {isMuted ? <VolumeX size={16} className="text-rose-500" /> : <Volume2 size={16} className="text-green-500" />}
+                          {isMuted ? <VolumeX size={16} className="text-rose-400" /> : <Volume2 size={16} className="text-green-400" />}
                         </button>
                       )}
 
                       <button
                         onClick={() => setIsTranslucentChatOpen(!isTranslucentChatOpen)}
-                        className="p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold text-xs transition-all flex items-center gap-1"
+                        className="p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-xs transition-all flex items-center gap-1"
                         title="Toggle In-Movie Chat Overlay"
                       >
-                        <MessageSquare size={16} className={isTranslucentChatOpen ? "text-rose-500" : "text-gray-500"} />
+                        <MessageSquare size={16} className={isTranslucentChatOpen ? "text-rose-400" : "text-gray-300"} />
                       </button>
 
                       <button
                         onClick={() => setIsTheaterMode(!isTheaterMode)}
-                        className="p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold text-xs transition-all flex items-center gap-1"
+                        className="p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-xs transition-all flex items-center gap-1"
                         title="Toggle Theater Mode"
                       >
                         {isTheaterMode ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
@@ -1518,7 +1518,7 @@ function WatchTogether({ user, roomId, socket }) {
                       <button
                         onClick={handleTogglePiP}
                         className={`px-3.5 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 ${
-                          isPiPActive ? 'bg-emerald-500 text-white shadow-md' : 'bg-rose-50 hover:bg-rose-100 text-rose-600'
+                          isPiPActive ? 'bg-emerald-500 text-white shadow-md' : 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300'
                         }`}
                         title="Pop video into a floating window over all apps"
                       >
@@ -1528,7 +1528,7 @@ function WatchTogether({ user, roomId, socket }) {
 
                       <button
                         onClick={handleFullscreenCinema}
-                        className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl font-black text-xs transition-all flex items-center gap-1.5"
+                        className="px-3.5 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded-xl font-black text-xs transition-all flex items-center gap-1.5"
                       >
                         {isCinemaFullscreen ? <X size={14} /> : <Maximize2 size={14} />}
                         <span>{isCinemaFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
@@ -1539,7 +1539,7 @@ function WatchTogether({ user, roomId, socket }) {
                   {isSharingScreen ? (
                     <button
                       onClick={stopScreenShareCinema}
-                      className="px-6 py-2.5 bg-gray-900 text-white rounded-2xl font-black text-xs shadow-lg hover:bg-black transition-all flex items-center gap-2"
+                      className="px-6 py-2.5 bg-rose-600 text-white rounded-2xl font-black text-xs shadow-lg hover:bg-rose-700 transition-all flex items-center gap-2"
                     >
                       <StopCircle size={16} /> End Cinema Stream
                     </button>
@@ -1557,17 +1557,21 @@ function WatchTogether({ user, roomId, socket }) {
               {/* Screen Video Container */}
               <div
                 ref={cinemaContainerRef}
-                className={`relative rounded-3xl overflow-hidden shadow-2xl bg-slate-950 border border-gray-800 transition-all ${
-                  isTheaterMode ? 'h-[75vh] md:h-[85vh]' : 'pt-[56.25%]'
+                className={`relative rounded-3xl overflow-hidden shadow-2xl bg-black border border-gray-800 transition-all ${
+                  isTheaterMode ? 'h-[75vh] md:h-[85vh]' : 'min-h-[250px] pt-[56.25%]'
                 }`}
+                style={{ backgroundColor: '#000000' }}
               >
                 <video
                   ref={screenVideoRef}
                   autoPlay
                   playsInline
+                  webkit-playsinline="true"
+                  x5-playsinline="true"
                   controls={isSharingScreen || isReceivingStream}
                   muted={isSharingScreen}
-                  className="absolute top-0 left-0 w-full h-full object-contain"
+                  className="absolute top-0 left-0 w-full h-full object-contain bg-black"
+                  style={{ backgroundColor: '#000000' }}
                 />
 
                 {/* AUTOPLAY BLOCKED OVERLAY FOR RECEIVER */}
