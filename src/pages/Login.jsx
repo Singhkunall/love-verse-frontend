@@ -17,45 +17,35 @@ const Login = () => {
   }, []);
 
   const handleGoogleSuccess = async (credentialResponse) => {
-  const loadId = toast.loading('Signing in...');
-  try {
-    const token = credentialResponse?.credential;
-    if (!token) throw new Error('Google credential not received');
+    const loadId = toast.loading('Signing in...');
+    try {
+      const token = credentialResponse?.credential;
+      if (!token) throw new Error('Google credential not received');
 
-    // Decode JWT token to get user info
-    const decoded = JSON.parse(atob(token.split('.')[1]));
+      // Decode JWT token to get user info
+      const decoded = JSON.parse(atob(token.split('.')[1]));
 
-    const res = await axios.post(
-      'https://love-verse-backend.onrender.com/api/auth/google-login',
-      { 
-        name: decoded.name, 
-        email: decoded.email, 
-        picture: decoded.picture 
-      }
-    );
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://love-verse-backend.onrender.com';
+      const backendUrl = apiUrl.startsWith('http://localhost') ? 'https://love-verse-backend.onrender.com' : apiUrl;
 
-    localStorage.setItem('token', res.data.token);
-    localStorage.setItem('user', JSON.stringify(res.data));
-    toast.success(`Welcome, ${res.data.name}! ✨`, { id: loadId });
-    navigate('/dashboard');
-  } catch (error) {
-    console.error('Web Login Error:', error);
-    toast.error('Google Login Failed! 😢', { id: loadId });
-  }
-};
+      const res = await axios.post(
+        `${backendUrl}/api/auth/google-login`,
+        { 
+          name: decoded.name, 
+          email: decoded.email, 
+          picture: decoded.picture 
+        }
+      );
 
-  const handleMobileGoogleLogin = async () => {
-  const loadId = toast.loading('Opening Google Login...');
-  try {
-    await Browser.open({ 
-      url: 'https://love-verse-frontend.vercel.app/login',
-      presentationStyle: 'fullscreen'
-    });
-    toast.dismiss(loadId);
-  } catch (error) {
-    toast.error('Browser open nahi hua!', { id: loadId });
-  }
-};
+      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('user', JSON.stringify(res.data));
+      toast.success(`Welcome, ${res.data.name}! ✨`, { id: loadId });
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Login Error:', error);
+      toast.error('Google Login Failed! 😢', { id: loadId });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center p-4 relative overflow-hidden">
@@ -105,30 +95,19 @@ const Login = () => {
             <div className="flex-1 h-px bg-white/10" />
           </div>
 
-          {/* Google Login Button */}
-          {/* Google Login Button */}
+          {/* Google Login Button (Renders In-App for all platforms) */}
           <div className="flex justify-center mb-8">
-            {Capacitor.isNativePlatform() ? (
-              <button
-                onClick={handleMobileGoogleLogin}
-                className="flex items-center gap-3 bg-white text-gray-800 font-bold px-8 py-3 rounded-full shadow-lg hover:shadow-xl transition-all"
-              >
-                <img src="https://www.google.com/favicon.ico" className="w-5 h-5" />
-                Continue with Google
-              </button>
-            ) : (
-              <div className="transform scale-110">
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={() => toast.error("Google Login Failed! 😢")}
-                  useOneTap
-                  theme="filled_black"
-                  shape="pill"
-                  size="large"
-                  text="continue_with"
-                />
-              </div>
-            )}
+            <div className="transform scale-110">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => toast.error("Google Login Failed! 😢")}
+                useOneTap
+                theme="filled_black"
+                shape="pill"
+                size="large"
+                text="continue_with"
+              />
+            </div>
           </div>
 
           {/* Info */}
