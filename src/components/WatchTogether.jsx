@@ -796,20 +796,29 @@ function WatchTogether({ user, roomId, socket }) {
 
   const startScreenShareCinema = async () => {
     try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+      let stream = null;
+
+      if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
+        try {
+          stream = await navigator.mediaDevices.getDisplayMedia({
+            video: { cursor: "always" },
+            audio: true
+          });
+        } catch (e1) {
+          try {
+            stream = await navigator.mediaDevices.getDisplayMedia({
+              video: true
+            });
+          } catch (e2) {
+            console.warn("getDisplayMedia failed on mobile:", e2);
+          }
+        }
+      }
+
+      if (!stream) {
         setShowMobileCinemaModal(true);
         return;
       }
-
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { cursor: "always" },
-        audio: true
-      }).catch(async () => {
-        // Fallback for browsers that don't support audio track in displayMedia
-        return await navigator.mediaDevices.getDisplayMedia({
-          video: { cursor: "always" }
-        });
-      });
 
       mediaStreamRef.current = stream;
       setActiveTab('screen_share');
@@ -836,11 +845,7 @@ function WatchTogether({ user, roomId, socket }) {
       };
     } catch (err) {
       console.error("Screen share error:", err);
-      if (err.name === 'NotAllowedError' || err.message?.includes('Permission denied')) {
-        toast.error("Screen share permission denied. Please grant permission when browser asks!");
-      } else {
-        setShowMobileCinemaModal(true);
-      }
+      setShowMobileCinemaModal(true);
     }
   };
 
