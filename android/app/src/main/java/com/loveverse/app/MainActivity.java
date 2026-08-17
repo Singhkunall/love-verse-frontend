@@ -13,6 +13,8 @@ public class MainActivity extends BridgeActivity {
 
         WebView webView = this.bridge.getWebView();
         if (webView != null) {
+            webView.getSettings().setJavaScriptEnabled(true);
+            webView.getSettings().setMediaPlaybackRequiresUserGesture(false);
             webView.setWebChromeClient(new WebChromeClient() {
                 @Override
                 public void onPermissionRequest(final PermissionRequest request) {
