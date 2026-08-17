@@ -65,6 +65,7 @@ function WatchTogether({ user, roomId, socket }) {
   const [showEchoSettings, setShowEchoSettings] = useState(false);
   const [isAudioDucking, setIsAudioDucking] = useState(true);
   const [isPartnerSpeaking, setIsPartnerSpeaking] = useState(false);
+  const [showMobileCinemaModal, setShowMobileCinemaModal] = useState(false);
 
   // Audio Processing Refs
   const audioCtxRef = useRef(null);
@@ -780,8 +781,8 @@ function WatchTogether({ user, roomId, socket }) {
 
   const startScreenShareCinema = async () => {
     try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-        toast.error("Screen Share streaming is supported on Laptop/Desktop browsers. On Mobile, you can stream NetMirror, YouTube, or Direct Movie links!", { duration: 6000 });
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        setShowMobileCinemaModal(true);
         return;
       }
 
@@ -823,7 +824,7 @@ function WatchTogether({ user, roomId, socket }) {
       if (err.name === 'NotAllowedError' || err.message?.includes('Permission denied')) {
         toast.error("Screen share permission denied. Please grant permission when browser asks!");
       } else {
-        toast.error("Screen Share streaming is supported on Laptop/Desktop browsers. On Mobile, you can stream NetMirror, YouTube, or Direct Video links!", { duration: 6000 });
+        setShowMobileCinemaModal(true);
       }
     }
   };
@@ -1821,6 +1822,56 @@ function WatchTogether({ user, roomId, socket }) {
         </div>
 
       </div>
+
+      {/* MOBILE CINEMA GUIDE MODAL */}
+      {showMobileCinemaModal && (
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-white/10 rounded-3xl p-6 max-w-md w-full text-white text-center space-y-4 shadow-2xl">
+            <div className="w-16 h-16 bg-rose-500/20 text-rose-400 rounded-full flex items-center justify-center mx-auto">
+              <Smartphone size={32} />
+            </div>
+            <h3 className="text-xl font-black">Mobile Cinema Guide 🍿</h3>
+            <p className="text-xs text-gray-300 font-medium leading-relaxed">
+              Android phones restrict screen tab capture. Here is how you can watch movies together on mobile:
+            </p>
+            
+            <div className="space-y-2 pt-2">
+              <button
+                onClick={() => {
+                  setShowMobileCinemaModal(false);
+                  setActiveTab('youtube');
+                }}
+                className="w-full py-3.5 px-4 bg-gradient-to-r from-rose-500 to-pink-600 rounded-2xl font-black text-xs text-white shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] transition-all"
+              >
+                <PlaySquare size={18} /> Play YouTube Together 🍿
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowMobileCinemaModal(false);
+                  setActiveTab('direct');
+                }}
+                className="w-full py-3.5 px-4 bg-white/10 hover:bg-white/20 border border-white/15 rounded-2xl font-bold text-xs text-white flex items-center justify-center gap-2 hover:scale-[1.02] transition-all"
+              >
+                <Video size={18} /> Play Direct Movie URL / MP4 🎥
+              </button>
+            </div>
+
+            <div className="pt-2 border-t border-white/10">
+              <p className="text-[11px] text-gray-400 italic leading-relaxed">
+                💡 <strong>Desktop Stream Tip:</strong> If your partner streams NetMirror from a Laptop/Desktop, your phone will automatically receive & play the live movie stream right here!
+              </p>
+            </div>
+
+            <button
+              onClick={() => setShowMobileCinemaModal(false)}
+              className="w-full py-2.5 bg-gray-800 hover:bg-gray-700 rounded-xl font-bold text-xs text-gray-300 mt-2"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
