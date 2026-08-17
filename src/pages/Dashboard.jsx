@@ -18,6 +18,7 @@ import Ludo from '../components/Ludo';
 import UniverseMap from '../components/UniverseMap';
 import VirtualTouch from '../components/VirtualTouch';
 import API_URL from '../utils/config';
+import { compressImage } from '../utils/imageCompressor';
 
 const socket = io.connect(API_URL);
 
@@ -145,15 +146,24 @@ function Dashboard() {
 
   const handleAddMemory = async (e) => {
     e.preventDefault();
-    if (!newMem.image || !newMem.caption) return toast.error("Bhai photo select karo aur caption dalo!");
-    const uploadToast = toast.loading("Uploading...");
+    if (!newMem.image || !newMem.caption) return toast.error("Photo select karo aur caption dalo!");
+    const uploadToast = toast.loading("Uploading memory...");
     try {
-      await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/add-memory`, {
-        userId: user._id || user.id, partnerId: user.partnerId?._id || user.partnerId, image: newMem.image, caption: newMem.caption
+      const compressedImg = await compressImage(newMem.image);
+      await axios.post(`${API_URL}/api/auth/add-memory`, {
+        userId: user._id || user.id,
+        partnerId: user.partnerId?._id || user.partnerId,
+        image: compressedImg,
+        caption: newMem.caption
       });
-      toast.success("Locked! 💖", { id: uploadToast });
-      setNewMem({ image: '', caption: '' }); setShowMemForm(false); fetchMemories();
-    } catch (err) { toast.error("Fail!", { id: uploadToast }); }
+      toast.success("Memory Saved! 💖", { id: uploadToast });
+      setNewMem({ image: '', caption: '' });
+      setShowMemForm(false);
+      fetchMemories();
+    } catch (err) {
+      console.error("Add memory error:", err);
+      toast.error("Memory upload fail!", { id: uploadToast });
+    }
   };
 
   const handleDeleteMemory = (id) => {

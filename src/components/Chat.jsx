@@ -181,10 +181,15 @@ function Chat({ user }) {
       const appId = import.meta.env.VITE_AGORA_APP_ID || "a5839042b3224b1a8d052b610c666579";
       const uid = Math.floor(Math.random() * 100000);
 
-      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/agora/token`, {
-        channelName: roomId, uid
-      });
-      const token = res.data.token;
+      let token = null;
+      try {
+        const res = await axios.post(`${API_URL}/api/agora/token`, {
+          channelName: roomId, uid
+        });
+        token = res.data.token;
+      } catch (err) {
+        console.warn("Token fetch failed, trying without token:", err);
+      }
 
       await agoraClientRef.current.join(appId, roomId, token, uid);
 
@@ -233,10 +238,15 @@ function Chat({ user }) {
       const appId = import.meta.env.VITE_AGORA_APP_ID || "a5839042b3224b1a8d052b610c666579";
       const uid = Math.floor(Math.random() * 100000);
 
-      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/agora/token`, {
-        channelName: roomId, uid
-      });
-      const token = res.data.token;
+      let token = null;
+      try {
+        const res = await axios.post(`${API_URL}/api/agora/token`, {
+          channelName: roomId, uid
+        });
+        token = res.data.token;
+      } catch (err) {
+        console.warn("Token fetch failed in answer, trying without:", err);
+      }
 
       await agoraClientRef.current.join(appId, roomId, token, uid);
 
@@ -385,8 +395,11 @@ function Chat({ user }) {
     reader.readAsDataURL(file);
     reader.onloadend = async () => {
       try {
-        const base64Data = reader.result;
-        const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/upload-media`, {
+        let base64Data = reader.result;
+        if (!isVideo) {
+          base64Data = await compressImage(base64Data);
+        }
+        const res = await axios.post(`${API_URL}/api/auth/upload-media`, {
           media: base64Data,
           resourceType: isVideo ? 'video' : 'image'
         });
