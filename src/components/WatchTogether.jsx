@@ -298,28 +298,43 @@ function WatchTogether({ user, roomId, socket }) {
     };
   }, [userId]);
 
-  // Screen stream binding effect (attaches local streamer preview or remote stream, handles browser autoplay blocking)
-  useEffect(() => {
-    if (activeTab !== 'screen_share' || !screenVideoRef.current) return;
-
+  // Screen stream binding helper (guarantees stream attaches to video element on mobile & desktop)
+  const bindScreenVideoStream = () => {
     const vid = screenVideoRef.current;
     const targetStream = isSharingScreen ? mediaStreamRef.current : (isReceivingStream ? remoteStreamRef.current : null);
 
-    if (!targetStream) return;
+    if (!vid || !targetStream) return;
 
     if (vid.srcObject !== targetStream) {
+      console.log("Binding targetStream to video element...", targetStream);
       vid.srcObject = targetStream;
       vid.muted = isSharingScreen;
+    }
 
-      const playPromise = vid.play();
-      if (playPromise !== undefined) {
-        playPromise.then(() => {
-          setAutoplayBlocked(false);
-        }).catch((err) => {
-          console.warn("Autoplay blocked by browser policy:", err);
-          setAutoplayBlocked(true);
-        });
-      }
+    const playPromise = vid.play();
+    if (playPromise !== undefined) {
+      playPromise.then(() => {
+        setAutoplayBlocked(false);
+      }).catch((err) => {
+        console.warn("Autoplay blocked by browser policy:", err);
+        setAutoplayBlocked(true);
+      });
+    }
+  };
+
+  const setScreenVideoRef = (el) => {
+    screenVideoRef.current = el;
+    if (el) {
+      bindScreenVideoStream();
+    }
+  };
+
+  // Screen stream binding effect (attaches local streamer preview or remote stream, handles browser autoplay blocking)
+  useEffect(() => {
+    if (activeTab === 'screen_share') {
+      bindScreenVideoStream();
+      const interval = setInterval(bindScreenVideoStream, 1000);
+      return () => clearInterval(interval);
     }
   }, [activeTab, isSharingScreen, isReceivingStream, hasRemoteStream]);
 
@@ -1563,7 +1578,7 @@ function WatchTogether({ user, roomId, socket }) {
                 style={{ backgroundColor: '#000000' }}
               >
                 <video
-                  ref={screenVideoRef}
+                  ref={setScreenVideoRef}
                   autoPlay
                   playsInline
                   webkit-playsinline="true"
