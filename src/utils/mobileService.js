@@ -117,7 +117,7 @@ class MobileService {
   // Toggle Screen Wake Lock (prevents phone display from sleeping while watching movie)
   async requestWakeLock() {
     try {
-      if ('wakeLock' in navigator) {
+      if ('wakeLock' in navigator && document.visibilityState === 'visible') {
         this.wakeLock = await navigator.wakeLock.request('screen');
         console.log("Screen Wake Lock active 💡");
         this.wakeLock.addEventListener('release', () => {
@@ -126,7 +126,7 @@ class MobileService {
         return true;
       }
     } catch (err) {
-      console.error("Wake Lock error:", err);
+      // Quietly ignore if tab is hidden or backgrounded
     }
     return false;
   }
