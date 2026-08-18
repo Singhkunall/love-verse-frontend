@@ -124,6 +124,7 @@ function WatchTogether({ user, roomId, socket }) {
   const [cinemaMessages, setCinemaMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const [isTranslucentChatOpen, setIsTranslucentChatOpen] = useState(true);
+  const [showEmojiFab, setShowEmojiFab] = useState(false);
 
   // Draggable PIP Overlay State
   const [pipPosition, setPipPosition] = useState({ x: 0, y: 0 });
@@ -1235,10 +1236,10 @@ function WatchTogether({ user, roomId, socket }) {
 
               {/* Floating Emojis Animation Container */}
               <div className="absolute inset-0 pointer-events-none overflow-hidden z-40">
-                {floatingEmojis.map((item) => (
+                {floatingReactions.map((item) => (
                   <div
                     key={item.id}
-                    style={{ left: `${item.left}%` }}
+                    style={{ left: `${item.leftPos || 50}%` }}
                     className="absolute bottom-10 text-4xl floating-emoji-item drop-shadow-lg"
                   >
                     {item.emoji}
@@ -1331,10 +1332,10 @@ function WatchTogether({ user, roomId, socket }) {
 
               {/* Floating Emojis Animation Container */}
               <div className="absolute inset-0 pointer-events-none overflow-hidden z-40">
-                {floatingEmojis.map((item) => (
+                {floatingReactions.map((item) => (
                   <div
                     key={item.id}
-                    style={{ left: `${item.left}%` }}
+                    style={{ left: `${item.leftPos || 50}%` }}
                     className="absolute bottom-10 text-4xl floating-emoji-item drop-shadow-lg"
                   >
                     {item.emoji}
