@@ -193,11 +193,17 @@ function Chat({ user }) {
 
       await agoraClientRef.current.join(appId, roomId, token, uid);
 
-      const audioTrack = await AgoraRTC.createMicrophoneAudioTrack({
-        AEC: true,
-        ANS: true,
-        AGC: true
-      });
+      let audioTrack = null;
+      try {
+        audioTrack = await AgoraRTC.createMicrophoneAudioTrack({
+          AEC: true,
+          ANS: true,
+          AGC: true
+        });
+      } catch (micErr) {
+        console.warn("Advanced mic track failed, using fallback basic mic track:", micErr);
+        audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+      }
       localTracksRef.current.audio = audioTrack;
 
       let videoTrack = null;
@@ -250,11 +256,17 @@ function Chat({ user }) {
 
       await agoraClientRef.current.join(appId, roomId, token, uid);
 
-      const audioTrack = await AgoraRTC.createMicrophoneAudioTrack({
-        AEC: true,
-        ANS: true,
-        AGC: true
-      });
+      let audioTrack = null;
+      try {
+        audioTrack = await AgoraRTC.createMicrophoneAudioTrack({
+          AEC: true,
+          ANS: true,
+          AGC: true
+        });
+      } catch (micErr) {
+        console.warn("Advanced mic track failed in answerCall, using fallback mic track:", micErr);
+        audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+      }
       localTracksRef.current.audio = audioTrack;
 
       let videoTrack = null;

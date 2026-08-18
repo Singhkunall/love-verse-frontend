@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PlaySquare, Link as LinkIcon, Search, Sparkles, Film, AlertCircle, Tv, Monitor, ExternalLink, Globe, Play, RefreshCw, Video, StopCircle, Maximize2, Volume2, VolumeX, Minimize2, Radio, Mic, MicOff, PhoneOff, VideoOff, GripVertical, MessageSquare, Send, Heart, Flame, Smile, ThumbsUp, X, ShieldCheck, Sliders, Volume1, Info, Bell } from 'lucide-react';
+import { PlaySquare, Link as LinkIcon, Search, Sparkles, Film, AlertCircle, Tv, Monitor, ExternalLink, Globe, Play, RefreshCw, Video, StopCircle, Maximize2, Volume2, VolumeX, Minimize2, Radio, Mic, MicOff, PhoneOff, VideoOff, GripVertical, MessageSquare, Send, Heart, Flame, Smile, ThumbsUp, X, ShieldCheck, Sliders, Volume1, Info, Bell, Smartphone } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Peer from 'peerjs';
 import AgoraRTC from 'agora-rtc-sdk-ng';
@@ -14,6 +14,7 @@ const PRESET_VIDEOS = [
   { name: 'Romantic Piano 🎹', id: '77ZozI0rw7w' },
   { name: 'Nature Relax 🌿', id: 'eKFTSSKCzWA' },
   { name: 'Movie Trailer 🍿', id: 'aWzlQ2N6qqg' }
+
 ];
 
 const QUICK_EMOJIS = ['❤️', '🍿', '😂', '😱', '🔥', '💖'];
@@ -42,7 +43,7 @@ function WatchTogether({ user, roomId, socket }) {
   const [webStreamUrl, setWebStreamUrl] = useState(NETMIRROR_DEFAULT_URL);
   const [directMovieUrl, setDirectMovieUrl] = useState('');
   const [inputUrl, setInputUrl] = useState('');
-  
+
   // Screen Share & Cinema State
   const [isSharingScreen, setIsSharingScreen] = useState(false);
   const [isReceivingStream, setIsReceivingStream] = useState(false);
@@ -170,7 +171,7 @@ function WatchTogether({ user, roomId, socket }) {
       if (document.hidden && autoPiPEnabled && (isSharingScreen || isReceivingStream)) {
         const vid = screenVideoRef.current || videoRef.current;
         if (vid && !document.pictureInPictureElement) {
-          mobileService.togglePictureInPicture(vid).catch(() => {});
+          mobileService.togglePictureInPicture(vid).catch(() => { });
         }
       }
     };
@@ -308,7 +309,7 @@ function WatchTogether({ user, roomId, socket }) {
     if (vid.srcObject !== targetStream) {
       console.log("Binding targetStream to video element...", targetStream);
       vid.srcObject = targetStream;
-      vid.muted = isSharingScreen;
+      vid.muted = isSharingScreen; // sirf pehli baar set hoga, kyunki ab yeh srcObject change hone par hi chalega
     }
 
     const playPromise = vid.play();
@@ -561,7 +562,7 @@ function WatchTogether({ user, roomId, socket }) {
       silenceTimerRef.current = null;
     }
     if (audioCtxRef.current) {
-      try { audioCtxRef.current.close(); } catch(e) {}
+      try { audioCtxRef.current.close(); } catch (e) { }
       audioCtxRef.current = null;
     }
     setMicLevel(0);
@@ -730,12 +731,18 @@ function WatchTogether({ user, roomId, socket }) {
         });
 
         await client.join(appId, voiceChannel, data.token, uid);
-        const audioTrack = await AgoraRTC.createMicrophoneAudioTrack({
-          encoderConfig: "speech_standard",
-          AEC: true,
-          ANS: true,
-          AGC: true
-        });
+        let audioTrack = null;
+        try {
+          audioTrack = await AgoraRTC.createMicrophoneAudioTrack({
+            encoderConfig: "speech_standard",
+            AEC: true,
+            ANS: true,
+            AGC: true
+          });
+        } catch (micErr) {
+          console.warn("Advanced mic track failed in WatchTogether, using fallback basic mic:", micErr);
+          audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+        }
         localAudioTrackRef.current = audioTrack;
         await client.publish([audioTrack]);
         setupVoiceGate(audioTrack);
@@ -1005,9 +1012,8 @@ function WatchTogether({ user, roomId, socket }) {
               return (
                 <div key={idx} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                   <span className="text-[9px] text-rose-200 font-bold mb-0.5">{isMe ? 'You' : msg.senderName}</span>
-                  <div className={`px-3 py-1.5 rounded-2xl text-[11px] font-bold max-w-[90%] backdrop-blur-md ${
-                    isMe ? 'bg-rose-500/80 text-white rounded-br-none' : 'bg-white/20 text-white rounded-bl-none'
-                  }`}>
+                  <div className={`px-3 py-1.5 rounded-2xl text-[11px] font-bold max-w-[90%] backdrop-blur-md ${isMe ? 'bg-rose-500/80 text-white rounded-br-none' : 'bg-white/20 text-white rounded-bl-none'
+                    }`}>
                     {msg.message}
                   </div>
                 </div>
@@ -1045,10 +1051,9 @@ function WatchTogether({ user, roomId, socket }) {
   );
 
   return (
-    <div className={`mx-auto w-full space-y-6 pb-20 animate-in fade-in duration-500 px-2 md:px-6 transition-all ${
-      isTheaterMode ? 'max-w-none' : 'max-w-7xl'
-    }`}>
-      
+    <div className={`mx-auto w-full space-y-6 pb-20 animate-in fade-in duration-500 px-2 md:px-6 transition-all ${isTheaterMode ? 'max-w-none' : 'max-w-7xl'
+      }`}>
+
       {/* Global CSS for PIP Camera Video Tags & Floating Reaction Animations */}
       <style>{`
         #watch-remote-video div, #watch-remote-video video, #watch-local-video div, #watch-local-video video {
@@ -1094,33 +1099,29 @@ function WatchTogether({ user, roomId, socket }) {
         <div className="flex bg-white/70 backdrop-blur-xl p-1 rounded-full border border-gray-200 shadow-sm overflow-x-auto">
           <button
             onClick={() => setActiveTab('youtube')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${
-              activeTab === 'youtube' ? 'bg-rose-500 text-white shadow-md' : 'text-gray-600'
-            }`}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${activeTab === 'youtube' ? 'bg-rose-500 text-white shadow-md' : 'text-gray-600'
+              }`}
           >
             🍿 YouTube
           </button>
           <button
             onClick={() => setActiveTab('screen_share')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${
-              activeTab === 'screen_share' ? 'bg-rose-500 text-white shadow-md' : 'text-gray-600'
-            }`}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${activeTab === 'screen_share' ? 'bg-rose-500 text-white shadow-md' : 'text-gray-600'
+              }`}
           >
             📽️ Virtual Cinema (NetMirror)
           </button>
           <button
             onClick={() => setActiveTab('direct')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${
-              activeTab === 'direct' ? 'bg-rose-500 text-white shadow-md' : 'text-gray-600'
-            }`}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${activeTab === 'direct' ? 'bg-rose-500 text-white shadow-md' : 'text-gray-600'
+              }`}
           >
             🎥 Direct Movie
           </button>
           <button
             onClick={() => setActiveTab('ott_guide')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${
-              activeTab === 'ott_guide' ? 'bg-rose-500 text-white shadow-md' : 'text-gray-600'
-            }`}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${activeTab === 'ott_guide' ? 'bg-rose-500 text-white shadow-md' : 'text-gray-600'
+              }`}
           >
             🎬 OTT Guide
           </button>
@@ -1158,11 +1159,10 @@ function WatchTogether({ user, roomId, socket }) {
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={() => setShowEchoSettings(!showEchoSettings)}
-                  className={`p-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
-                    showEchoSettings
-                      ? 'bg-emerald-400 text-slate-950 font-black shadow-lg scale-105'
-                      : 'bg-white/20 hover:bg-white/30 text-white'
-                  }`}
+                  className={`p-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${showEchoSettings
+                    ? 'bg-emerald-400 text-slate-950 font-black shadow-lg scale-105'
+                    : 'bg-white/20 hover:bg-white/30 text-white'
+                    }`}
                   title="Configure Anti-Echo Shield, Push-To-Talk & Voice Gate Sensitivity"
                 >
                   <ShieldCheck size={16} className={voiceMode === 'auto_gate' ? 'text-emerald-300' : 'text-amber-300'} />
@@ -1199,9 +1199,8 @@ function WatchTogether({ user, roomId, socket }) {
                             localAudioTrackRef.current.setEnabled(false);
                           }
                         }}
-                        className={`px-3.5 py-2.5 rounded-xl font-black text-xs transition-all shadow-lg flex items-center gap-1.5 select-none ${
-                          isPttPressed ? 'bg-emerald-400 text-slate-950 scale-105 ring-4 ring-emerald-300' : 'bg-amber-400 text-gray-900 hover:bg-amber-300'
-                        }`}
+                        className={`px-3.5 py-2.5 rounded-xl font-black text-xs transition-all shadow-lg flex items-center gap-1.5 select-none ${isPttPressed ? 'bg-emerald-400 text-slate-950 scale-105 ring-4 ring-emerald-300' : 'bg-amber-400 text-gray-900 hover:bg-amber-300'
+                          }`}
                       >
                         <Mic size={14} />
                         <span>{isPttPressed ? 'TALKING LIVE 🎙️' : 'HOLD TO TALK (SPACE)'}</span>
@@ -1210,9 +1209,8 @@ function WatchTogether({ user, roomId, socket }) {
 
                     <button
                       onClick={toggleMuteCinema}
-                      className={`p-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
-                        isMuted ? 'bg-amber-500 text-white shadow-md' : 'bg-white/20 hover:bg-white/30 text-white'
-                      }`}
+                      className={`p-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${isMuted ? 'bg-amber-500 text-white shadow-md' : 'bg-white/20 hover:bg-white/30 text-white'
+                        }`}
                       title={isMuted ? "Unmute Movie Audio" : "Mute Movie Audio to Avoid Echo"}
                     >
                       {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
@@ -1221,9 +1219,8 @@ function WatchTogether({ user, roomId, socket }) {
 
                     <button
                       onClick={toggleMicMuteWatch}
-                      className={`p-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
-                        isVoiceMicMuted ? 'bg-red-600 text-white shadow-md' : 'bg-white/20 hover:bg-white/30 text-white'
-                      }`}
+                      className={`p-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${isVoiceMicMuted ? 'bg-red-600 text-white shadow-md' : 'bg-white/20 hover:bg-white/30 text-white'
+                        }`}
                       title={isVoiceMicMuted ? "Unmute Mic" : "Mute Mic"}
                     >
                       {isVoiceMicMuted ? <MicOff size={16} /> : <Mic size={16} />}
@@ -1232,9 +1229,8 @@ function WatchTogether({ user, roomId, socket }) {
 
                     <button
                       onClick={toggleCameraWatch}
-                      className={`p-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
-                        isCameraOn ? 'bg-green-500 text-white shadow-md' : 'bg-white/20 hover:bg-white/30 text-white'
-                      }`}
+                      className={`p-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${isCameraOn ? 'bg-green-500 text-white shadow-md' : 'bg-white/20 hover:bg-white/30 text-white'
+                        }`}
                       title={isCameraOn ? "Turn Off Camera" : "Turn On Camera"}
                     >
                       {isCameraOn ? <Video size={16} /> : <VideoOff size={16} />}
@@ -1245,9 +1241,8 @@ function WatchTogether({ user, roomId, socket }) {
 
                 <button
                   onClick={toggleVoiceChatWatch}
-                  className={`px-4 py-2 rounded-xl font-black text-xs transition-all shadow-lg flex items-center gap-1.5 ${
-                    isVoiceConnected ? 'bg-gray-900 hover:bg-black text-white' : 'bg-white text-rose-600 hover:bg-rose-50'
-                  }`}
+                  className={`px-4 py-2 rounded-xl font-black text-xs transition-all shadow-lg flex items-center gap-1.5 ${isVoiceConnected ? 'bg-gray-900 hover:bg-black text-white' : 'bg-white text-rose-600 hover:bg-rose-50'
+                    }`}
                 >
                   {isVoiceConnected ? <PhoneOff size={14} /> : <Mic size={14} />}
                   <span>{isVoiceConnected ? 'Disconnect' : 'Connect Voice & Video 🎙️📹'}</span>
@@ -1277,11 +1272,10 @@ function WatchTogether({ user, roomId, socket }) {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <button
                     onClick={() => setVoiceMode('auto_gate')}
-                    className={`p-3 rounded-2xl text-left border transition-all ${
-                      voiceMode === 'auto_gate'
-                        ? 'bg-emerald-500/20 border-emerald-400 text-white shadow-lg'
-                        : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
-                    }`}
+                    className={`p-3 rounded-2xl text-left border transition-all ${voiceMode === 'auto_gate'
+                      ? 'bg-emerald-500/20 border-emerald-400 text-white shadow-lg'
+                      : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                      }`}
                   >
                     <div className="flex items-center gap-1.5 font-black text-xs text-emerald-300">
                       <ShieldCheck size={14} /> Smart Voice Gate 🛡️
@@ -1293,11 +1287,10 @@ function WatchTogether({ user, roomId, socket }) {
 
                   <button
                     onClick={() => setVoiceMode('push_to_talk')}
-                    className={`p-3 rounded-2xl text-left border transition-all ${
-                      voiceMode === 'push_to_talk'
-                        ? 'bg-amber-500/20 border-amber-400 text-white shadow-lg'
-                        : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
-                    }`}
+                    className={`p-3 rounded-2xl text-left border transition-all ${voiceMode === 'push_to_talk'
+                      ? 'bg-amber-500/20 border-amber-400 text-white shadow-lg'
+                      : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                      }`}
                   >
                     <div className="flex items-center gap-1.5 font-black text-xs text-amber-300">
                       <Mic size={14} /> Push-to-Talk (PTT) 🎙️
@@ -1309,11 +1302,10 @@ function WatchTogether({ user, roomId, socket }) {
 
                   <button
                     onClick={() => setVoiceMode('always_on')}
-                    className={`p-3 rounded-2xl text-left border transition-all ${
-                      voiceMode === 'always_on'
-                        ? 'bg-rose-500/20 border-rose-400 text-white shadow-lg'
-                        : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
-                    }`}
+                    className={`p-3 rounded-2xl text-left border transition-all ${voiceMode === 'always_on'
+                      ? 'bg-rose-500/20 border-rose-400 text-white shadow-lg'
+                      : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                      }`}
                   >
                     <div className="flex items-center gap-1.5 font-black text-xs text-rose-300">
                       <Radio size={14} /> Always On Mic 🔊
@@ -1340,9 +1332,8 @@ function WatchTogether({ user, roomId, socket }) {
                     <div className="relative w-full h-3 bg-gray-800 rounded-full overflow-hidden border border-white/10">
                       <div
                         style={{ width: `${micLevel}%` }}
-                        className={`h-full transition-all duration-75 ${
-                          micLevel > gateThreshold ? 'bg-emerald-400' : 'bg-rose-500/80'
-                        }`}
+                        className={`h-full transition-all duration-75 ${micLevel > gateThreshold ? 'bg-emerald-400' : 'bg-rose-500/80'
+                          }`}
                       />
                       {/* Threshold Marker */}
                       <div
@@ -1419,9 +1410,9 @@ function WatchTogether({ user, roomId, socket }) {
             <form onSubmit={handleLoadVideo} className={`${glassStyle} p-4 flex gap-3`}>
               <div className="flex-1 flex items-center gap-3 bg-gray-50 rounded-2xl px-4 py-3 border border-gray-100">
                 <LinkIcon size={20} className="text-rose-400 shrink-0" />
-                <input 
-                  type="text" 
-                  placeholder="Paste NetMirror, YouTube, or Movie Link..." 
+                <input
+                  type="text"
+                  placeholder="Paste NetMirror, YouTube, or Movie Link..."
                   value={inputUrl}
                   onChange={(e) => setInputUrl(e.target.value)}
                   className="flex-1 bg-transparent border-none outline-none text-xs md:text-sm text-gray-800 font-bold"
@@ -1501,8 +1492,8 @@ function WatchTogether({ user, roomId, socket }) {
                     {isSharingScreen
                       ? 'Virtual Cinema Stream Active! 📽️'
                       : isReceivingStream
-                      ? `${streamerName || 'Partner'}'s Stream Live! 🍿`
-                      : 'Virtual Cinema Mode'}
+                        ? `${streamerName || 'Partner'}'s Stream Live! 🍿`
+                        : 'Virtual Cinema Mode'}
                   </h4>
                 </div>
 
@@ -1537,9 +1528,8 @@ function WatchTogether({ user, roomId, socket }) {
 
                       <button
                         onClick={handleTogglePiP}
-                        className={`px-3.5 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 ${
-                          isPiPActive ? 'bg-emerald-500 text-white shadow-md' : 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300'
-                        }`}
+                        className={`px-3.5 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 ${isPiPActive ? 'bg-emerald-500 text-white shadow-md' : 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300'
+                          }`}
                         title="Pop video into a floating window over all apps"
                       >
                         <Tv size={14} />
@@ -1577,9 +1567,8 @@ function WatchTogether({ user, roomId, socket }) {
               {/* Screen Video Container */}
               <div
                 ref={cinemaContainerRef}
-                className={`relative rounded-3xl overflow-hidden shadow-2xl bg-black border border-gray-800 transition-all ${
-                  isTheaterMode ? 'h-[75vh] md:h-[85vh]' : 'min-h-[250px] pt-[56.25%]'
-                }`}
+                className={`relative rounded-3xl overflow-hidden shadow-2xl bg-black border border-gray-800 transition-all ${isTheaterMode ? 'h-[75vh] md:h-[85vh]' : 'min-h-[250px] pt-[56.25%]'
+                  }`}
                 style={{ backgroundColor: '#000000' }}
               >
                 <video
@@ -1810,11 +1799,10 @@ function WatchTogether({ user, roomId, socket }) {
                         {isMe ? 'You' : msg.senderName || 'Partner'} • {msg.time}
                       </span>
                       <div
-                        className={`px-3.5 py-2 rounded-2xl text-xs font-bold max-w-[85%] leading-relaxed shadow-sm ${
-                          isMe
-                            ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-br-none'
-                            : 'bg-gray-100 text-gray-800 rounded-bl-none border border-gray-200'
-                        }`}
+                        className={`px-3.5 py-2 rounded-2xl text-xs font-bold max-w-[85%] leading-relaxed shadow-sm ${isMe
+                          ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-br-none'
+                          : 'bg-gray-100 text-gray-800 rounded-bl-none border border-gray-200'
+                          }`}
                       >
                         {msg.message}
                       </div>
@@ -1858,7 +1846,7 @@ function WatchTogether({ user, roomId, socket }) {
             <p className="text-xs text-gray-300 font-medium leading-relaxed">
               Android phones restrict screen tab capture. Here is how you can watch movies together on mobile:
             </p>
-            
+
             <div className="space-y-2 pt-2">
               <button
                 onClick={() => {
