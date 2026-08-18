@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { PlaySquare, Link as LinkIcon, Search, Sparkles, Film, AlertCircle, Tv, Monitor, ExternalLink, Globe, Play, RefreshCw, Video, StopCircle, Maximize2, Volume2, VolumeX, Minimize2, Radio, Mic, MicOff, PhoneOff, VideoOff, GripVertical, MessageSquare, Send, Heart, Flame, Smile, ThumbsUp, X, ShieldCheck, Sliders, Volume1, Info, Bell, Smartphone } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Peer from 'peerjs';
@@ -398,6 +399,33 @@ function WatchTogether({ user, roomId, socket }) {
       document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
     };
   }, []);
+
+  // Lock screen to Landscape orientation & hide bottom nav bar during full-screen mode
+  useEffect(() => {
+    if (isCinemaFullscreen) {
+      document.body.classList.add('cinema-fullscreen-active');
+      document.body.style.overflow = 'hidden';
+
+      if (window.screen?.orientation?.lock) {
+        window.screen.orientation.lock('landscape').catch(() => { });
+      }
+    } else {
+      document.body.classList.remove('cinema-fullscreen-active');
+      document.body.style.overflow = 'auto';
+
+      if (window.screen?.orientation?.unlock) {
+        window.screen.orientation.unlock().catch(() => { });
+      }
+    }
+
+    return () => {
+      document.body.classList.remove('cinema-fullscreen-active');
+      document.body.style.overflow = 'auto';
+      if (window.screen?.orientation?.unlock) {
+        window.screen.orientation.unlock().catch(() => { });
+      }
+    };
+  }, [isCinemaFullscreen]);
 
   // Socket event listeners for stream signaling & reactions & chat
   useEffect(() => {
@@ -1097,6 +1125,82 @@ function WatchTogether({ user, roomId, socket }) {
       </button>
     </div>
   );
+  // Shared Fullscreen Portal Overlay Component (attaches directly to document.body)
+  const renderFullscreenPortal = () => {
+    if (!isCinemaFullscreen) return null;
+
+    return ReactDOM.createPortal(
+      <div className="fixed inset-0 z-[9999999] w-screen h-screen bg-black flex flex-col items-center justify-center overflow-hidden m-0 p-0 pointer-events-auto select-none" style={{ backgroundColor: '#000000' }}>
+        {/* Sleek Top Glass Control Bar */}
+        <div className="absolute top-4 left-4 right-4 z-50 flex items-center justify-between bg-black/75 backdrop-blur-xl border border-white/20 px-4 py-2.5 rounded-full text-white shadow-2xl pointer-events-auto">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-ping" />
+            <span className="text-xs font-black truncate text-white">
+              {isSharingScreen ? 'Virtual Cinema Stream Live! 📽️' : isReceivingStream ? `${streamerName || 'Partner'}'s Stream Live! 🍿` : 'Watch Together Fullscreen 🍿'}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsTranslucentChatOpen(!isTranslucentChatOpen)}
+              className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-all text-rose-300 flex items-center justify-center"
+              title="Toggle Movie Chat"
+            >
+              <MessageSquare size={16} />
+            </button>
+            <button
+              onClick={handleFullscreenCinema}
+              className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-full font-black text-xs transition-all flex items-center gap-1 shadow-md"
+            >
+              <X size={14} /> Exit Fullscreen
+            </button>
+          </div>
+        </div>
+
+        {/* ACTIVE STREAM VIDEO TAG */}
+        {activeTab === 'screen_share' ? (
+          <video
+            ref={setScreenVideoRef}
+            autoPlay
+            playsInline
+            webkit-playsinline="true"
+            x5-playsinline="true"
+            controls={isSharingScreen || isReceivingStream}
+            muted={isSharingScreen}
+            className="w-full h-full object-contain bg-black"
+            style={{ backgroundColor: '#000000' }}
+          />
+        ) : activeTab === 'direct' ? (
+          <video
+            ref={videoRef}
+            src={directMovieUrl}
+            controls
+            playsInline
+            webkit-playsinline="true"
+            className="w-full h-full object-contain bg-black"
+            style={{ backgroundColor: '#000000' }}
+          />
+        ) : null}
+
+        {renderPipCameraOverlay()}
+        {renderTranslucentChatOverlay()}
+        {renderReactionFab()}
+
+        {/* Floating Emojis Animation Container */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-40">
+          {floatingReactions.map((item) => (
+            <div
+              key={item.id}
+              style={{ left: `${item.leftPos || 50}%` }}
+              className="absolute bottom-10 text-4xl floating-emoji-item drop-shadow-lg"
+            >
+              {item.emoji}
+            </div>
+          ))}
+        </div>
+      </div>,
+      document.body
+    );
+  };
 
   return (
     <div className={`mx-auto w-full space-y-4 pb-20 animate-in fade-in duration-500 px-1 md:px-6 transition-all ${isTheaterMode ? 'max-w-none' : 'max-w-7xl'}`}>
@@ -1108,6 +1212,15 @@ function WatchTogether({ user, roomId, socket }) {
           height: 100% !important;
           object-fit: cover !important;
           border-radius: 1.5rem !important;
+        }
+
+        body.cinema-fullscreen-active nav,
+        body.cinema-fullscreen-active .bottom-nav,
+        body.cinema-fullscreen-active header,
+        body.cinema-fullscreen-active footer,
+        body.cinema-fullscreen-active [class*="bottom-nav"],
+        body.cinema-fullscreen-active [class*="BottomNav"] {
+          display: none !important;
         }
 
         @keyframes floatUpEmoji {
@@ -1573,6 +1686,8 @@ function WatchTogether({ user, roomId, socket }) {
           </div>
         </div>
       )}
+      {/* FULLSCREEN PORTAL DIRECTLY ON BODY WHEN FULLSCREEN IS ACTIVE */}
+      {renderFullscreenPortal()}
     </div>
   );
 }
