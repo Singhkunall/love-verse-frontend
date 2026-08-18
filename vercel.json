@@ -1,4 +1,19 @@
 {
+  "headers": [
+    {
+      "source": "/(.*).apk",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/vnd.android.package-archive"
+        },
+        {
+          "key": "Content-Disposition",
+          "value": "attachment"
+        }
+      ]
+    }
+  ],
   "routes": [
     { "src": "/app.apk", "dest": "/app.apk" },
     { "src": "/LoveVerse-v5-Final.apk", "dest": "/LoveVerse-v5-Final.apk" },
