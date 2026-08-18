@@ -1061,20 +1061,44 @@ function WatchTogether({ user, roomId, socket }) {
           </button>
         </form>
       </div>
-    ) : (
+    ) : null
+  );
+
+  // Shared Floating Reaction FAB Button Component
+  const renderReactionFab = () => (
+    <div className="absolute bottom-6 right-6 z-50 flex flex-col items-end gap-2 pointer-events-auto">
+      {showEmojiFab && (
+        <div className="flex items-center gap-1 bg-black/80 backdrop-blur-xl border border-white/20 p-1.5 rounded-2xl shadow-2xl animate-in fade-in zoom-in-95">
+          {QUICK_EMOJIS.map((emoji, index) => (
+            <button
+              key={index}
+              onClick={() => {
+                if (navigator.vibrate) navigator.vibrate(30);
+                triggerEmojiReaction(emoji);
+                setShowEmojiFab(false);
+              }}
+              className="w-9 h-9 hover:bg-white/20 rounded-xl text-xl flex items-center justify-center transition-all active:scale-95"
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+      )}
       <button
-        onClick={() => setIsTranslucentChatOpen(true)}
-        className="absolute bottom-6 left-6 z-50 px-3.5 py-2 bg-black/60 backdrop-blur-xl border border-white/20 text-white rounded-2xl font-black text-xs shadow-xl hover:bg-black/80 transition-all flex items-center gap-1.5 pointer-events-auto"
+        onClick={() => {
+          if (navigator.vibrate) navigator.vibrate(20);
+          setShowEmojiFab(!showEmojiFab);
+        }}
+        className="w-11 h-11 bg-gradient-to-tr from-rose-500 to-pink-500 text-white rounded-full flex items-center justify-center shadow-2xl border-2 border-white/40 transition-all hover:scale-110 active:scale-95"
+        title="Pop Floating Emoji Reaction 💖"
       >
-        <MessageSquare size={14} className="text-rose-400" />
-        <span>Open Movie Chat 💬</span>
+        <Sparkles size={18} />
       </button>
-    )
+    </div>
   );
 
   return (
-    <div className={`mx-auto w-full space-y-6 pb-20 animate-in fade-in duration-500 px-2 md:px-6 transition-all ${isTheaterMode ? 'max-w-none' : 'max-w-7xl'
-      }`}>
+    <div className={`mx-auto w-full space-y-4 pb-20 animate-in fade-in duration-500 px-1 md:px-6 transition-all ${isTheaterMode ? 'max-w-none' : 'max-w-7xl'}`}>
 
       {/* Global CSS for PIP Camera Video Tags & Floating Reaction Animations */}
       <style>{`
@@ -1105,760 +1129,402 @@ function WatchTogether({ user, roomId, socket }) {
         }
       `}</style>
 
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-rose-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-rose-200">
-            <PlaySquare size={24} />
+      {/* 1. COMPACT HEADER WITH MERGED LIVE PARTNER BADGE */}
+      <div className="flex items-center justify-between gap-2 px-2 pt-1">
+        <div className="flex items-center gap-2.5">
+          <div className="w-10 h-10 bg-gradient-to-tr from-rose-500 to-pink-500 text-white rounded-2xl flex items-center justify-center shadow-lg font-black shrink-0">
+            <PlaySquare size={20} />
           </div>
           <div>
-            <h3 className="text-3xl font-black text-gray-800">Watch Together 🍿</h3>
-            <p className="text-xs text-gray-500 font-bold">YouTube, Virtual Cinema, Direct Movies & OTT Guide</p>
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg md:text-2xl font-black text-gray-800">Watch Together 🍿</h3>
+              <span className="px-2 py-0.5 bg-green-500/10 text-green-600 border border-green-500/20 rounded-full font-black text-[9px] flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-ping" /> LIVE WITH PARTNER
+              </span>
+            </div>
+            <p className="text-[10px] text-gray-500 font-bold hidden sm:block">YouTube, Virtual Cinema, Direct Movies & OTT Guide</p>
           </div>
-        </div>
-
-        {/* Tab Selector */}
-        <div className="flex bg-white/70 backdrop-blur-xl p-1 rounded-full border border-gray-200 shadow-sm overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('youtube')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${activeTab === 'youtube' ? 'bg-rose-500 text-white shadow-md' : 'text-gray-600'
-              }`}
-          >
-            🍿 YouTube
-          </button>
-          <button
-            onClick={() => setActiveTab('screen_share')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${activeTab === 'screen_share' ? 'bg-rose-500 text-white shadow-md' : 'text-gray-600'
-              }`}
-          >
-            📽️ Virtual Cinema (NetMirror)
-          </button>
-          <button
-            onClick={() => setActiveTab('direct')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${activeTab === 'direct' ? 'bg-rose-500 text-white shadow-md' : 'text-gray-600'
-              }`}
-          >
-            🎥 Direct Movie
-          </button>
-          <button
-            onClick={() => setActiveTab('ott_guide')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${activeTab === 'ott_guide' ? 'bg-rose-500 text-white shadow-md' : 'text-gray-600'
-              }`}
-          >
-            🎬 OTT Guide
-          </button>
         </div>
       </div>
 
-      {/* FULL-WIDTH 2-COLUMN CINEMA GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {/* 2. SCROLLABLE TAB PILLS */}
+      <div className="flex bg-white/80 backdrop-blur-xl p-1 rounded-2xl border border-gray-200 shadow-sm overflow-x-auto gap-1">
+        <button
+          onClick={() => setActiveTab('youtube')}
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${activeTab === 'youtube' ? 'bg-rose-500 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'}`}
+        >
+          🍿 YouTube
+        </button>
+        <button
+          onClick={() => setActiveTab('screen_share')}
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${activeTab === 'screen_share' ? 'bg-rose-500 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'}`}
+        >
+          📽️ Virtual Cinema (NetMirror)
+        </button>
+        <button
+          onClick={() => setActiveTab('direct')}
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${activeTab === 'direct' ? 'bg-rose-500 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'}`}
+        >
+          🎥 Direct Movie
+        </button>
+        <button
+          onClick={() => setActiveTab('ott_guide')}
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${activeTab === 'ott_guide' ? 'bg-rose-500 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'}`}
+        >
+          🎬 OTT Guide
+        </button>
+      </div>
 
-        {/* LEFT COLUMN: MAIN MOVIE PLAYER & VOICE/VIDEO BAR (8 COLS) */}
-        <div className="lg:col-span-8 space-y-6">
+      {/* 3. PROMINENT VIDEO PLAYER (TOP FEATURE) */}
+      <div className="space-y-3">
+        
+        {/* URL INPUT FOR YOUTUBE AND DIRECT MOVIE TABS */}
+        {activeTab !== 'ott_guide' && activeTab !== 'screen_share' && (
+          <form onSubmit={handleLoadVideo} className={`${glassStyle} p-2.5 flex gap-2`}>
+            <div className="flex-1 flex items-center gap-2 bg-gray-50 rounded-2xl px-3 py-2 border border-gray-100">
+              <LinkIcon size={16} className="text-rose-400 shrink-0" />
+              <input
+                type="text"
+                placeholder="Paste NetMirror, YouTube, or Movie Link..."
+                value={inputUrl}
+                onChange={(e) => setInputUrl(e.target.value)}
+                className="flex-1 bg-transparent border-none outline-none text-xs text-gray-800 font-bold"
+              />
+            </div>
+            <button
+              type="submit"
+              className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-2xl font-black text-xs shadow-md transition-all flex items-center gap-1.5 shrink-0"
+            >
+              <Search size={14} /> Load & Sync
+            </button>
+          </form>
+        )}
 
-          {/* LIVE VOICE & CAMERA CHAT FLOATING BAR WITH ANTI-ECHO SHIELD */}
-          <div className="flex flex-col gap-2">
-            <div className="flex flex-wrap items-center justify-between bg-gradient-to-r from-rose-500 via-pink-500 to-purple-600 p-3.5 rounded-3xl text-white shadow-xl gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center font-black">
-                  <Radio size={20} className={isVoiceConnected ? "animate-pulse text-green-300" : "text-white"} />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="text-xs font-black uppercase tracking-wider">
-                      {isVoiceConnected ? 'Live Voice & Video Chat Active 🎙️📹' : 'Movie Voice & Camera Chat'}
-                    </h4>
-                    <span className="px-2 py-0.5 bg-emerald-400/30 text-emerald-200 border border-emerald-300/40 rounded-full text-[9px] font-black flex items-center gap-1">
-                      <ShieldCheck size={10} /> Anti-Echo Active
-                    </span>
+        {/* TAB 1: YOUTUBE PLAYER */}
+        {activeTab === 'youtube' && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest shrink-0">
+                Quick Picks:
+              </span>
+              {PRESET_VIDEOS.map((preset, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleSelectPreset(preset)}
+                  className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/60 rounded-full font-bold text-[10px] whitespace-nowrap shrink-0 transition-all"
+                >
+                  {preset.name}
+                </button>
+              ))}
+            </div>
+
+            {/* Video Player Container */}
+            <div
+              ref={youtubeContainerRef}
+              className={`relative rounded-3xl overflow-hidden shadow-2xl bg-black border border-gray-800 transition-all ${
+                isCinemaFullscreen
+                  ? 'fixed inset-0 z-[99999] w-screen h-screen rounded-none border-none'
+                  : (isTheaterMode ? 'h-[75vh] md:h-[85vh]' : 'h-[45vh] min-h-[250px] md:h-[60vh]')
+              }`}
+              style={{ backgroundColor: '#000000' }}
+            >
+              <div id="youtube-player" className="w-full h-full" />
+              {renderPipCameraOverlay()}
+              {renderTranslucentChatOverlay()}
+              {renderReactionFab()}
+
+              {/* Floating Emojis Animation Container */}
+              <div className="absolute inset-0 pointer-events-none overflow-hidden z-40">
+                {floatingEmojis.map((item) => (
+                  <div
+                    key={item.id}
+                    style={{ left: `${item.left}%` }}
+                    className="absolute bottom-10 text-4xl floating-emoji-item drop-shadow-lg"
+                  >
+                    {item.emoji}
                   </div>
-                  <p className="text-[10px] text-rose-100 font-bold">
-                    {isVoiceConnected ? 'Talk & see live facial reactions with zero speaker echo!' : 'Connect mic & camera to talk & see each other live during movie'}
-                  </p>
-                </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 2: VIRTUAL CINEMA SCREEN SHARE PLAYER (NETMIRROR) */}
+        {activeTab === 'screen_share' && (
+          <div className="bg-slate-950 p-4 space-y-4 text-center rounded-3xl text-white border border-slate-800 shadow-2xl">
+            <div className="flex flex-wrap justify-between items-center gap-2 px-1">
+              <div className="flex items-center gap-2">
+                <span className={`w-3 h-3 rounded-full ${isSharingScreen || isReceivingStream ? 'bg-green-500 animate-ping' : 'bg-gray-400'}`} />
+                <h4 className="text-xs md:text-sm font-black text-white">
+                  {isSharingScreen
+                    ? 'Virtual Cinema Stream Active! 📽️'
+                    : isReceivingStream
+                    ? `${streamerName || 'Partner'}'s Stream Live! 🍿`
+                    : 'Virtual Cinema Mode'}
+                </h4>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={() => setShowEchoSettings(!showEchoSettings)}
-                  className={`p-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${showEchoSettings
-                    ? 'bg-emerald-400 text-slate-950 font-black shadow-lg scale-105'
-                    : 'bg-white/20 hover:bg-white/30 text-white'
-                    }`}
-                  title="Configure Anti-Echo Shield, Push-To-Talk & Voice Gate Sensitivity"
-                >
-                  <ShieldCheck size={16} className={voiceMode === 'auto_gate' ? 'text-emerald-300' : 'text-amber-300'} />
-                  <span>
-                    {voiceMode === 'auto_gate' ? 'Echo Shield: Auto 🛡️' : voiceMode === 'push_to_talk' ? 'Echo Shield: PTT 🎙️' : 'Echo Shield ⚙️'}
-                  </span>
-                </button>
-
-                {isVoiceConnected && (
+              <div className="flex items-center gap-1.5">
+                {(isSharingScreen || isReceivingStream) && (
                   <>
-                    {voiceMode === 'push_to_talk' && (
-                      <button
-                        onMouseDown={() => {
-                          setIsPttPressed(true);
-                          if (localAudioTrackRef.current && !isVoiceMicMuted) {
-                            localAudioTrackRef.current.setEnabled(true);
-                          }
-                        }}
-                        onMouseUp={() => {
-                          setIsPttPressed(false);
-                          if (localAudioTrackRef.current) {
-                            localAudioTrackRef.current.setEnabled(false);
-                          }
-                        }}
-                        onTouchStart={() => {
-                          setIsPttPressed(true);
-                          if (localAudioTrackRef.current && !isVoiceMicMuted) {
-                            localAudioTrackRef.current.setEnabled(true);
-                          }
-                        }}
-                        onTouchEnd={() => {
-                          setIsPttPressed(false);
-                          if (localAudioTrackRef.current) {
-                            localAudioTrackRef.current.setEnabled(false);
-                          }
-                        }}
-                        className={`px-3.5 py-2.5 rounded-xl font-black text-xs transition-all shadow-lg flex items-center gap-1.5 select-none ${isPttPressed ? 'bg-emerald-400 text-slate-950 scale-105 ring-4 ring-emerald-300' : 'bg-amber-400 text-gray-900 hover:bg-amber-300'
-                          }`}
-                      >
-                        <Mic size={14} />
-                        <span>{isPttPressed ? 'TALKING LIVE 🎙️' : 'HOLD TO TALK (SPACE)'}</span>
-                      </button>
-                    )}
-
                     <button
-                      onClick={toggleMuteCinema}
-                      className={`p-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${isMuted ? 'bg-amber-500 text-white shadow-md' : 'bg-white/20 hover:bg-white/30 text-white'
-                        }`}
-                      title={isMuted ? "Unmute Movie Audio" : "Mute Movie Audio to Avoid Echo"}
+                      onClick={() => setIsTranslucentChatOpen(!isTranslucentChatOpen)}
+                      className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-xs transition-all flex items-center gap-1"
+                      title="Toggle In-Movie Chat Overlay"
                     >
-                      {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-                      <span>{isMuted ? 'Movie Muted' : 'Movie Sound'}</span>
+                      <MessageSquare size={14} className={isTranslucentChatOpen ? "text-rose-400" : "text-gray-300"} />
                     </button>
 
                     <button
-                      onClick={toggleMicMuteWatch}
-                      className={`p-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${isVoiceMicMuted ? 'bg-red-600 text-white shadow-md' : 'bg-white/20 hover:bg-white/30 text-white'
-                        }`}
-                      title={isVoiceMicMuted ? "Unmute Mic" : "Mute Mic"}
+                      onClick={handleFullscreenCinema}
+                      className="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded-xl font-black text-xs transition-all flex items-center gap-1"
                     >
-                      {isVoiceMicMuted ? <MicOff size={16} /> : <Mic size={16} />}
-                      <span>{isVoiceMicMuted ? 'Muted' : 'Mic On'}</span>
-                    </button>
-
-                    <button
-                      onClick={toggleCameraWatch}
-                      className={`p-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${isCameraOn ? 'bg-green-500 text-white shadow-md' : 'bg-white/20 hover:bg-white/30 text-white'
-                        }`}
-                      title={isCameraOn ? "Turn Off Camera" : "Turn On Camera"}
-                    >
-                      {isCameraOn ? <Video size={16} /> : <VideoOff size={16} />}
-                      <span>{isCameraOn ? 'Camera On' : 'Turn On Cam 📹'}</span>
+                      {isCinemaFullscreen ? <X size={14} /> : <Maximize2 size={14} />}
+                      <span>{isCinemaFullscreen ? 'Exit' : 'Fullscreen'}</span>
                     </button>
                   </>
                 )}
 
-                <button
-                  onClick={toggleVoiceChatWatch}
-                  className={`px-4 py-2 rounded-xl font-black text-xs transition-all shadow-lg flex items-center gap-1.5 ${isVoiceConnected ? 'bg-gray-900 hover:bg-black text-white' : 'bg-white text-rose-600 hover:bg-rose-50'
-                    }`}
-                >
-                  {isVoiceConnected ? <PhoneOff size={14} /> : <Mic size={14} />}
-                  <span>{isVoiceConnected ? 'Disconnect' : 'Connect Voice & Video 🎙️📹'}</span>
-                </button>
+                {isSharingScreen ? (
+                  <button
+                    onClick={stopScreenShareCinema}
+                    className="px-4 py-2 bg-rose-600 text-white rounded-xl font-black text-xs shadow-lg hover:bg-rose-700 transition-all flex items-center gap-1.5"
+                  >
+                    <StopCircle size={14} /> End Stream
+                  </button>
+                ) : !isReceivingStream && (
+                  <button
+                    onClick={startScreenShareCinema}
+                    className="px-4 py-2 bg-rose-500 text-white rounded-xl font-black text-xs shadow-lg hover:bg-rose-600 transition-all flex items-center gap-1.5"
+                  >
+                    <Video size={14} /> Start NetMirror Screen Stream 🍿
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* EXPANDABLE ANTI-ECHO SHIELD CONTROL PANEL */}
-            {showEchoSettings && (
-              <div className="bg-slate-900/95 backdrop-blur-xl border border-rose-500/30 rounded-3xl p-4 text-white shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
-                <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck size={18} className="text-emerald-400" />
-                    <h5 className="text-sm font-black uppercase tracking-wider text-emerald-300">
-                      Anti-Echo Shield & Mic Filter Settings 🛡️
-                    </h5>
+            {/* Screen Video Container */}
+            <div
+              ref={cinemaContainerRef}
+              className={`relative rounded-3xl overflow-hidden shadow-2xl bg-black border border-gray-800 transition-all ${
+                isCinemaFullscreen
+                  ? 'fixed inset-0 z-[99999] w-screen h-screen rounded-none border-none'
+                  : (isTheaterMode ? 'h-[75vh] md:h-[85vh]' : 'h-[45vh] min-h-[250px] md:h-[60vh]')
+              }`}
+              style={{ backgroundColor: '#000000' }}
+            >
+              <video
+                ref={setScreenVideoRef}
+                autoPlay
+                playsInline
+                webkit-playsinline="true"
+                x5-playsinline="true"
+                controls={isSharingScreen || isReceivingStream}
+                muted={isSharingScreen}
+                className="absolute top-0 left-0 w-full h-full object-contain bg-black"
+                style={{ backgroundColor: '#000000' }}
+              />
+
+              {renderPipCameraOverlay()}
+              {renderTranslucentChatOverlay()}
+              {renderReactionFab()}
+
+              {/* Floating Emojis Animation Container */}
+              <div className="absolute inset-0 pointer-events-none overflow-hidden z-40">
+                {floatingEmojis.map((item) => (
+                  <div
+                    key={item.id}
+                    style={{ left: `${item.left}%` }}
+                    className="absolute bottom-10 text-4xl floating-emoji-item drop-shadow-lg"
+                  >
+                    {item.emoji}
                   </div>
-                  <button
-                    onClick={() => setShowEchoSettings(false)}
-                    className="text-xs bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-full font-bold transition-all"
-                  >
-                    ✖ Close
-                  </button>
-                </div>
-
-                {/* Mode Selector */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <button
-                    onClick={() => setVoiceMode('auto_gate')}
-                    className={`p-3 rounded-2xl text-left border transition-all ${voiceMode === 'auto_gate'
-                      ? 'bg-emerald-500/20 border-emerald-400 text-white shadow-lg'
-                      : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
-                      }`}
-                  >
-                    <div className="flex items-center gap-1.5 font-black text-xs text-emerald-300">
-                      <ShieldCheck size={14} /> Smart Voice Gate 🛡️
-                    </div>
-                    <p className="text-[10px] text-gray-300 mt-1 font-medium leading-relaxed">
-                      Auto-mutes mic when movie plays. Unmutes instantly when you speak! (Recommended)
-                    </p>
-                  </button>
-
-                  <button
-                    onClick={() => setVoiceMode('push_to_talk')}
-                    className={`p-3 rounded-2xl text-left border transition-all ${voiceMode === 'push_to_talk'
-                      ? 'bg-amber-500/20 border-amber-400 text-white shadow-lg'
-                      : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
-                      }`}
-                  >
-                    <div className="flex items-center gap-1.5 font-black text-xs text-amber-300">
-                      <Mic size={14} /> Push-to-Talk (PTT) 🎙️
-                    </div>
-                    <p className="text-[10px] text-gray-300 mt-1 font-medium leading-relaxed">
-                      Mic stays muted until you hold Space key or Hold-to-Talk button. 100% Zero Echo!
-                    </p>
-                  </button>
-
-                  <button
-                    onClick={() => setVoiceMode('always_on')}
-                    className={`p-3 rounded-2xl text-left border transition-all ${voiceMode === 'always_on'
-                      ? 'bg-rose-500/20 border-rose-400 text-white shadow-lg'
-                      : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
-                      }`}
-                  >
-                    <div className="flex items-center gap-1.5 font-black text-xs text-rose-300">
-                      <Radio size={14} /> Always On Mic 🔊
-                    </div>
-                    <p className="text-[10px] text-gray-300 mt-1 font-medium leading-relaxed">
-                      Standard mic mode with Chrome AEC/ANS active. Best used with earphones!
-                    </p>
-                  </button>
-                </div>
-
-                {/* Mic Sensitivity Meter & Threshold Slider */}
-                {isVoiceConnected && (
-                  <div className="space-y-2 bg-black/40 p-3.5 rounded-2xl border border-white/10">
-                    <div className="flex items-center justify-between text-xs font-bold">
-                      <span className="flex items-center gap-1.5 text-gray-200">
-                        <Sliders size={14} className="text-emerald-400" /> Live Mic Input Volume:
-                      </span>
-                      <span className={micLevel > gateThreshold ? "text-emerald-400 font-black" : "text-gray-400 font-bold"}>
-                        {micLevel > gateThreshold ? "Speaking 🗣️" : "Gate Suppressed 🛡️"} ({micLevel}%)
-                      </span>
-                    </div>
-
-                    {/* Visual Level Bar */}
-                    <div className="relative w-full h-3 bg-gray-800 rounded-full overflow-hidden border border-white/10">
-                      <div
-                        style={{ width: `${micLevel}%` }}
-                        className={`h-full transition-all duration-75 ${micLevel > gateThreshold ? 'bg-emerald-400' : 'bg-rose-500/80'
-                          }`}
-                      />
-                      {/* Threshold Marker */}
-                      <div
-                        style={{ left: `${gateThreshold}%` }}
-                        className="absolute top-0 bottom-0 w-1 bg-yellow-300 z-10 shadow-md"
-                        title={`Gate Threshold: ${gateThreshold}%`}
-                      />
-                    </div>
-
-                    {voiceMode === 'auto_gate' && (
-                      <div className="flex items-center justify-between text-[11px] pt-1">
-                        <span className="text-gray-300 font-medium">Mic Gate Cutoff Sensitivity:</span>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="range"
-                            min="5"
-                            max="40"
-                            value={gateThreshold}
-                            onChange={(e) => setGateThreshold(Number(e.target.value))}
-                            className="w-32 accent-emerald-400 cursor-pointer"
-                          />
-                          <span className="font-mono font-bold text-emerald-300 w-8">{gateThreshold}%</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Audio Ducking & Hindi/English Tip */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pt-1 border-t border-white/10 text-xs">
-                  <label className="flex items-center gap-2 font-bold text-gray-200 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={isAudioDucking}
-                      onChange={(e) => setIsAudioDucking(e.target.checked)}
-                      className="accent-rose-500 rounded"
-                    />
-                    <span>🍿 Auto-Duck Movie Volume when partner speaks</span>
-                  </label>
-
-                  <div className="text-[11px] text-amber-300 italic font-medium flex items-center gap-1">
-                    <Info size={12} className="shrink-0" />
-                    <span>Earphones / Headphones use karne se 100% studio clear voice milti hai! 🎧</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {isVoiceConnected && !showEchoSettings && (
-              <div className="px-4 py-2 bg-slate-900/60 backdrop-blur-md border border-slate-700/50 rounded-2xl flex flex-wrap items-center justify-between text-[11px] font-bold text-gray-300 gap-2 animate-in fade-in">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck size={14} className="text-emerald-400" />
-                  <span>
-                    Anti-Echo Mode: <strong className="text-emerald-300 uppercase">{voiceMode.replace('_', ' ')}</strong>
-                  </span>
-                  {isPartnerSpeaking && (
-                    <span className="px-2 py-0.5 bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded-full text-[10px] animate-pulse">
-                      Partner Speaking 🗣️ (Movie Ducked bin)
-                    </span>
-                  )}
-                </div>
-                <button
-                  onClick={() => setShowEchoSettings(true)}
-                  className="text-[10px] text-emerald-400 hover:text-emerald-300 underline font-black"
-                >
-                  Adjust Anti-Echo Gate Settings ⚙️
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* URL Input Form */}
-          {activeTab !== 'ott_guide' && activeTab !== 'screen_share' && (
-            <form onSubmit={handleLoadVideo} className={`${glassStyle} p-4 flex gap-3`}>
-              <div className="flex-1 flex items-center gap-3 bg-gray-50 rounded-2xl px-4 py-3 border border-gray-100">
-                <LinkIcon size={20} className="text-rose-400 shrink-0" />
-                <input
-                  type="text"
-                  placeholder="Paste NetMirror, YouTube, or Movie Link..."
-                  value={inputUrl}
-                  onChange={(e) => setInputUrl(e.target.value)}
-                  className="flex-1 bg-transparent border-none outline-none text-xs md:text-sm text-gray-800 font-bold"
-                />
-              </div>
-              <button
-                type="submit"
-                className="bg-rose-500 hover:bg-rose-600 text-white px-6 py-3 rounded-2xl font-black text-xs shadow-lg transition-all flex items-center gap-2 shrink-0"
-              >
-                <Search size={16} /> Load & Sync
-              </button>
-            </form>
-          )}
-
-          {/* TAB 1: YOUTUBE PLAYER */}
-          {activeTab === 'youtube' && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest shrink-0">
-                  Quick Picks:
-                </span>
-                {PRESET_VIDEOS.map((preset, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => handleSelectPreset(preset)}
-                    className="px-3.5 py-1.5 bg-white/70 hover:bg-rose-50 border border-gray-100 text-gray-700 text-xs font-bold rounded-full shadow-sm transition-all shrink-0"
-                  >
-                    {preset.name}
-                  </button>
                 ))}
               </div>
-
-              <div className={`${glassStyle} p-4 md:p-6`}>
-                <div
-                  ref={youtubeContainerRef}
-                  className="relative pt-[56.25%] rounded-3xl overflow-hidden shadow-2xl bg-black border border-gray-900"
-                >
-                  <iframe
-                    ref={iframeRef}
-                    src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&enablejsapi=1&rel=0`}
-                    title="Watch Together YouTube Player"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                    className="absolute top-0 left-0 w-full h-full border-0"
-                  />
-
-                  {/* FLOATING EMOJI ANIMATION OVERLAY */}
-                  <div className="absolute inset-0 pointer-events-none overflow-hidden z-40">
-                    {floatingReactions.map(r => (
-                      <div
-                        key={r.id}
-                        style={{ left: `${r.leftPos}%` }}
-                        className="absolute bottom-4 text-4xl md:text-5xl floating-emoji-item"
-                      >
-                        {r.emoji}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* TRANSLUCENT IN-MOVIE CHAT OVERLAY */}
-                  {renderTranslucentChatOverlay()}
-
-                  {/* DRAGGABLE PIP CAMERA OVERLAY */}
-                  {renderPipCameraOverlay()}
-                </div>
-              </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* TAB 2: VIRTUAL CINEMA SCREEN SHARE PLAYER (FOR NETMIRROR / NETFLIX / PRIME) */}
-          {activeTab === 'screen_share' && (
-            <div className="bg-slate-950 p-6 space-y-6 text-center rounded-3xl text-white border border-slate-800 shadow-2xl">
-              <div className="flex flex-wrap justify-between items-center gap-3 px-2">
-                <div className="flex items-center gap-2">
-                  <span className={`w-3.5 h-3.5 rounded-full ${isSharingScreen || isReceivingStream ? 'bg-green-500 animate-ping' : 'bg-gray-400'}`} />
-                  <h4 className="text-base font-black text-white">
-                    {isSharingScreen
-                      ? 'Virtual Cinema Stream Active! 📽️'
-                      : isReceivingStream
-                        ? `${streamerName || 'Partner'}'s Stream Live! 🍿`
-                        : 'Virtual Cinema Mode'}
-                  </h4>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {(isSharingScreen || isReceivingStream) && (
-                    <>
-                      {isSharingScreen && (
-                        <button
-                          onClick={toggleMuteCinema}
-                          className="p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-xs transition-all flex items-center gap-1"
-                          title={isMuted ? "Unmute Local Audio" : "Mute Local Audio to Prevent Echo"}
-                        >
-                          {isMuted ? <VolumeX size={16} className="text-rose-400" /> : <Volume2 size={16} className="text-green-400" />}
-                        </button>
-                      )}
-
-                      <button
-                        onClick={() => setIsTranslucentChatOpen(!isTranslucentChatOpen)}
-                        className="p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-xs transition-all flex items-center gap-1"
-                        title="Toggle In-Movie Chat Overlay"
-                      >
-                        <MessageSquare size={16} className={isTranslucentChatOpen ? "text-rose-400" : "text-gray-300"} />
-                      </button>
-
-                      <button
-                        onClick={() => setIsTheaterMode(!isTheaterMode)}
-                        className="p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-xs transition-all flex items-center gap-1"
-                        title="Toggle Theater Mode"
-                      >
-                        {isTheaterMode ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-                      </button>
-
-                      <button
-                        onClick={handleTogglePiP}
-                        className={`px-3.5 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 ${isPiPActive ? 'bg-emerald-500 text-white shadow-md' : 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300'
-                          }`}
-                        title="Pop video into a floating window over all apps"
-                      >
-                        <Tv size={14} />
-                        <span>{isPiPActive ? 'Exit PiP' : 'Floating PiP 📺'}</span>
-                      </button>
-
-                      <button
-                        onClick={handleFullscreenCinema}
-                        className="px-3.5 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded-xl font-black text-xs transition-all flex items-center gap-1.5"
-                      >
-                        {isCinemaFullscreen ? <X size={14} /> : <Maximize2 size={14} />}
-                        <span>{isCinemaFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
-                      </button>
-                    </>
-                  )}
-
-                  {isSharingScreen ? (
-                    <button
-                      onClick={stopScreenShareCinema}
-                      className="px-6 py-2.5 bg-rose-600 text-white rounded-2xl font-black text-xs shadow-lg hover:bg-rose-700 transition-all flex items-center gap-2"
-                    >
-                      <StopCircle size={16} /> End Cinema Stream
-                    </button>
-                  ) : !isReceivingStream && (
-                    <button
-                      onClick={startScreenShareCinema}
-                      className="px-6 py-2.5 bg-rose-500 text-white rounded-2xl font-black text-xs shadow-lg hover:bg-rose-600 transition-all flex items-center gap-2"
-                    >
-                      <Video size={16} /> Start NetMirror Screen Stream 🍿
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Screen Video Container */}
-              <div
-                ref={cinemaContainerRef}
-                className={`relative rounded-3xl overflow-hidden shadow-2xl bg-black border border-gray-800 transition-all ${
-                  isCinemaFullscreen
-                    ? 'fixed inset-0 z-[99999] w-screen h-screen rounded-none border-none'
-                    : (isTheaterMode ? 'h-[75vh] md:h-[85vh]' : 'min-h-[250px] pt-[56.25%]')
-                }`}
-                style={{ backgroundColor: '#000000' }}
-              >
+        {/* TAB 3: DIRECT MOVIE MP4 PLAYER */}
+        {activeTab === 'direct' && (
+          <div className="space-y-3">
+            <div
+              className={`relative rounded-3xl overflow-hidden shadow-2xl bg-black border border-gray-800 transition-all ${
+                isCinemaFullscreen
+                  ? 'fixed inset-0 z-[99999] w-screen h-screen rounded-none border-none'
+                  : (isTheaterMode ? 'h-[75vh] md:h-[85vh]' : 'h-[45vh] min-h-[250px] md:h-[60vh]')
+              }`}
+              style={{ backgroundColor: '#000000' }}
+            >
+              {directMovieUrl ? (
                 <video
-                  ref={setScreenVideoRef}
-                  autoPlay
+                  ref={videoRef}
+                  src={directMovieUrl}
+                  controls
                   playsInline
                   webkit-playsinline="true"
-                  x5-playsinline="true"
-                  controls={isSharingScreen || isReceivingStream}
-                  muted={isSharingScreen}
-                  className="absolute top-0 left-0 w-full h-full object-contain bg-black"
+                  className="w-full h-full object-contain bg-black"
                   style={{ backgroundColor: '#000000' }}
                 />
-
-                {/* AUTOPLAY BLOCKED OVERLAY FOR RECEIVER */}
-                {autoplayBlocked && isReceivingStream && (
-                  <div className="absolute inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center space-y-4 animate-in fade-in">
-                    <div className="w-16 h-16 bg-rose-500 text-white rounded-full flex items-center justify-center animate-bounce shadow-2xl">
-                      <Play size={32} className="ml-1" />
-                    </div>
-                    <h4 className="text-xl font-black text-white">Partner's Stream is Ready! 🍿</h4>
-                    <p className="text-xs text-gray-300 max-w-sm font-bold leading-relaxed">
-                      Browser Autoplay Policy requires 1 tap to start live video & audio stream!
-                    </p>
-                    <button
-                      onClick={() => {
-                        if (screenVideoRef.current) {
-                          screenVideoRef.current.play().then(() => setAutoplayBlocked(false)).catch(e => console.error(e));
-                        }
-                      }}
-                      className="px-8 py-3.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-2xl font-black text-sm shadow-xl hover:scale-105 transition-all flex items-center gap-2"
-                    >
-                      <Play size={18} /> Tap to Play Live Stream 🍿
-                    </button>
-                  </div>
-                )}
-
-                {/* CONNECTING SPINNER OVERLAY */}
-                {isReceivingStream && !hasRemoteStream && !autoplayBlocked && (
-                  <div className="absolute inset-0 z-40 bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center text-white space-y-3">
-                    <RefreshCw size={36} className="text-rose-500 animate-spin" />
-                    <h4 className="text-lg font-black">{streamerName || 'Partner'}'s Cinema Connecting...</h4>
-                    <p className="text-xs text-gray-400 font-bold max-w-xs">
-                      Connecting live WebRTC stream. Video will start automatically!
-                    </p>
-                  </div>
-                )}
-
-                {/* FLOATING EMOJI ANIMATION OVERLAY */}
-                <div className="absolute inset-0 pointer-events-none overflow-hidden z-40">
-                  {floatingReactions.map(r => (
-                    <div
-                      key={r.id}
-                      style={{ left: `${r.leftPos}%` }}
-                      className="absolute bottom-4 text-4xl md:text-5xl floating-emoji-item"
-                    >
-                      {r.emoji}
-                    </div>
-                  ))}
-                </div>
-
-                {/* TRANSLUCENT FLOATING IN-MOVIE CHAT OVERLAY */}
-                {renderTranslucentChatOverlay()}
-
-                {/* DRAGGABLE PIP LIVE CAMERA OVERLAY */}
-                {renderPipCameraOverlay()}
-
-                {!isSharingScreen && !isReceivingStream && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-white space-y-3 bg-slate-900/90 backdrop-blur-sm">
-                    <Monitor size={48} className="text-rose-500 animate-pulse" />
-                    <h4 className="text-xl font-black">Watch NetMirror Together Inside Love-Verse 🍿</h4>
-                    <p className="text-xs text-gray-300 max-w-md italic leading-relaxed">
-                      <strong>If you are playing the movie:</strong> Click below to share your NetMirror tab.<br />
-                      <strong>If your partner is streaming:</strong> Just sit back & enjoy! The movie will stream right here automatically.
-                    </p>
-                    <button
-                      onClick={startScreenShareCinema}
-                      className="px-8 py-3.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-2xl font-black text-xs shadow-xl hover:scale-105 transition-all flex items-center gap-2 mt-2"
-                    >
-                      <Video size={18} /> I Want to Stream NetMirror 📽️
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* TAB 3: DIRECT MOVIE PLAYER (MP4 / HLS) */}
-          {activeTab === 'direct' && (
-            <div className={`${glassStyle} p-4 md:p-6 space-y-4`}>
-              <div className="relative pt-[56.25%] rounded-3xl overflow-hidden shadow-2xl bg-black border border-gray-900">
-                {directMovieUrl ? (
-                  <video
-                    ref={videoRef}
-                    src={directMovieUrl}
-                    controls
-                    autoPlay
-                    className="absolute top-0 left-0 w-full h-full object-contain"
-                  />
-                ) : (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-white space-y-3 bg-slate-900">
-                    <Film size={44} className="text-rose-500" />
-                    <h4 className="text-lg font-black">Direct Movie Streamer</h4>
-                    <p className="text-xs text-gray-400 max-w-sm">
-                      Paste any direct movie link (.mp4, .webm, Google Drive stream link) in the box above to stream together!
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* TAB 4: NETFLIX & AMAZON PRIME GUIDE */}
-          {activeTab === 'ott_guide' && (
-            <div className={`${glassStyle} p-8 space-y-6 animate-in zoom-in-95`}>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center font-black">
-                  <Tv size={26} />
-                </div>
-                <div>
-                  <h4 className="text-2xl font-black text-gray-800">How to Watch Netflix, Amazon Prime & Hotstar Together 🎬</h4>
-                  <p className="text-xs text-gray-500 font-bold">Netflix, Prime Video & Hotstar use DRM copyright protection so they cannot be embedded in web pages.</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                <div className="p-6 bg-gradient-to-br from-rose-500 to-pink-600 text-white rounded-3xl space-y-3 shadow-xl relative overflow-hidden">
-                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center font-black">
-                    <Monitor size={20} />
-                  </div>
-                  <h5 className="text-lg font-black">Method 1: Love-Verse Screen Share 🖥️ (Recommended)</h5>
-                  <ol className="text-xs space-y-2 text-rose-100 font-bold list-decimal ml-4">
-                    <li>Go to **Chat & Call** tab in Love-Verse.</li>
-                    <li>Start a Video Call with your partner.</li>
-                    <li>Click **"Share Screen"** button and select your Chrome tab playing Netflix/Prime Video!</li>
-                  </ol>
-                </div>
-
-                <div className="p-6 bg-gray-50 border border-gray-200 rounded-3xl space-y-3 shadow-sm">
-                  <div className="w-10 h-10 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center font-black">
-                    <ExternalLink size={20} />
-                  </div>
-                  <h5 className="text-lg font-black text-gray-800">Method 2: Teleparty (Netflix Party) 🌐</h5>
-                  <ol className="text-xs space-y-2 text-gray-600 font-bold list-decimal ml-4">
-                    <li>Install free **Teleparty extension** on Google Chrome or Edge.</li>
-                    <li>Open Netflix / Prime / Disney+ Hotstar and start the movie.</li>
-                    <li>Click Teleparty extension icon and send the sync link to your partner!</li>
-                  </ol>
-                </div>
-              </div>
-            </div>
-          )}
-
-        </div>
-
-        {/* RIGHT COLUMN: INTERACTIVE CINEMA SIDEBAR (4 COLS) */}
-        <div className="lg:col-span-4 space-y-6">
-
-          {/* PARTNER PRESENCE BADGE */}
-          <div className={`${glassStyle} p-5 flex items-center justify-between`}>
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="w-10 h-10 bg-gradient-to-tr from-rose-500 to-pink-500 text-white rounded-2xl flex items-center justify-center font-black shadow-md">
-                  🍿
-                </div>
-                <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full" />
-              </div>
-              <div>
-                <h5 className="text-xs font-black text-gray-800 uppercase tracking-wider">Partner Status</h5>
-                <p className="text-[11px] text-gray-500 font-bold">Watching Live in Room 💕</p>
-              </div>
-            </div>
-            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full font-black text-[10px]">
-              LIVE
-            </span>
-          </div>
-
-          {/* LIVE EMOJI REACTIONS BAR */}
-          <div className={`${glassStyle} p-5 space-y-3`}>
-            <div className="flex items-center justify-between">
-              <h5 className="text-xs font-black text-gray-800 uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles size={14} className="text-rose-500" /> Floating Movie Reactions
-              </h5>
-              <span className="text-[9px] font-bold text-gray-400">Click to Pop</span>
-            </div>
-
-            <div className="grid grid-cols-6 gap-2 pt-1">
-              {QUICK_EMOJIS.map((emoji, index) => (
-                <button
-                  key={index}
-                  onClick={() => triggerEmojiReaction(emoji)}
-                  className="h-11 bg-rose-50/70 hover:bg-rose-100 border border-rose-100 rounded-2xl text-2xl flex items-center justify-center hover:scale-125 transition-all shadow-sm active:scale-95"
-                  title={`Send ${emoji} reaction!`}
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* IN-MOVIE COUPLE SIDEBAR CHAT */}
-          <div className={`${glassStyle} p-5 space-y-4 flex flex-col h-[480px]`}>
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <div className="flex items-center gap-2">
-                <MessageSquare size={16} className="text-rose-500" />
-                <h5 className="text-xs font-black text-gray-800 uppercase tracking-wider">In-Movie Live Chat</h5>
-              </div>
-              <span className="text-[10px] font-bold text-gray-400">Syncs Live</span>
-            </div>
-
-            {/* Chat Messages List */}
-            <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-              {cinemaMessages.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center p-4 text-gray-400 space-y-2">
-                  <Film size={32} className="text-rose-300 opacity-60" />
-                  <p className="text-xs font-bold italic">No messages yet!</p>
-                  <p className="text-[10px]">Type a message below to chat while watching movies!</p>
-                </div>
               ) : (
-                cinemaMessages.map((msg, idx) => {
-                  const isMe = msg.sender === userId;
-                  return (
-                    <div
-                      key={idx}
-                      className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} animate-in fade-in duration-300`}
-                    >
-                      <span className="text-[9px] font-bold text-gray-400 mb-0.5">
-                        {isMe ? 'You' : msg.senderName || 'Partner'} • {msg.time}
-                      </span>
-                      <div
-                        className={`px-3.5 py-2 rounded-2xl text-xs font-bold max-w-[85%] leading-relaxed shadow-sm ${isMe
-                          ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-br-none'
-                          : 'bg-gray-100 text-gray-800 rounded-bl-none border border-gray-200'
-                          }`}
-                      >
-                        {msg.message}
-                      </div>
-                    </div>
-                  );
-                })
+                <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-gray-400 space-y-3">
+                  <Film size={48} className="text-rose-400 opacity-60" />
+                  <h4 className="text-base font-black text-white">Direct Movie Player 🎥</h4>
+                  <p className="text-xs max-w-md font-medium text-gray-300">
+                    Paste any direct MP4 / video stream URL above to watch together live!
+                  </p>
+                </div>
               )}
-              <div ref={chatBottomRef} />
+              {renderPipCameraOverlay()}
+              {renderTranslucentChatOverlay()}
+              {renderReactionFab()}
             </div>
-
-            {/* Chat Input Form */}
-            <form onSubmit={handleSendChatMessage} className="pt-2 flex gap-2 border-t border-gray-100">
-              <input
-                type="text"
-                placeholder="Comment on movie..."
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                className="flex-1 bg-gray-50 border border-gray-200 rounded-2xl px-3.5 py-2.5 text-xs font-bold text-gray-800 outline-none focus:border-rose-400 transition-colors"
-              />
-              <button
-                type="submit"
-                className="w-10 h-10 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl flex items-center justify-center shadow-md hover:scale-105 transition-all shrink-0"
-              >
-                <Send size={14} />
-              </button>
-            </form>
           </div>
+        )}
 
+        {/* TAB 4: OTT GUIDE */}
+        {activeTab === 'ott_guide' && (
+          <div className={`${glassStyle} p-6 space-y-4 text-center`}>
+            <div className="w-16 h-16 bg-rose-500/10 text-rose-500 rounded-3xl flex items-center justify-center mx-auto shadow-inner">
+              <Tv size={32} />
+            </div>
+            <h4 className="text-xl font-black text-gray-800">Netflix, Prime & Disney+ Hotstar Guide 🎬</h4>
+            <p className="text-xs text-gray-500 font-bold max-w-md mx-auto">
+              How to watch premium DRM protected OTT platforms together with 100% video sync:
+            </p>
+            <div className="bg-rose-50/60 p-4 rounded-2xl border border-rose-100 text-left space-y-2 max-w-lg mx-auto">
+              <ol className="text-xs space-y-2 text-gray-600 font-bold list-decimal ml-4">
+                <li>Install free **Teleparty extension** on Google Chrome or Edge.</li>
+                <li>Open Netflix / Prime / Disney+ Hotstar and start the movie.</li>
+                <li>Click Teleparty extension icon and send the sync link to your partner!</li>
+              </ol>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 4. SLIM SINGLE-ROW VOICE & CAMERA CONTROL BAR */}
+      <div className="bg-slate-900/90 backdrop-blur-2xl p-2.5 md:p-3 rounded-2xl border border-slate-800 text-white shadow-xl flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleVoiceChatWatch}
+            className={`px-3.5 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 shadow-md ${
+              isVoiceConnected ? 'bg-slate-800 hover:bg-black text-white' : 'bg-gradient-to-r from-rose-500 to-pink-600 text-white'
+            }`}
+          >
+            {isVoiceConnected ? <PhoneOff size={14} /> : <Mic size={14} />}
+            <span>{isVoiceConnected ? 'Disconnect' : 'Connect Voice & Cam 🎙️📹'}</span>
+          </button>
+
+          {isVoiceConnected && (
+            <>
+              <button
+                onClick={toggleMicMuteWatch}
+                className={`p-2 rounded-xl text-xs font-bold transition-all ${
+                  isVoiceMicMuted ? 'bg-rose-600 text-white' : 'bg-white/10 hover:bg-white/20 text-white'
+                }`}
+                title={isVoiceMicMuted ? "Unmute Mic" : "Mute Mic"}
+              >
+                {isVoiceMicMuted ? <MicOff size={16} /> : <Mic size={16} />}
+              </button>
+
+              <button
+                onClick={toggleCameraWatch}
+                className={`p-2 rounded-xl text-xs font-bold transition-all ${
+                  isCameraOn ? 'bg-emerald-500 text-white' : 'bg-white/10 hover:bg-white/20 text-white'
+                }`}
+                title={isCameraOn ? "Turn Off Camera" : "Turn On Camera"}
+              >
+                {isCameraOn ? <Video size={16} /> : <VideoOff size={16} />}
+              </button>
+            </>
+          )}
         </div>
 
+        <div className="flex items-center gap-2">
+          {isVoiceConnected && (
+            <button
+              onClick={() => setShowEchoSettings(!showEchoSettings)}
+              className={`p-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
+                showEchoSettings ? 'bg-emerald-400 text-slate-950 font-black' : 'bg-white/10 hover:bg-white/20 text-white'
+              }`}
+              title="Anti-Echo Settings ⚙️"
+            >
+              <ShieldCheck size={16} className={voiceMode === 'auto_gate' ? 'text-emerald-400' : 'text-amber-400'} />
+              <span className="hidden sm:inline text-[11px] font-black">Echo Settings</span>
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* EXPANDABLE ANTI-ECHO & VOICE GATE SETTINGS DRAWER */}
+      {isVoiceConnected && showEchoSettings && (
+        <div className="bg-slate-950 border border-slate-800 p-4 rounded-3xl text-white space-y-3 animate-in fade-in zoom-in-95 shadow-2xl">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+            <h5 className="text-xs font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+              <ShieldCheck size={14} /> Anti-Echo Shield & Mic Mode
+            </h5>
+            <button
+              onClick={() => setShowEchoSettings(false)}
+              className="text-[10px] bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-full font-bold"
+            >
+              Done ✖
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <button
+              onClick={() => setVoiceMode('auto_gate')}
+              className={`p-2.5 rounded-2xl text-left border transition-all ${
+                voiceMode === 'auto_gate' ? 'bg-emerald-500/20 border-emerald-400 text-white' : 'bg-white/5 border-white/10 text-gray-300'
+              }`}
+            >
+              <div className="font-black text-xs text-emerald-300">Smart Voice Gate 🛡️</div>
+              <div className="text-[10px] text-gray-400">Auto-mutes background noise</div>
+            </button>
+
+            <button
+              onClick={() => setVoiceMode('push_to_talk')}
+              className={`p-2.5 rounded-2xl text-left border transition-all ${
+                voiceMode === 'push_to_talk' ? 'bg-amber-500/20 border-amber-400 text-white' : 'bg-white/5 border-white/10 text-gray-300'
+              }`}
+            >
+              <div className="font-black text-xs text-amber-300">Push-to-Talk (PTT) 🎙️</div>
+              <div className="text-[10px] text-gray-400">Hold button to speak</div>
+            </button>
+
+            <button
+              onClick={() => setVoiceMode('always_on')}
+              className={`p-2.5 rounded-2xl text-left border transition-all ${
+                voiceMode === 'always_on' ? 'bg-rose-500/20 border-rose-400 text-white' : 'bg-white/5 border-white/10 text-gray-300'
+              }`}
+            >
+              <div className="font-black text-xs text-rose-300">Always On Mic 🔊</div>
+              <div className="text-[10px] text-gray-400">Continuous open mic</div>
+            </button>
+          </div>
+
+          {/* Visual Level Bar */}
+          <div className="space-y-1 pt-1">
+            <div className="flex items-center justify-between text-[10px] text-gray-300 font-bold">
+              <span>Mic Audio Level:</span>
+              <span className={micLevel > gateThreshold ? "text-emerald-400 font-black" : "text-gray-400"}>
+                {micLevel > gateThreshold ? "VOICE TRANSMITTING 🎙️" : "Gate Closed (Silent)"}
+              </span>
+            </div>
+            <div className="relative w-full h-2.5 bg-gray-800 rounded-full overflow-hidden border border-white/10">
+              <div
+                style={{ width: `${micLevel}%` }}
+                className={`h-full transition-all duration-75 ${micLevel > gateThreshold ? 'bg-emerald-400' : 'bg-rose-500/80'}`}
+              />
+              <div
+                style={{ left: `${gateThreshold}%` }}
+                className="absolute top-0 bottom-0 w-1 bg-yellow-300 z-10"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MOBILE CINEMA GUIDE MODAL */}
       {showMobileCinemaModal && (
@@ -1888,14 +1554,11 @@ function WatchTogether({ user, roomId, socket }) {
                   setShowMobileCinemaModal(false);
                   setActiveTab('direct');
                 }}
-                className="w-full py-3.5 px-4 bg-white/10 hover:bg-white/20 border border-white/15 rounded-2xl font-bold text-xs text-white flex items-center justify-center gap-2 hover:scale-[1.02] transition-all"
+                className="w-full py-3.5 px-4 bg-white/10 hover:bg-white/20 rounded-2xl font-black text-xs text-white border border-white/20 flex items-center justify-center gap-2 transition-all"
               >
-                <Video size={18} /> Play Direct Movie URL / MP4 🎥
+                <Film size={18} /> Direct Movie URL / MP4 🎥
               </button>
-            </div>
-
-            <div className="pt-2 border-t border-white/10">
-              <p className="text-[11px] text-gray-400 italic leading-relaxed">
+              <p className="text-[11px] text-gray-400 italic leading-relaxed pt-1">
                 💡 <strong>Desktop Stream Tip:</strong> If your partner streams NetMirror from a Laptop/Desktop, your phone will automatically receive & play the live movie stream right here!
               </p>
             </div>
