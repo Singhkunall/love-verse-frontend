@@ -965,42 +965,46 @@ function WatchTogether({ user, roomId, socket }) {
   const glassStyle = "bg-white/80 backdrop-blur-2xl border border-white/60 shadow-xl rounded-[2.5rem]";
 
   // Shared Draggable Camera PIP Component
-  const renderPipCameraOverlay = () => (
-    isVoiceConnected && (isCameraOn || hasRemoteVideo) && (
+  const renderPipCameraOverlay = () => {
+    // If voice is not connected OR both local & remote cameras are off -> HIDE FLOATING CONTAINER COMPLETELY!
+    if (!isVoiceConnected || (!isCameraOn && !hasRemoteVideo)) {
+      return null;
+    }
+
+    return (
       <div
         style={{
           transform: `translate(${pipPosition.x}px, ${pipPosition.y}px)`
         }}
-        className="absolute bottom-6 right-6 z-50 flex flex-col items-end gap-2 animate-in fade-in zoom-in-95 pointer-events-auto touch-none select-none"
+        className="absolute bottom-6 right-6 z-50 flex flex-col items-end gap-2 animate-in fade-in zoom-in-95 duration-300 pointer-events-auto touch-none select-none"
       >
         <div
           onMouseDown={(e) => handleDragStart(e.clientX, e.clientY)}
           onTouchStart={(e) => e.touches?.[0] && handleDragStart(e.touches[0].clientX, e.touches[0].clientY)}
-          className="relative w-36 h-52 md:w-44 md:h-60 rounded-3xl overflow-hidden border-2 border-rose-500/80 shadow-2xl bg-slate-950 cursor-grab active:cursor-grabbing group hover:border-pink-400 transition-colors"
+          className="relative w-32 h-48 md:w-44 md:h-60 rounded-3xl overflow-hidden border-2 border-rose-500/80 shadow-2xl bg-slate-950 cursor-grab active:cursor-grabbing group hover:border-pink-400 transition-all duration-300"
         >
           <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md px-2.5 py-0.5 rounded-full text-white/80 z-30 flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
             <GripVertical size={10} />
             <span className="text-[8px] font-black uppercase tracking-widest">Drag Me</span>
           </div>
 
+          {/* MAIN STREAM: Render Remote video if active, else Local video if active */}
           {hasRemoteVideo ? (
             <div id="watch-remote-video" className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center text-slate-400">
-              <VideoOff size={24} className="mb-2 text-slate-500" />
-              <p className="text-[10px] font-bold">Partner's camera off</p>
-            </div>
-          )}
+          ) : isCameraOn ? (
+            <div id="watch-local-video" className="w-full h-full object-cover" />
+          ) : null}
 
-          {isCameraOn && (
+          {/* SECONDARY INSET STREAM: Only if BOTH remote & local videos are active! */}
+          {hasRemoteVideo && isCameraOn && (
             <div className="absolute bottom-2 right-2 w-14 h-20 md:w-18 md:h-24 rounded-2xl overflow-hidden border-2 border-white shadow-lg bg-black z-20">
               <div id="watch-local-video" className="w-full h-full object-cover" />
             </div>
           )}
         </div>
       </div>
-    )
-  );
+    );
+  };
 
   // Shared Translucent In-Movie Chat Component
   const renderTranslucentChatOverlay = () => (
