@@ -309,17 +309,17 @@ function WatchTogether({ user, roomId, socket }) {
     if (vid.srcObject !== targetStream) {
       console.log("Binding targetStream to video element...", targetStream);
       vid.srcObject = targetStream;
-      vid.muted = isSharingScreen; // sirf pehli baar set hoga, kyunki ab yeh srcObject change hone par hi chalega
-    }
+      vid.muted = isSharingScreen;
 
-    const playPromise = vid.play();
-    if (playPromise !== undefined) {
-      playPromise.then(() => {
-        setAutoplayBlocked(false);
-      }).catch((err) => {
-        console.warn("Autoplay blocked by browser policy:", err);
-        setAutoplayBlocked(true);
-      });
+      const playPromise = vid.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          setAutoplayBlocked(false);
+        }).catch((err) => {
+          console.warn("Autoplay blocked by browser policy:", err);
+          setAutoplayBlocked(true);
+        });
+      }
     }
   };
 
@@ -330,11 +330,11 @@ function WatchTogether({ user, roomId, socket }) {
     }
   };
 
-  // Screen stream binding effect (attaches local streamer preview or remote stream, handles browser autoplay blocking)
+  // Screen stream binding effect
   useEffect(() => {
     if (activeTab === 'screen_share') {
       bindScreenVideoStream();
-      const interval = setInterval(bindScreenVideoStream, 1000);
+      const interval = setInterval(bindScreenVideoStream, 2000);
       return () => clearInterval(interval);
     }
   }, [activeTab, isSharingScreen, isReceivingStream, hasRemoteStream]);
@@ -868,23 +868,41 @@ function WatchTogether({ user, roomId, socket }) {
     toast.success("Virtual Cinema Ended!");
   };
 
-  // Fullscreen helper - True Native Browser Fullscreen on the parent Cinema Container!
+  // Fullscreen helper - Native Android/iOS Video Fullscreen + HTML5 & Viewport Overlay Fallback!
   const handleFullscreenCinema = () => {
-    const elem = (activeTab === 'youtube' ? youtubeContainerRef.current : cinemaContainerRef.current) || screenVideoRef.current;
-    if (!elem) return;
+    const vid = screenVideoRef.current;
 
-    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-      if (elem.requestFullscreen) {
-        elem.requestFullscreen();
-      } else if (elem.webkitRequestFullscreen) {
-        elem.webkitRequestFullscreen();
+    // 1. Try native webkitEnterFullscreen on video tag for Android/iOS mobile browsers
+    if (vid && typeof vid.webkitEnterFullscreen === 'function') {
+      try {
+        vid.webkitEnterFullscreen();
+        return;
+      } catch (e) {
+        console.warn("webkitEnterFullscreen fallback:", e);
+      }
+    }
+
+    // 2. Try HTML5 requestFullscreen on container
+    const container = (activeTab === 'youtube' ? youtubeContainerRef.current : cinemaContainerRef.current) || vid;
+    if (container) {
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        if (container.requestFullscreen) {
+          container.requestFullscreen().catch(() => setIsCinemaFullscreen(prev => !prev));
+        } else if (container.webkitRequestFullscreen) {
+          container.webkitRequestFullscreen();
+        } else {
+          setIsCinemaFullscreen(prev => !prev);
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        }
+        setIsCinemaFullscreen(false);
       }
     } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-      }
+      setIsCinemaFullscreen(prev => !prev);
     }
   };
 
@@ -1567,8 +1585,11 @@ function WatchTogether({ user, roomId, socket }) {
               {/* Screen Video Container */}
               <div
                 ref={cinemaContainerRef}
-                className={`relative rounded-3xl overflow-hidden shadow-2xl bg-black border border-gray-800 transition-all ${isTheaterMode ? 'h-[75vh] md:h-[85vh]' : 'min-h-[250px] pt-[56.25%]'
-                  }`}
+                className={`relative rounded-3xl overflow-hidden shadow-2xl bg-black border border-gray-800 transition-all ${
+                  isCinemaFullscreen
+                    ? 'fixed inset-0 z-[99999] w-screen h-screen rounded-none border-none'
+                    : (isTheaterMode ? 'h-[75vh] md:h-[85vh]' : 'min-h-[250px] pt-[56.25%]')
+                }`}
                 style={{ backgroundColor: '#000000' }}
               >
                 <video
