@@ -1,6 +1,7 @@
 {
   "routes": [
     { "src": "/app.apk", "dest": "/app.apk" },
+    { "src": "/LoveVerse-v5-Final.apk", "dest": "/LoveVerse-v5-Final.apk" },
     { "src": "/LoveVerse-v4.apk", "dest": "/LoveVerse-v4.apk" },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }
