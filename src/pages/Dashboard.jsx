@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Heart, LogOut, User, Clock, Calendar as CalendarIcon, Sparkles, Image as ImageIcon, Plus, Trash2, Zap, Gamepad2, Star, ListTodo, CheckCircle2, Circle, ChevronRight, Radio, Touchpad, PlaySquare, MessageSquare } from 'lucide-react';
+import { Heart, LogOut, User, Clock, Calendar as CalendarIcon, Sparkles, Image as ImageIcon, Plus, Trash2, Zap, Gamepad2, Star, ListTodo, CheckCircle2, Circle, ChevronRight, Radio, Touchpad, PlaySquare, MessageSquare, Bell, Lock } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import Chat from '../components/Chat';
@@ -17,6 +17,8 @@ import WatchTogether from '../components/WatchTogether';
 import Ludo from '../components/Ludo';
 import UniverseMap from '../components/UniverseMap';
 import VirtualTouch from '../components/VirtualTouch';
+import NotificationCenter from '../components/NotificationCenter';
+import SecurityLock from '../components/SecurityLock';
 import API_URL from '../utils/config';
 import { compressImage } from '../utils/imageCompressor';
 
@@ -64,6 +66,12 @@ function Dashboard() {
   const [tasks, setTasks] = useState([]);
   const [showHearts, setShowHearts] = useState(false); // NAYA: Hearts state
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [showNotifs, setShowNotifs] = useState(false);
+  const [notifs, setNotifs] = useState([
+    { type: 'hug', title: 'Partner Hug Sent ❤️', text: 'Partner sent a warm virtual hug!', time: '10m ago' },
+    { type: 'mood', title: 'Partner Mood Updated 😊', text: 'Partner is feeling Romantic today!', time: '1h ago' }
+  ]);
+  const [showSecurityLock, setShowSecurityLock] = useState(false);
 
   const userId = user._id || user.id;
   // ✅ Fix 1: safely extract partnerId as string regardless of object or string
@@ -363,18 +371,54 @@ function Dashboard() {
 
       <main className="flex-1 flex flex-col gap-6 overflow-y-auto">
         {/* Top Navbar */}
-        <nav className={`${glassStyle} p-4 px-6 md:px-8 rounded-[2rem] flex justify-between items-center`}>
+        <nav className={`${glassStyle} p-4 px-6 md:px-8 rounded-[2rem] flex justify-between items-center z-20`}>
           <div className="lg:hidden font-serif italic font-black text-rose-600 text-2xl tracking-tight">Love-Verse</div>
           <div className="hidden lg:block text-xs font-bold text-gray-400 uppercase tracking-widest italic font-sans">
             "Your digital home for love"
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 md:gap-3">
+            <button
+              onClick={() => setShowNotifs(true)}
+              className="relative p-2.5 rounded-2xl bg-white/80 hover:bg-rose-50 text-gray-700 hover:text-rose-500 border border-rose-100 shadow-sm transition-all active:scale-95"
+              title="Activity Center"
+            >
+              <Bell size={18} />
+              {notifs.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white font-black text-[9px] flex items-center justify-center animate-pulse">
+                  {notifs.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setShowSecurityLock(true)}
+              className="p-2.5 rounded-2xl bg-white/80 hover:bg-rose-50 text-gray-700 hover:text-rose-500 border border-rose-100 shadow-sm transition-all active:scale-95"
+              title="Security PIN Lock"
+            >
+              <Lock size={18} />
+            </button>
+
             <div className="w-8 h-8 rounded-full bg-rose-500 text-white flex items-center justify-center font-black text-xs border border-white shadow-sm lg:hidden">
               {user?.name?.charAt(0)}
             </div>
             <button onClick={handleLogout} className="lg:hidden text-gray-400 p-1 hover:text-rose-500"><LogOut size={18} /></button>
           </div>
         </nav>
+
+        {/* In-App Notification Center Drawer */}
+        <NotificationCenter
+          isOpen={showNotifs}
+          onClose={() => setShowNotifs(false)}
+          notifications={notifs}
+          onClearAll={() => setNotifs([])}
+        />
+
+        {/* Security Passcode Modal */}
+        <SecurityLock
+          isOpen={showSecurityLock}
+          onClose={() => setShowSecurityLock(false)}
+          onUnlock={() => setShowSecurityLock(false)}
+        />
 
         {/* --- DYNAMIC TABS --- */}
         {activeTab === 'home' && (

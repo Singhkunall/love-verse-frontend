@@ -34,6 +34,9 @@ function Chat({ user }) {
   const [callDuration, setCallDuration] = useState(0);
 
   const [showRoutine, setShowRoutine] = useState(false);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [activeReactionMsg, setActiveReactionMsg] = useState(null);
+  const [isDisappearingMode, setIsDisappearingMode] = useState(false);
 
   const scrollRef = useRef();
   const mediaRecorderRef = useRef(null);
@@ -162,11 +165,22 @@ function Chat({ user }) {
     const handleTyping = (data) => {
       if (data.userId !== userId) setIsTyping(data.typing);
     };
+    const handleReaction = (data) => {
+      setMessageList(prev => prev.map((msg, idx) => {
+        if (idx === data.msgIndex) {
+          const reactions = msg.reactions || [];
+          return { ...msg, reactions: [...reactions.filter(r => r.userId !== data.userId), { emoji: data.emoji, userId: data.userId }] };
+        }
+        return msg;
+      }));
+    };
     socket.on("receive_message", handleReceive);
     socket.on("display_typing", handleTyping);
+    socket.on("receive_msg_reaction", handleReaction);
     return () => {
       socket.off("receive_message", handleReceive);
       socket.off("display_typing", handleTyping);
+      socket.off("receive_msg_reaction", handleReaction);
     };
   }, [userId]);
 
@@ -380,6 +394,18 @@ function Chat({ user }) {
     }
   };
 
+  const handleReactToMsg = (msgIndex, emoji) => {
+    setMessageList(prev => prev.map((msg, idx) => {
+      if (idx === msgIndex) {
+        const reactions = msg.reactions || [];
+        return { ...msg, reactions: [...reactions.filter(r => r.userId !== userId), { emoji, userId }] };
+      }
+      return msg;
+    }));
+    socket.emit("send_msg_reaction", { room: roomId, msgIndex, emoji, userId });
+    setActiveReactionMsg(null);
+  };
+
   const sendMessage = async () => {
     if (currentMessage.trim() !== "") {
       const messageData = {
@@ -387,11 +413,14 @@ function Chat({ user }) {
         sender: userId,
         senderName: user.name,
         message: currentMessage,
+        replyTo: replyingTo ? { senderName: replyingTo.senderName, text: replyingTo.message } : null,
+        isDisappearing: isDisappearingMode,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       await socket.emit("send_message", messageData);
       setMessageList((list) => [...list, messageData]);
       setCurrentMessage("");
+      setReplyingTo(null);
       setShowEmoji(false);
       socket.emit("typing", { room: roomId, userId, typing: false });
     }
@@ -627,6 +656,18 @@ function Chat({ user }) {
         {/* Call & Action Buttons (Consistent Uniform Badges) */}
         <div className="flex items-center gap-2">
           <button
+            onClick={() => {
+              setIsDisappearingMode(!isDisappearingMode);
+              toast(isDisappearingMode ? "Disappearing Mode Off 🛡️" : "Secret Disappearing Mode Active 🔒🔥");
+            }}
+            className={`w-9 h-9 rounded-full flex items-center justify-center transition-all border active:scale-95 ${
+              isDisappearingMode ? 'bg-amber-500 text-white border-amber-600 shadow-md animate-pulse' : 'bg-rose-50 text-gray-700 hover:bg-rose-100 border-rose-100/80'
+            }`}
+            title={isDisappearingMode ? "Disappearing Mode Active" : "Enable Secret Disappearing Mode"}
+          >
+            <Sparkles size={16} className={isDisappearingMode ? "fill-current" : ""} />
+          </button>
+          <button
             onClick={() => startCall(false)}
             className="w-9 h-9 rounded-full bg-rose-50 text-gray-700 hover:bg-rose-100 flex items-center justify-center transition-all border border-rose-100/80 active:scale-95"
             title="Start HD Audio Call"
@@ -664,7 +705,23 @@ function Chat({ user }) {
           const isLastInGroup = !isNextSameSender;
 
           return (
-            <div key={index} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} ${isLastInGroup ? 'mb-2.5' : 'mb-0.5'}`}>
+            <div key={index} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} ${isLastInGroup ? 'mb-2.5' : 'mb-0.5'} relative group`}>
+              {/* Quick Reaction Selector Floating Picker */}
+              {activeReactionMsg === index && (
+                <div className={`absolute -top-10 z-40 bg-white/95 backdrop-blur-md border border-rose-100 rounded-full px-2 py-1 shadow-xl flex items-center gap-1 animate-in zoom-in-95 ${isMe ? 'right-0' : 'left-8'}`}>
+                  {['❤️', '😂', '🔥', '🥺', '😮', '👍'].map((emoji, eIdx) => (
+                    <button
+                      key={eIdx}
+                      onClick={() => handleReactToMsg(index, emoji)}
+                      className="hover:scale-125 text-base transition-transform p-1"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                  <button onClick={() => setActiveReactionMsg(null)} className="text-gray-400 p-1 text-xs font-bold">✖</button>
+                </div>
+              )}
+
               <div className={`flex items-end gap-2 max-w-[82%] md:max-w-[72%] ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
                 {/* Partner Avatar for received messages (only on last message of group) */}
                 {!isMe && (
@@ -681,11 +738,24 @@ function Chat({ user }) {
                   </div>
                 )}
 
-                <div className={`p-3 md:p-3.5 ${
-                  isMe
-                    ? 'bg-[#aa2c4c] text-white font-bold rounded-2xl rounded-tr-xs shadow-md'
-                    : 'bg-[#fffcf7] text-gray-800 font-bold rounded-2xl rounded-tl-xs shadow-sm border border-rose-100/90'
-                }`}>
+                <div 
+                  onClick={() => setActiveReactionMsg(activeReactionMsg === index ? null : index)}
+                  className={`p-3 md:p-3.5 cursor-pointer relative ${
+                    isMe
+                      ? 'bg-[#aa2c4c] text-white font-bold rounded-2xl rounded-tr-xs shadow-md'
+                      : 'bg-[#fffcf7] text-gray-800 font-bold rounded-2xl rounded-tl-xs shadow-sm border border-rose-100/90'
+                  }`}
+                >
+                  {/* Reply Context Block if present */}
+                  {msg.replyTo && (
+                    <div className={`p-2 rounded-xl text-[10px] mb-1.5 border-l-2 ${
+                      isMe ? 'bg-white/15 border-white text-rose-100' : 'bg-rose-50 border-[#aa2c4c] text-gray-700'
+                    }`}>
+                      <span className="font-black block">{msg.replyTo.senderName}</span>
+                      <span className="truncate block opacity-90">{msg.replyTo.text}</span>
+                    </div>
+                  )}
+
                   {msg.isVideo ? (
                     <video src={msg.message} controls className="rounded-xl max-h-60 object-cover" />
                   ) : msg.isImage ? (
@@ -693,7 +763,7 @@ function Chat({ user }) {
                   ) : msg.isVoiceNote ? (
                     <div className="flex items-center gap-3 min-w-[180px]">
                       <button
-                        onClick={() => toggleVoiceNotePlay(index, msg.message)}
+                        onClick={(e) => { e.stopPropagation(); toggleVoiceNotePlay(index, msg.message); }}
                         className={`p-2.5 rounded-full ${isMe ? 'bg-white text-[#aa2c4c]' : 'bg-[#aa2c4c] text-white'}`}
                       >
                         {playingId === index ? <Pause size={16} /> : <Play size={16} />}
@@ -709,14 +779,33 @@ function Chat({ user }) {
                     <p className="text-xs md:text-sm font-bold leading-relaxed">{msg.message}</p>
                   )}
 
+                  {/* Attached Emoji Reactions */}
+                  {msg.reactions && msg.reactions.length > 0 && (
+                    <div className={`absolute -bottom-2 ${isMe ? 'left-2' : 'right-2'} bg-white border border-rose-100 rounded-full px-1.5 py-0.5 text-xs shadow-md flex items-center gap-0.5`}>
+                      {msg.reactions.map((r, rIdx) => (
+                        <span key={rIdx}>{r.emoji}</span>
+                      ))}
+                    </div>
+                  )}
+
                   {/* Show timestamp & read-receipt only on last message of consecutive group */}
                   {isLastInGroup && (
                     <div className={`flex items-center justify-end gap-1 mt-1 text-[10px] font-medium ${isMe ? 'text-rose-100' : 'text-gray-400'}`}>
+                      {msg.isDisappearing && <Sparkles size={10} className="text-amber-300" title="Disappearing Message" />}
                       <span>{msg.time}</span>
                       {isMe && <CheckCheck size={12} className="text-rose-200" />}
                     </div>
                   )}
                 </div>
+
+                {/* Reply Button on Hover */}
+                <button
+                  onClick={() => setReplyingTo(msg)}
+                  className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-rose-500 transition-opacity"
+                  title="Reply to message"
+                >
+                  <MessageSquare size={14} />
+                </button>
               </div>
             </div>
           );
@@ -728,7 +817,23 @@ function Chat({ user }) {
       {showEmoji && <div className="absolute bottom-20 left-4 right-4 md:left-6 z-50 shadow-2xl"><EmojiPicker onEmojiClick={(d) => setCurrentMessage(p => p + d.emoji)} /></div>}
 
       {/* Floating Bottom Input Bar (Unified Monochromatic Styling) */}
-      <div className="p-2.5 bg-transparent sticky bottom-0 z-20">
+      <div className="p-2.5 bg-transparent sticky bottom-0 z-20 space-y-1.5">
+        {/* Reply Preview Header */}
+        {replyingTo && (
+          <div className="flex items-center justify-between px-4 py-2 bg-white/90 backdrop-blur-md rounded-2xl border border-rose-100 text-xs shadow-sm">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-1 h-8 bg-[#aa2c4c] rounded-full shrink-0" />
+              <div className="min-w-0">
+                <span className="text-[10px] font-black text-rose-500 uppercase block">Replying to {replyingTo.senderName}</span>
+                <p className="text-gray-700 truncate font-medium">{replyingTo.message}</p>
+              </div>
+            </div>
+            <button onClick={() => setReplyingTo(null)} className="p-1 text-gray-400 hover:text-gray-600 rounded-full bg-gray-100 shrink-0">
+              <X size={14} />
+            </button>
+          </div>
+        )}
+
         {recording && (
           <div className="flex items-center justify-between mb-2 px-4 py-2 bg-red-50 rounded-2xl border border-red-100">
             <div className="flex items-center gap-2">
