@@ -603,22 +603,23 @@ function Chat({ user }) {
       )}
 
       {/* Chat Top Header */}
-      <div className="p-6 bg-white/40 border-b border-rose-100 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-rose-400 to-pink-500 text-white flex items-center justify-center font-black shadow-md overflow-hidden">
+      <div className="p-4 md:p-5 bg-white/60 backdrop-blur-xl border-b border-rose-100/80 flex items-center justify-between shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="relative shrink-0">
+            <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-rose-500 to-pink-500 text-white flex items-center justify-center font-black shadow-md border-2 border-white overflow-hidden">
               {partnerAvatar ? (
                 <img src={partnerAvatar} alt={partnerName} className="w-full h-full object-cover" />
               ) : (
                 partnerName ? partnerName[0].toUpperCase() : 'P'
               )}
             </div>
-            <div className="w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full absolute bottom-0 right-0" />
+            <div className="w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full absolute bottom-0 right-0 shadow-sm" />
           </div>
           <div>
-            <h3 className="font-black text-gray-800 text-lg leading-tight">{partnerName}</h3>
-            <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">
-              {isTyping ? "Typing..." : "Online in sanctuary"}
+            <h3 className="font-serif italic font-black text-gray-800 text-base leading-tight">{partnerName}</h3>
+            <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping inline-block" />
+              {isTyping ? "Typing..." : "Online in Sanctuary"}
             </p>
           </div>
         </div>
@@ -627,21 +628,21 @@ function Chat({ user }) {
         <div className="flex items-center gap-2">
           <button
             onClick={() => startCall(false)}
-            className="p-3 bg-white text-rose-500 hover:bg-rose-50 rounded-2xl border border-rose-100 shadow-sm hover:scale-105 transition-all"
+            className="p-2.5 bg-white text-rose-500 hover:bg-rose-50 rounded-2xl border border-rose-100 shadow-sm hover:scale-105 transition-all"
             title="Start HD Audio Call"
           >
             <Phone size={18} />
           </button>
           <button
             onClick={() => startCall(true)}
-            className="p-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-2xl shadow-md hover:scale-105 transition-all"
+            className="p-2.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-2xl shadow-md hover:scale-105 transition-all"
             title="Start HD Video Call"
           >
             <Video size={18} />
           </button>
           <button
             onClick={() => setShowRoutine(!showRoutine)}
-            className={`p-3 rounded-2xl border shadow-sm transition-all ${
+            className={`p-2.5 rounded-2xl border shadow-sm transition-all ${
               showRoutine ? 'bg-rose-500 text-white border-rose-500' : 'bg-white text-gray-600 border-rose-100 hover:bg-rose-50'
             }`}
             title="Toggle Routines"
@@ -658,15 +659,15 @@ function Chat({ user }) {
       )}
 
       {/* Messages Feed */}
-      <div className="flex-1 p-6 overflow-y-auto space-y-4">
+      <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-3.5">
         {messageList.map((msg, index) => {
           const isMe = msg.sender === userId;
           return (
             <div key={index} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-              <div className={`max-w-[75%] p-4 rounded-[2rem] shadow-sm ${
+              <div className={`max-w-[80%] md:max-w-[75%] p-3.5 md:p-4 rounded-[1.8rem] shadow-sm ${
                 isMe
                   ? 'bg-gradient-to-tr from-rose-500 to-pink-500 text-white rounded-tr-none'
-                  : 'bg-white border border-rose-100 text-gray-800 rounded-tl-none'
+                  : 'bg-white border border-rose-100 text-gray-800 rounded-tl-none shadow-slate-100'
               }`}>
                 {msg.isVideo ? (
                   <video src={msg.message} controls className="rounded-2xl max-h-60 object-cover" />
@@ -688,9 +689,9 @@ function Chat({ user }) {
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm font-bold leading-relaxed">{msg.message}</p>
+                  <p className="text-xs md:text-sm font-bold leading-relaxed">{msg.message}</p>
                 )}
-                <span className={`text-[9px] font-bold block mt-1.5 text-right ${isMe ? 'text-rose-100' : 'text-gray-400'}`}>
+                <span className={`text-[9px] font-bold block mt-1 text-right ${isMe ? 'text-rose-100' : 'text-gray-400'}`}>
                   {msg.time}
                 </span>
               </div>
@@ -701,30 +702,30 @@ function Chat({ user }) {
         <div ref={scrollRef} />
       </div>
 
-      {showEmoji && <div className="absolute bottom-24 left-6 z-50 shadow-2xl"><EmojiPicker onEmojiClick={(d) => setCurrentMessage(p => p + d.emoji)} /></div>}
+      {showEmoji && <div className="absolute bottom-24 left-4 right-4 md:left-6 z-50 shadow-2xl"><EmojiPicker onEmojiClick={(d) => setCurrentMessage(p => p + d.emoji)} /></div>}
 
-      {/* Input Bar */}
-      <div className="p-6 bg-transparent">
+      {/* Floating Bottom Input Bar */}
+      <div className="p-4 bg-transparent">
         {recording && (
-          <div className="flex items-center justify-between mb-3 px-4 py-2 bg-red-50 rounded-2xl border border-red-100">
+          <div className="flex items-center justify-between mb-2.5 px-4 py-2 bg-red-50 rounded-2xl border border-red-100">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              <span className="text-red-500 font-black text-sm">Recording... {formatTime(recordingTime)}</span>
+              <span className="text-red-500 font-black text-xs">Recording... {formatTime(recordingTime)}</span>
             </div>
             <button onClick={stopRecording} className="text-red-500 font-black text-xs bg-red-100 px-3 py-1 rounded-full">Send ✓</button>
           </div>
         )}
-        <div className="bg-white/80 backdrop-blur-2xl p-2 rounded-[2.5rem] flex items-center gap-2 border border-white shadow-xl shadow-rose-200/20 focus-within:ring-2 ring-rose-100 transition-all">
-          <label className="p-3 text-rose-400 hover:bg-rose-50 rounded-full cursor-pointer transition-all" title="Send Photo 📸">
-            {isUploading ? <Loader2 size={22} className="animate-spin" /> : <ImageIcon size={22} />}
+        <div className="bg-white/90 backdrop-blur-2xl p-2 rounded-[2.5rem] flex items-center gap-1.5 border border-white shadow-xl shadow-rose-100/50 focus-within:ring-2 ring-rose-200 transition-all">
+          <label className="p-2.5 text-rose-400 hover:bg-rose-50 rounded-full cursor-pointer transition-all" title="Send Photo 📸">
+            {isUploading ? <Loader2 size={20} className="animate-spin" /> : <ImageIcon size={20} />}
             <input type="file" className="hidden" accept="image/*" onChange={handleMediaUpload} disabled={isUploading} />
           </label>
-          <label className="p-3 text-rose-400 hover:bg-rose-50 rounded-full cursor-pointer transition-all" title="Send Video 🎬">
-            {isUploading ? <Loader2 size={22} className="animate-spin" /> : <Film size={22} />}
+          <label className="p-2.5 text-rose-400 hover:bg-rose-50 rounded-full cursor-pointer transition-all" title="Send Video 🎬">
+            {isUploading ? <Loader2 size={20} className="animate-spin" /> : <Film size={20} />}
             <input type="file" className="hidden" accept="video/*" onChange={handleMediaUpload} disabled={isUploading} />
           </label>
-          <button onClick={() => setShowEmoji(!showEmoji)} className={`p-3 rounded-full transition-all ${showEmoji ? 'bg-rose-100 text-rose-600' : 'text-rose-400 hover:bg-rose-50'}`}>
-            <Smile size={22} />
+          <button onClick={() => setShowEmoji(!showEmoji)} className={`p-2.5 rounded-full transition-all ${showEmoji ? 'bg-rose-100 text-rose-600' : 'text-rose-400 hover:bg-rose-50'}`}>
+            <Smile size={20} />
           </button>
           <input
             type="text"
@@ -732,20 +733,20 @@ function Chat({ user }) {
             placeholder={recording ? "Recording..." : sendingVoice ? "Sending..." : "Type your love..."}
             onChange={(e) => { setCurrentMessage(e.target.value); socket.emit("typing", { room: roomId, userId, typing: e.target.value.length > 0 }); }}
             onKeyPress={(e) => e.key === "Enter" && sendMessage()}
-            className="flex-1 bg-transparent border-none outline-none text-xs md:text-sm text-gray-700 font-bold px-2"
+            className="flex-1 bg-transparent border-none outline-none text-xs md:text-sm text-gray-800 font-bold px-2"
             disabled={recording || sendingVoice}
           />
           {currentMessage.length === 0 ? (
             <button
               onClick={recording ? stopRecording : startRecording}
               disabled={sendingVoice}
-              className={`p-3.5 rounded-full transition-all ${recording ? 'bg-red-500 text-white animate-pulse' : 'bg-rose-100 text-rose-500 hover:bg-rose-500 hover:text-white'}`}
+              className={`p-3 rounded-full transition-all ${recording ? 'bg-red-500 text-white animate-pulse' : 'bg-rose-100 text-rose-500 hover:bg-rose-500 hover:text-white'}`}
             >
               {sendingVoice ? <Loader2 size={18} className="animate-spin" /> : recording ? <MicOff size={18} /> : <Mic size={18} />}
             </button>
           ) : (
-            <button onClick={sendMessage} className="p-3.5 rounded-full bg-rose-500 text-white shadow-lg scale-105 transition-all">
-              <Send size={18} />
+            <button onClick={sendMessage} className="p-3.5 rounded-full bg-gradient-to-r from-rose-950 to-pink-900 text-white shadow-md scale-105 transition-all">
+              <Send size={16} />
             </button>
           )}
         </div>
