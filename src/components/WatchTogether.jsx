@@ -1262,21 +1262,35 @@ function WatchTogether({ user, roomId, socket }) {
         }
       `}</style>
 
-      {/* 1. COMPACT HEADER WITH MERGED LIVE PARTNER BADGE */}
-      <div className="flex items-center justify-between gap-2 px-2 pt-1">
-        <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 bg-gradient-to-tr from-rose-500 to-pink-500 text-white rounded-2xl flex items-center justify-center shadow-lg font-black shrink-0">
-            <PlaySquare size={20} />
+      {/* 1. TOP PURPLE/PINK VOICE & CAMERA CHAT BANNER */}
+      <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-rose-500 rounded-[2rem] p-4 text-white shadow-xl flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white shrink-0 shadow-inner">
+            <Radio size={20} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-lg md:text-2xl font-black text-gray-800">Watch Together 🍿</h3>
-              <span className="px-2 py-0.5 bg-green-500/10 text-green-600 border border-green-500/20 rounded-full font-black text-[9px] flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-ping" /> LIVE WITH PARTNER
+              <h4 className="text-xs md:text-sm font-black uppercase tracking-wider text-white">MOVIE VOICE & CAMERA CHAT</h4>
+              <span className="px-2 py-0.5 bg-white/20 backdrop-blur-md rounded-full text-[9px] font-black uppercase border border-white/30 text-rose-100">
+                ANTI-ECHO ✓
               </span>
             </div>
-            <p className="text-[10px] text-gray-500 font-bold hidden sm:block">YouTube, Virtual Cinema, Direct Movies & OTT Guide</p>
+            <p className="text-[10px] md:text-[11px] font-medium text-pink-100 mt-0.5">Connect mic & camera to talk live during movie</p>
           </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setShowEchoSettings(!showEchoSettings)}
+            className="px-3 py-2 bg-white/15 hover:bg-white/25 rounded-2xl font-bold text-xs border border-white/30 backdrop-blur-md text-white transition-all flex items-center gap-1.5"
+          >
+            <ShieldCheck size={14} className="text-emerald-300" /> Echo Shield: Auto
+          </button>
+          <button
+            onClick={toggleVoiceChatWatch}
+            className="px-4 py-2 bg-white text-rose-600 hover:bg-rose-50 rounded-2xl font-black text-xs shadow-md transition-all flex items-center gap-1.5 active:scale-95"
+          >
+            <Mic size={14} /> {isVoiceConnected ? 'Disconnect' : 'Connect Voice & Video'}
+          </button>
         </div>
       </div>
 
@@ -1292,13 +1306,13 @@ function WatchTogether({ user, roomId, socket }) {
           onClick={() => setActiveTab('screen_share')}
           className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${activeTab === 'screen_share' ? 'bg-rose-500 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'}`}
         >
-          📽️ Virtual Cinema (NetMirror)
+          📽️ Cinema
         </button>
         <button
           onClick={() => setActiveTab('direct')}
           className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${activeTab === 'direct' ? 'bg-rose-500 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'}`}
         >
-          🎥 Direct Movie
+          🎥 Direct
         </button>
         <button
           onClick={() => setActiveTab('ott_guide')}
@@ -1308,9 +1322,8 @@ function WatchTogether({ user, roomId, socket }) {
         </button>
       </div>
 
-      {/* 3. PROMINENT VIDEO PLAYER (TOP FEATURE) */}
+      {/* 3. PROMINENT VIDEO PLAYER & SEARCH */}
       <div className="space-y-3">
-        
         {/* URL INPUT FOR YOUTUBE AND DIRECT MOVIE TABS */}
         {activeTab !== 'ott_guide' && activeTab !== 'screen_share' && (
           <form onSubmit={handleLoadVideo} className={`${glassStyle} p-2.5 flex gap-2`}>
@@ -1318,7 +1331,7 @@ function WatchTogether({ user, roomId, socket }) {
               <LinkIcon size={16} className="text-rose-400 shrink-0" />
               <input
                 type="text"
-                placeholder="Paste NetMirror, YouTube, or Movie Link..."
+                placeholder="Paste NetMirror, YouTube, or Movie..."
                 value={inputUrl}
                 onChange={(e) => setInputUrl(e.target.value)}
                 className="flex-1 bg-transparent border-none outline-none text-xs text-gray-800 font-bold"
@@ -1328,7 +1341,7 @@ function WatchTogether({ user, roomId, socket }) {
               type="submit"
               className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-2xl font-black text-xs shadow-md transition-all flex items-center gap-1.5 shrink-0"
             >
-              <Search size={14} /> Load & Sync
+              <Search size={14} /> Load
             </button>
           </form>
         )}
@@ -1337,14 +1350,11 @@ function WatchTogether({ user, roomId, socket }) {
         {activeTab === 'youtube' && (
           <div className="space-y-3">
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest shrink-0">
-                Quick Picks:
-              </span>
               {PRESET_VIDEOS.map((preset, idx) => (
                 <button
                   key={idx}
                   onClick={() => handleSelectPreset(preset)}
-                  className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/60 rounded-full font-bold text-[10px] whitespace-nowrap shrink-0 transition-all"
+                  className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/60 rounded-full font-bold text-xs whitespace-nowrap shrink-0 transition-all shadow-sm"
                 >
                   {preset.name}
                 </button>
@@ -1543,58 +1553,122 @@ function WatchTogether({ user, roomId, socket }) {
         )}
       </div>
 
-      {/* 4. SLIM SINGLE-ROW VOICE & CAMERA CONTROL BAR */}
-      <div className="bg-slate-900/90 backdrop-blur-2xl p-2.5 md:p-3 rounded-2xl border border-slate-800 text-white shadow-xl flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
+      {/* 4. PARTNER STATUS CARD */}
+      <div className={`${glassStyle} p-4 flex items-center justify-between`}>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500 font-bold text-lg shadow-inner">
+            🍿
+          </div>
+          <div>
+            <h5 className="text-xs font-black text-gray-800">Partner Status</h5>
+            <p className="text-[10px] text-gray-400 font-bold">Watching Live</p>
+          </div>
+        </div>
+        <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 rounded-full font-black text-[10px] flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" /> LIVE
+        </span>
+      </div>
+
+      {/* 5. FLOATING MOVIE REACTIONS CARD */}
+      <div className={`${glassStyle} p-4 space-y-3`}>
+        <h5 className="text-xs font-black text-gray-800 flex items-center gap-1.5">
+          <Sparkles size={14} className="text-amber-500" /> Floating Movie Reactions
+        </h5>
+        <div className="grid grid-cols-6 gap-2">
+          {QUICK_EMOJIS.map((emoji, idx) => (
+            <button
+              key={idx}
+              onClick={() => triggerEmojiReaction(emoji)}
+              className="py-2.5 bg-rose-50/70 hover:bg-rose-100 border border-rose-100 rounded-2xl text-xl flex items-center justify-center transition-all active:scale-95 shadow-sm"
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 6. IN-MOVIE LIVE CHAT CARD */}
+      <div className={`${glassStyle} p-4 space-y-3`}>
+        <h5 className="text-xs font-black text-gray-800 flex items-center gap-1.5">
+          <MessageSquare size={14} className="text-rose-500" /> In-Movie Live Chat
+        </h5>
+        <div className="max-h-48 overflow-y-auto space-y-2 pr-1 text-xs">
+          {cinemaMessages.map((msg, idx) => (
+            <div key={idx} className={`flex flex-col ${msg.sender === userId ? 'items-end' : 'items-start'}`}>
+              <span className="text-[9px] text-gray-400 font-bold mb-0.5">{msg.sender === userId ? 'You' : msg.senderName}</span>
+              <div className={`px-3 py-2 rounded-2xl text-xs font-bold max-w-[85%] ${
+                msg.sender === userId ? 'bg-rose-500 text-white rounded-br-none' : 'bg-gray-100 text-gray-800 rounded-bl-none'
+              }`}>
+                {msg.message}
+              </div>
+            </div>
+          ))}
+          {cinemaMessages.length === 0 && (
+            <p className="text-[10px] text-gray-400 font-bold italic text-center py-4">No comments yet. Type a message to chat live during movie! 💬</p>
+          )}
+          <div ref={chatBottomRef} />
+        </div>
+        <form onSubmit={handleSendChatMessage} className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Type comment..."
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            className="flex-1 bg-gray-50 border border-gray-100 rounded-2xl px-3 py-2 text-xs font-bold outline-none focus:border-rose-300"
+          />
+          <button type="submit" className="px-4 py-2 bg-rose-500 text-white rounded-2xl font-black text-xs shadow-md">
+            <Send size={14} />
+          </button>
+        </form>
+      </div>
+
+      {/* 7. SLIM SINGLE-ROW VOICE & CAMERA CONTROL BAR */}
+      <div className="bg-slate-950 p-3.5 rounded-[2rem] border border-slate-800 text-white shadow-2xl space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleMicMuteWatch}
+              className={`w-10 h-10 rounded-2xl flex items-center justify-center text-white transition-all shadow-md ${
+                isVoiceMicMuted ? 'bg-rose-600' : 'bg-rose-500/80 hover:bg-rose-500'
+              }`}
+              title={isVoiceMicMuted ? "Unmute Mic" : "Mute Mic"}
+            >
+              {isVoiceMicMuted ? <MicOff size={18} /> : <Mic size={18} />}
+            </button>
+
+            <button
+              onClick={toggleCameraWatch}
+              className={`w-10 h-10 rounded-2xl flex items-center justify-center text-white transition-all shadow-md ${
+                isCameraOn ? 'bg-emerald-500' : 'bg-white/10 hover:bg-white/20'
+              }`}
+              title={isCameraOn ? "Turn Off Camera" : "Turn On Camera"}
+            >
+              {isCameraOn ? <Video size={18} /> : <VideoOff size={18} />}
+            </button>
+
+            <button
+              onClick={() => setIsAudioDucking(!isAudioDucking)}
+              className={`w-10 h-10 rounded-2xl flex items-center justify-center text-white transition-all shadow-md ${
+                isAudioDucking ? 'bg-amber-500' : 'bg-white/10 hover:bg-white/20'
+              }`}
+              title="Toggle Audio Ducking"
+            >
+              <Volume2 size={18} />
+            </button>
+          </div>
+
           <button
             onClick={toggleVoiceChatWatch}
-            className={`px-3.5 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 shadow-md ${
-              isVoiceConnected ? 'bg-slate-800 hover:bg-black text-white' : 'bg-gradient-to-r from-rose-500 to-pink-600 text-white'
+            className={`px-5 py-2.5 rounded-2xl font-black text-xs transition-all shadow-lg flex items-center gap-2 ${
+              isVoiceConnected ? 'bg-red-600 text-white' : 'bg-gradient-to-r from-rose-500 to-pink-500 text-white'
             }`}
           >
-            {isVoiceConnected ? <PhoneOff size={14} /> : <Mic size={14} />}
-            <span>{isVoiceConnected ? 'Disconnect' : 'Connect Voice & Cam 🎙️📹'}</span>
+            <PhoneOff size={16} /> {isVoiceConnected ? 'Disconnect' : 'Connect'}
           </button>
-
-          {isVoiceConnected && (
-            <>
-              <button
-                onClick={toggleMicMuteWatch}
-                className={`p-2 rounded-xl text-xs font-bold transition-all ${
-                  isVoiceMicMuted ? 'bg-rose-600 text-white' : 'bg-white/10 hover:bg-white/20 text-white'
-                }`}
-                title={isVoiceMicMuted ? "Unmute Mic" : "Mute Mic"}
-              >
-                {isVoiceMicMuted ? <MicOff size={16} /> : <Mic size={16} />}
-              </button>
-
-              <button
-                onClick={toggleCameraWatch}
-                className={`p-2 rounded-xl text-xs font-bold transition-all ${
-                  isCameraOn ? 'bg-emerald-500 text-white' : 'bg-white/10 hover:bg-white/20 text-white'
-                }`}
-                title={isCameraOn ? "Turn Off Camera" : "Turn On Camera"}
-              >
-                {isCameraOn ? <Video size={16} /> : <VideoOff size={16} />}
-              </button>
-            </>
-          )}
         </div>
-
-        <div className="flex items-center gap-2">
-          {isVoiceConnected && (
-            <button
-              onClick={() => setShowEchoSettings(!showEchoSettings)}
-              className={`p-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
-                showEchoSettings ? 'bg-emerald-400 text-slate-950 font-black' : 'bg-white/10 hover:bg-white/20 text-white'
-              }`}
-              title="Anti-Echo Settings ⚙️"
-            >
-              <ShieldCheck size={16} className={voiceMode === 'auto_gate' ? 'text-emerald-400' : 'text-amber-400'} />
-              <span className="hidden sm:inline text-[11px] font-black">Echo Settings</span>
-            </button>
-          )}
-        </div>
+        <p className="text-[10px] text-gray-400 font-bold text-center flex items-center justify-center gap-1">
+          <ShieldCheck size={12} className="text-emerald-400" /> Anti-echo: Auto Gate — tap 🎙️ to adjust
+        </p>
       </div>
 
       {/* EXPANDABLE ANTI-ECHO & VOICE GATE SETTINGS DRAWER */}
