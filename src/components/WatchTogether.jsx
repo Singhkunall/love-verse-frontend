@@ -175,13 +175,15 @@ function WatchTogether({ user, roomId, socket }) {
 
   // Auto-PiP on tab blur/visibilitychange
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden && autoPiPEnabled && (isSharingScreen || isReceivingStream)) {
-        const vid = screenVideoRef.current || videoRef.current;
-        if (vid && !document.pictureInPictureElement) {
-          mobileService.togglePictureInPicture(vid).catch(() => { });
+    const handleVisibilityChange = async () => {
+      try {
+        if (document.hidden && autoPiPEnabled && (isSharingScreen || isReceivingStream)) {
+          const vid = screenVideoRef.current || videoRef.current;
+          if (vid && !document.pictureInPictureElement) {
+            await mobileService.togglePictureInPicture(vid);
+          }
         }
-      }
+      } catch (e) {}
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -284,8 +286,8 @@ function WatchTogether({ user, roomId, socket }) {
   const iframeRef = useRef(null);
   const videoRef = useRef(null);
 
-  const userId = (user?._id || user?.id)?.toString();
-  const partnerId = (user?.partnerId?._id || user?.partnerId)?.toString();
+  const userId = user ? (user._id || user.id || '')?.toString() : '';
+  const partnerId = user?.partnerId ? (user.partnerId._id || user.partnerId || '')?.toString() : '';
 
   // PeerJS WebRTC Stream Setup
   useEffect(() => {
@@ -334,25 +336,33 @@ function WatchTogether({ user, roomId, socket }) {
 
   // Screen stream binding helper (guarantees stream attaches to video element on mobile & desktop)
   const bindScreenVideoStream = () => {
-    const vid = screenVideoRef.current;
-    const targetStream = isSharingScreen ? mediaStreamRef.current : (isReceivingStream ? remoteStreamRef.current : null);
+    try {
+      const vid = screenVideoRef.current;
+      const targetStream = isSharingScreen ? mediaStreamRef.current : (isReceivingStream ? remoteStreamRef.current : null);
 
-    if (!vid || !targetStream) return;
+      if (!vid || !targetStream) return;
 
-    if (vid.srcObject !== targetStream) {
-      console.log("Binding targetStream to video element...", targetStream);
-      vid.srcObject = targetStream;
-      vid.muted = isSharingScreen;
+      if (vid.srcObject !== targetStream) {
+        console.log("Binding targetStream to video element...", targetStream);
+        vid.srcObject = targetStream;
+        vid.muted = isSharingScreen;
 
-      const playPromise = vid.play();
-      if (playPromise !== undefined) {
-        playPromise.then(() => {
-          setAutoplayBlocked(false);
-        }).catch((err) => {
-          console.warn("Autoplay blocked by browser policy:", err);
-          setAutoplayBlocked(true);
-        });
+        try {
+          const playPromise = vid.play();
+          if (playPromise && typeof playPromise.then === 'function') {
+            playPromise.then(() => {
+              setAutoplayBlocked(false);
+            }).catch((err) => {
+              console.warn("Autoplay blocked by browser policy:", err);
+              setAutoplayBlocked(true);
+            });
+          }
+        } catch (err) {
+          console.warn("Video play exception:", err);
+        }
       }
+    } catch (err) {
+      console.warn("bindScreenVideoStream exception:", err);
     }
   };
 
@@ -433,28 +443,39 @@ function WatchTogether({ user, roomId, socket }) {
 
   // Lock screen to Landscape orientation & hide bottom nav bar during full-screen mode
   useEffect(() => {
-    if (isCinemaFullscreen) {
-      document.body.classList.add('cinema-fullscreen-active');
-      document.body.style.overflow = 'hidden';
+    try {
+      if (isCinemaFullscreen) {
+        document.body.classList.add('cinema-fullscreen-active');
+        document.body.style.overflow = 'hidden';
 
-      if (window.screen?.orientation?.lock) {
-        window.screen.orientation.lock('landscape').catch(() => { });
-      }
-    } else {
-      document.body.classList.remove('cinema-fullscreen-active');
-      document.body.style.overflow = 'auto';
+        if (window.screen?.orientation?.lock) {
+          try {
+            const res = window.screen.orientation.lock('landscape');
+            if (res && typeof res.catch === 'function') res.catch(() => {});
+          } catch (e) {}
+        }
+      } else {
+        document.body.classList.remove('cinema-fullscreen-active');
+        document.body.style.overflow = 'auto';
 
-      if (window.screen?.orientation?.unlock) {
-        window.screen.orientation.unlock().catch(() => { });
+        if (window.screen?.orientation?.unlock) {
+          try {
+            const res = window.screen.orientation.unlock();
+            if (res && typeof res.catch === 'function') res.catch(() => {});
+          } catch (e) {}
+        }
       }
-    }
+    } catch (e) {}
 
     return () => {
-      document.body.classList.remove('cinema-fullscreen-active');
-      document.body.style.overflow = 'auto';
-      if (window.screen?.orientation?.unlock) {
-        window.screen.orientation.unlock().catch(() => { });
-      }
+      try {
+        document.body.classList.remove('cinema-fullscreen-active');
+        document.body.style.overflow = 'auto';
+        if (window.screen?.orientation?.unlock) {
+          const res = window.screen.orientation.unlock();
+          if (res && typeof res.catch === 'function') res.catch(() => {});
+        }
+      } catch (e) {}
     };
   }, [isCinemaFullscreen]);
 

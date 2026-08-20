@@ -136,8 +136,11 @@ class MobileService {
       if (this.wakeLock) {
         const lock = this.wakeLock;
         this.wakeLock = null;
-        if (typeof lock.release === 'function') {
-          await lock.release().catch(() => {});
+        if (typeof lock?.release === 'function') {
+          const res = lock.release();
+          if (res && typeof res.catch === 'function') {
+            await res.catch(() => {});
+          }
         }
       }
     } catch (err) {
