@@ -603,7 +603,7 @@ function Chat({ user }) {
       )}
 
       {/* Chat Sub-Header */}
-      <div className="px-2 py-3 flex items-center justify-between">
+      <div className="px-3 py-3 bg-white/70 backdrop-blur-md border-b border-rose-100/60 flex items-center justify-between shadow-sm z-10">
         <div className="flex items-center gap-3">
           <div className="relative shrink-0">
             <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-rose-400 to-pink-500 text-white flex items-center justify-center font-black shadow-md border-2 border-white overflow-hidden">
@@ -624,25 +624,25 @@ function Chat({ user }) {
           </div>
         </div>
 
-        {/* Call & Action Buttons */}
+        {/* Call & Action Buttons (Consistent Uniform Badges) */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => startCall(false)}
-            className="w-9 h-9 rounded-full bg-rose-50 text-gray-700 hover:bg-rose-100 flex items-center justify-center transition-all"
+            className="w-9 h-9 rounded-full bg-rose-50 text-gray-700 hover:bg-rose-100 flex items-center justify-center transition-all border border-rose-100/80 active:scale-95"
             title="Start HD Audio Call"
           >
             <Phone size={16} />
           </button>
           <button
             onClick={() => startCall(true)}
-            className="w-9 h-9 rounded-full bg-[#aa2c4c] text-white flex items-center justify-center shadow-md hover:scale-105 transition-all"
+            className="w-9 h-9 rounded-full bg-[#aa2c4c] text-white flex items-center justify-center shadow-md hover:scale-105 transition-all active:scale-95"
             title="Start HD Video Call"
           >
             <Video size={16} />
           </button>
           <button
             onClick={() => setShowRoutine(!showRoutine)}
-            className="w-9 h-9 rounded-full bg-rose-50 text-rose-800 hover:bg-rose-100 flex items-center justify-center transition-all"
+            className="w-9 h-9 rounded-full bg-rose-50 text-rose-800 hover:bg-rose-100 flex items-center justify-center transition-all border border-rose-100/80 active:scale-95"
             title="Toggle Routines"
           >
             <ListTodo size={16} />
@@ -651,59 +651,84 @@ function Chat({ user }) {
       </div>
 
       {showRoutine && (
-        <div className="p-3 bg-white/80 rounded-2xl border border-rose-100 animate-in slide-in-from-top-4 mb-2">
+        <div className="p-3 bg-white/90 rounded-2xl border border-rose-100 animate-in slide-in-from-top-4 mb-2 shadow-sm z-10">
           <Routine user={user} />
         </div>
       )}
 
-      {/* Messages Feed */}
-      <div className="flex-1 px-2 py-4 overflow-y-auto space-y-3">
+      {/* Messages Feed with Subtle Heart Pattern Watermark & Grouping */}
+      <div className="flex-1 px-3 py-4 overflow-y-auto space-y-1.5 pb-24 md:pb-28 relative bg-[#fff9f6] bg-[radial-gradient(#f43f5e_0.5px,transparent_0.5px)] [background-size:18px_18px] [background-position:0_0]">
         {messageList.map((msg, index) => {
           const isMe = msg.sender === userId;
+          const isNextSameSender = messageList[index + 1]?.sender === msg.sender;
+          const isLastInGroup = !isNextSameSender;
+
           return (
-            <div key={index} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-              <div className={`max-w-[78%] md:max-w-[70%] p-3.5 rounded-2xl ${
-                isMe
-                  ? 'bg-[#aa2c4c] text-white font-bold rounded-tr-sm shadow-md'
-                  : 'bg-white text-gray-800 font-bold rounded-tl-sm shadow-sm border border-rose-100/60'
-              }`}>
-                {msg.isVideo ? (
-                  <video src={msg.message} controls className="rounded-xl max-h-60 object-cover" />
-                ) : msg.isImage ? (
-                  <img src={msg.message} alt="Shared photo" className="rounded-xl max-h-60 object-cover" />
-                ) : msg.isVoiceNote ? (
-                  <div className="flex items-center gap-3 min-w-[180px]">
-                    <button
-                      onClick={() => toggleVoiceNotePlay(index, msg.message)}
-                      className={`p-2.5 rounded-full ${isMe ? 'bg-white text-[#aa2c4c]' : 'bg-[#aa2c4c] text-white'}`}
-                    >
-                      {playingId === index ? <Pause size={16} /> : <Play size={16} />}
-                    </button>
-                    <div className="flex-1">
-                      <p className={`text-xs font-bold ${isMe ? 'text-white' : 'text-gray-800'}`}>Voice Note 🎙️</p>
-                      <div className={`h-1.5 rounded-full mt-1 ${isMe ? 'bg-white/40' : 'bg-gray-200'}`}>
-                        <div className={`h-full rounded-full ${isMe ? 'bg-white' : 'bg-[#aa2c4c]'} ${playingId === index ? 'animate-pulse w-full' : 'w-0'}`} />
+            <div key={index} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} ${isLastInGroup ? 'mb-2.5' : 'mb-0.5'}`}>
+              <div className={`flex items-end gap-2 max-w-[82%] md:max-w-[72%] ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                {/* Partner Avatar for received messages (only on last message of group) */}
+                {!isMe && (
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-rose-400 to-pink-500 text-white flex items-center justify-center font-bold text-[9px] shrink-0 overflow-hidden shadow-sm">
+                    {isLastInGroup ? (
+                      partnerAvatar ? (
+                        <img src={partnerAvatar} alt={partnerName} className="w-full h-full object-cover" />
+                      ) : (
+                        partnerName ? partnerName[0].toUpperCase() : 'P'
+                      )
+                    ) : (
+                      <div className="w-full h-full bg-transparent" />
+                    )}
+                  </div>
+                )}
+
+                <div className={`p-3 md:p-3.5 ${
+                  isMe
+                    ? 'bg-[#aa2c4c] text-white font-bold rounded-2xl rounded-tr-xs shadow-md'
+                    : 'bg-[#fffcf7] text-gray-800 font-bold rounded-2xl rounded-tl-xs shadow-sm border border-rose-100/90'
+                }`}>
+                  {msg.isVideo ? (
+                    <video src={msg.message} controls className="rounded-xl max-h-60 object-cover" />
+                  ) : msg.isImage ? (
+                    <img src={msg.message} alt="Shared photo" className="rounded-xl max-h-60 object-cover" />
+                  ) : msg.isVoiceNote ? (
+                    <div className="flex items-center gap-3 min-w-[180px]">
+                      <button
+                        onClick={() => toggleVoiceNotePlay(index, msg.message)}
+                        className={`p-2.5 rounded-full ${isMe ? 'bg-white text-[#aa2c4c]' : 'bg-[#aa2c4c] text-white'}`}
+                      >
+                        {playingId === index ? <Pause size={16} /> : <Play size={16} />}
+                      </button>
+                      <div className="flex-1">
+                        <p className={`text-xs font-bold ${isMe ? 'text-white' : 'text-gray-800'}`}>Voice Note 🎙️</p>
+                        <div className={`h-1.5 rounded-full mt-1 ${isMe ? 'bg-white/40' : 'bg-gray-200'}`}>
+                          <div className={`h-full rounded-full ${isMe ? 'bg-white' : 'bg-[#aa2c4c]'} ${playingId === index ? 'animate-pulse w-full' : 'w-0'}`} />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  <p className="text-xs md:text-sm font-bold leading-relaxed">{msg.message}</p>
-                )}
-                <span className={`text-[10px] font-medium block mt-1 text-right ${isMe ? 'text-rose-100' : 'text-gray-400'}`}>
-                  {msg.time}
-                </span>
+                  ) : (
+                    <p className="text-xs md:text-sm font-bold leading-relaxed">{msg.message}</p>
+                  )}
+
+                  {/* Show timestamp & read-receipt only on last message of consecutive group */}
+                  {isLastInGroup && (
+                    <div className={`flex items-center justify-end gap-1 mt-1 text-[10px] font-medium ${isMe ? 'text-rose-100' : 'text-gray-400'}`}>
+                      <span>{msg.time}</span>
+                      {isMe && <CheckCheck size={12} className="text-rose-200" />}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           );
         })}
-        {isTyping && <div className="text-[10px] text-rose-500 font-bold animate-pulse px-3 bg-white/60 w-fit rounded-full py-1 ml-2">Partner is typing...</div>}
+        {isTyping && <div className="text-[10px] text-rose-500 font-bold animate-pulse px-3 bg-white/80 border border-rose-100/80 w-fit rounded-full py-1 ml-8 shadow-sm">Partner is typing...</div>}
         <div ref={scrollRef} />
       </div>
 
       {showEmoji && <div className="absolute bottom-20 left-4 right-4 md:left-6 z-50 shadow-2xl"><EmojiPicker onEmojiClick={(d) => setCurrentMessage(p => p + d.emoji)} /></div>}
 
-      {/* Floating Bottom Input Bar */}
-      <div className="p-2 bg-transparent">
+      {/* Floating Bottom Input Bar (Unified Monochromatic Styling) */}
+      <div className="p-2.5 bg-transparent sticky bottom-0 z-20">
         {recording && (
           <div className="flex items-center justify-between mb-2 px-4 py-2 bg-red-50 rounded-2xl border border-red-100">
             <div className="flex items-center gap-2">
@@ -713,17 +738,17 @@ function Chat({ user }) {
             <button onClick={stopRecording} className="text-red-500 font-bold text-xs bg-red-100 px-3 py-1 rounded-full">Send ✓</button>
           </div>
         )}
-        <div className="bg-white rounded-full p-2 flex items-center gap-2 border border-white shadow-xl shadow-rose-100/40">
-          <label className="p-2 text-gray-500 hover:text-[#aa2c4c] rounded-full cursor-pointer transition-all flex items-center justify-center" title="Send Photo 📸">
-            {isUploading ? <Loader2 size={18} className="animate-spin text-rose-500" /> : <span className="text-lg">🖼️</span>}
+        <div className="bg-white/95 backdrop-blur-2xl rounded-full p-2 flex items-center gap-1.5 border border-white shadow-xl shadow-rose-100/50">
+          <label className="p-2 text-[#aa2c4c] hover:bg-rose-50 rounded-full cursor-pointer transition-all flex items-center justify-center" title="Send Photo 📸">
+            {isUploading ? <Loader2 size={18} className="animate-spin text-rose-500" /> : <ImageIcon size={19} className="text-[#aa2c4c]" />}
             <input type="file" className="hidden" accept="image/*" onChange={handleMediaUpload} disabled={isUploading} />
           </label>
-          <label className="p-2 text-gray-500 hover:text-[#aa2c4c] rounded-full cursor-pointer transition-all flex items-center justify-center" title="Send Video 🎬">
-            {isUploading ? <Loader2 size={18} className="animate-spin text-rose-500" /> : <span className="text-lg">🎬</span>}
+          <label className="p-2 text-[#aa2c4c] hover:bg-rose-50 rounded-full cursor-pointer transition-all flex items-center justify-center" title="Send Video 🎬">
+            {isUploading ? <Loader2 size={18} className="animate-spin text-rose-500" /> : <Film size={19} className="text-[#aa2c4c]" />}
             <input type="file" className="hidden" accept="video/*" onChange={handleMediaUpload} disabled={isUploading} />
           </label>
-          <button onClick={() => setShowEmoji(!showEmoji)} className="p-2 text-gray-500 hover:text-[#aa2c4c] rounded-full transition-all flex items-center justify-center">
-            <span className="text-lg">😊</span>
+          <button onClick={() => setShowEmoji(!showEmoji)} className="p-2 text-[#aa2c4c] hover:bg-rose-50 rounded-full transition-all flex items-center justify-center">
+            <Smile size={19} className="text-[#aa2c4c]" />
           </button>
           <input
             type="text"
