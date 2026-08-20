@@ -119,7 +119,7 @@ const Sidebar = ({ activeTab, setActiveTab, user, handleLogout, sendNudge }) => 
             <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-t border-rose-100 shadow-2xl">
                 <div className="flex items-center px-2 py-1">
                     <BottomNavBtn icon={<Home size={20} />} label="Home" active={activeTab === 'home'} onClick={() => { setActiveTab('home'); setMobileMenuOpen(false); }} />
-                    <BottomNavBtn icon={<PlaySquare size={20} />} label="Watch 🍿" active={activeTab === 'watch_together'} onClick={() => { setActiveTab('watch_together'); setMobileMenuOpen(false); }} />
+                    <BottomNavBtn icon={<PlaySquare size={20} />} label="Watch" active={activeTab === 'watch_together'} onClick={() => { setActiveTab('watch_together'); setMobileMenuOpen(false); }} />
 
                     {/* Center Hug Button */}
                     <button
@@ -133,7 +133,7 @@ const Sidebar = ({ activeTab, setActiveTab, user, handleLogout, sendNudge }) => 
                     </button>
 
                     <BottomNavBtn icon={<MessageCircle size={20} />} label="Chat" active={activeTab === 'chat'} onClick={() => { setActiveTab('chat'); setMobileMenuOpen(false); }} />
-                    <BottomNavBtn icon={<Menu size={20} />} label="Hub ✨" active={mobileMenuOpen} onClick={() => setMobileMenuOpen(!mobileMenuOpen)} />
+                    <BottomNavBtn icon={<Menu size={20} />} label="Hub" active={mobileMenuOpen} onClick={() => setMobileMenuOpen(!mobileMenuOpen)} />
                 </div>
             </div>
 

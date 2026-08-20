@@ -355,7 +355,7 @@ function Dashboard() {
             {/* ========================================================================= */}
             {/* MOBILE ONLY VIEW: Exact Mockup Card Layout Structure (Rose/Pink Theme) */}
             {/* ========================================================================= */}
-            <div className="lg:hidden space-y-5">
+            <div className="lg:hidden space-y-3.5">
               
               {/* 1. Days Together Hero Card */}
               <div className="bg-gradient-to-br from-rose-950 via-rose-900 to-pink-950 text-white rounded-[2.5rem] p-6 shadow-2xl relative overflow-hidden space-y-4">
@@ -403,7 +403,7 @@ function Dashboard() {
               </div>
 
               {/* 2. YOUR MOOD TODAY */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <div className="flex items-center gap-2 px-1">
                   <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">YOUR MOOD TODAY</span>
                   <div className="flex-1 h-px bg-gray-200/80" />
@@ -461,48 +461,53 @@ function Dashboard() {
               {/* 4. Stats Grid Cards */}
               <div className="grid grid-cols-12 gap-3">
                 {/* Connection Level */}
-                <div className="col-span-7 bg-white/80 backdrop-blur-xl p-4 rounded-3xl border border-white/60 shadow-lg flex flex-col justify-between space-y-3">
+                <div className="col-span-7 bg-white/80 backdrop-blur-xl p-4 rounded-3xl border border-white/60 shadow-lg flex flex-col justify-between space-y-2">
                   <div>
-                    <div className="flex items-center gap-1 text-[9px] font-black text-rose-400 uppercase tracking-widest mb-1">
+                    <div className="flex items-center gap-1 text-[9px] font-black text-rose-400 uppercase tracking-widest mb-0.5">
                       <Zap size={12} /> CONNECTION LEVEL
                     </div>
                     <h3 className="font-serif text-3xl font-black text-gray-800">Lvl {level}</h3>
                   </div>
-                  <div className="h-2 bg-rose-50 rounded-full border border-rose-100 overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-rose-400 to-pink-500 rounded-full" style={{ width: `${progress}%` }} />
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-500 text-right mb-1 leading-none">{progress} / 100 XP to Lvl {level + 1}</p>
+                    <div className="h-3 bg-rose-100/80 rounded-full border border-rose-200/50 p-0.5 overflow-hidden shadow-inner">
+                      <div className="h-full bg-gradient-to-r from-rose-400 via-pink-500 to-rose-500 rounded-full transition-all duration-700" style={{ width: `${progress}%` }} />
+                    </div>
                   </div>
                 </div>
 
                 {/* Memories & Milestone */}
-                <div className="col-span-5 flex flex-col gap-3">
-                  <div className="bg-white/80 backdrop-blur-xl p-3.5 rounded-3xl border border-white/60 shadow-lg flex-1">
-                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">MEMORIES</p>
-                    <p className="font-serif text-2xl font-black text-gray-800">{memories.length}</p>
+                <div className="col-span-5 flex flex-col gap-2.5">
+                  <div className="bg-white/80 backdrop-blur-xl p-3.5 rounded-3xl border border-white/60 shadow-lg flex-1 flex flex-col justify-between">
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1">🖼️ MEMORIES</p>
+                    <p className="font-serif text-2xl font-black text-gray-800 leading-none mt-1">{memories.length}</p>
                   </div>
-                  <div className="bg-white/80 backdrop-blur-xl p-3.5 rounded-3xl border border-white/60 shadow-lg flex-1">
-                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">MILESTONE</p>
-                    <p className="font-serif text-2xl font-black text-amber-500">Gold</p>
+                  <div className="bg-white/80 backdrop-blur-xl p-3.5 rounded-3xl border border-white/60 shadow-lg flex-1 flex flex-col justify-between">
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1">🏅 MILESTONE</p>
+                    <p className="font-serif text-2xl font-black text-amber-500 leading-none mt-1">Gold</p>
                   </div>
                 </div>
               </div>
 
               {/* 5. COMING UP NEXT */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <div className="flex items-center gap-2 px-1">
                   <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">COMING UP NEXT</span>
                   <div className="flex-1 h-px bg-gray-200/80" />
                 </div>
-                <div className="border-2 border-dashed border-rose-200/80 rounded-3xl p-5 text-center bg-white/40 backdrop-blur-md space-y-2">
-                  <div className="w-10 h-10 bg-rose-50 text-rose-400 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
-                    <Clock size={20} />
+                <div className="border-2 border-dashed border-rose-200/80 rounded-3xl p-3.5 text-center bg-white/40 backdrop-blur-md flex items-center gap-3">
+                  <div className="w-9 h-9 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
+                    <Clock size={18} />
                   </div>
-                  <p className="text-xs font-serif italic text-rose-500 font-bold">Nothing planned yet</p>
-                  <p className="text-[10px] text-gray-400 font-medium">Tap "Add a memory" or "Daily Routine" to plan your day together</p>
+                  <div className="text-left flex-1 min-w-0">
+                    <p className="text-xs font-serif italic text-rose-600 font-bold leading-tight">Nothing planned yet</p>
+                    <p className="text-[10px] text-gray-400 font-medium leading-tight truncate">Tap "Add a memory" or "Daily Routine" to plan your day together</p>
+                  </div>
                 </div>
               </div>
 
               {/* 6. EXPLORE TOGETHER LIST */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <div className="flex items-center gap-2 px-1">
                   <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">EXPLORE TOGETHER</span>
                   <div className="flex-1 h-px bg-gray-200/80" />
@@ -510,10 +515,10 @@ function Dashboard() {
                 <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/60 shadow-lg divide-y divide-gray-100 overflow-hidden">
                   <button
                     onClick={() => setActiveTab('couple_beats')}
-                    className="w-full p-4 flex items-center justify-between text-left hover:bg-rose-50/50 transition-all active:bg-rose-100/50"
+                    className="w-full p-3.5 flex items-center justify-between text-left hover:bg-rose-50/50 transition-all active:bg-rose-100/50"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-purple-50 text-purple-500 rounded-2xl flex items-center justify-center font-black">
+                      <div className="w-10 h-10 bg-purple-100 text-purple-600 border border-purple-200/70 rounded-2xl flex items-center justify-center font-black shadow-sm shrink-0">
                         <Radio size={20} />
                       </div>
                       <div>
@@ -526,10 +531,10 @@ function Dashboard() {
 
                   <button
                     onClick={() => setActiveTab('virtual_touch')}
-                    className="w-full p-4 flex items-center justify-between text-left hover:bg-rose-50/50 transition-all active:bg-rose-100/50"
+                    className="w-full p-3.5 flex items-center justify-between text-left hover:bg-rose-50/50 transition-all active:bg-rose-100/50"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-pink-50 text-pink-500 rounded-2xl flex items-center justify-center font-black">
+                      <div className="w-10 h-10 bg-pink-100 text-pink-600 border border-pink-200/70 rounded-2xl flex items-center justify-center font-black shadow-sm shrink-0">
                         <Touchpad size={20} />
                       </div>
                       <div>
@@ -542,10 +547,10 @@ function Dashboard() {
 
                   <button
                     onClick={() => setActiveTab('watch_together')}
-                    className="w-full p-4 flex items-center justify-between text-left hover:bg-rose-50/50 transition-all active:bg-rose-100/50"
+                    className="w-full p-3.5 flex items-center justify-between text-left hover:bg-rose-50/50 transition-all active:bg-rose-100/50"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center font-black">
+                      <div className="w-10 h-10 bg-rose-100 text-rose-600 border border-rose-200/70 rounded-2xl flex items-center justify-center font-black shadow-sm shrink-0">
                         <PlaySquare size={20} />
                       </div>
                       <div>
