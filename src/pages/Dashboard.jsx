@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Heart, LogOut, User, Clock, Calendar as CalendarIcon, Sparkles, Image as ImageIcon, Plus, Trash2, Zap, Gamepad2, Star, ListTodo, CheckCircle2, Circle } from 'lucide-react';
+import { Heart, LogOut, User, Clock, Calendar as CalendarIcon, Sparkles, Image as ImageIcon, Plus, Trash2, Zap, Gamepad2, Star, ListTodo, CheckCircle2, Circle, ChevronRight, Radio, Touchpad, PlaySquare, MessageSquare } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import Chat from '../components/Chat';
@@ -334,148 +334,368 @@ function Dashboard() {
       />
 
       <main className="flex-1 flex flex-col gap-6 overflow-y-auto">
-        <nav className={`${glassStyle} p-4 px-8 rounded-[2rem] flex justify-between items-center`}>
-          <div className="lg:hidden font-black text-rose-500 italic">Love-Verse</div>
+        {/* Top Navbar */}
+        <nav className={`${glassStyle} p-4 px-6 md:px-8 rounded-[2rem] flex justify-between items-center`}>
+          <div className="lg:hidden font-serif italic font-black text-rose-600 text-2xl tracking-tight">Love-Verse</div>
           <div className="hidden lg:block text-xs font-bold text-gray-400 uppercase tracking-widest italic font-sans">
             "Your digital home for love"
           </div>
-          <button onClick={handleLogout} className="lg:hidden text-gray-400"><LogOut size={20} /></button>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-rose-500 text-white flex items-center justify-center font-black text-xs border border-white shadow-sm lg:hidden">
+              {user?.name?.charAt(0)}
+            </div>
+            <button onClick={handleLogout} className="lg:hidden text-gray-400 p-1 hover:text-rose-500"><LogOut size={18} /></button>
+          </div>
         </nav>
 
         {/* --- DYNAMIC TABS --- */}
         {activeTab === 'home' && (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
 
-            {/* LOVE-O-METER UI CARD */}
-            <div className={`${glassStyle} p-6 rounded-[2.5rem] relative overflow-hidden group`}>
-              <div className="flex justify-between items-end mb-4 relative z-10">
+            {/* ========================================================================= */}
+            {/* MOBILE ONLY VIEW: Exact Mockup Card Layout Structure (Rose/Pink Theme) */}
+            {/* ========================================================================= */}
+            <div className="lg:hidden space-y-5">
+              
+              {/* 1. Days Together Hero Card */}
+              <div className="bg-gradient-to-br from-rose-950 via-rose-900 to-pink-950 text-white rounded-[2.5rem] p-6 shadow-2xl relative overflow-hidden space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                    <span className="text-[10px] font-black tracking-widest uppercase text-rose-200">TOGETHER, STILL COUNTING</span>
+                  </div>
+                  <span className="text-xs font-bold text-rose-200/80">Lvl {level}</span>
+                </div>
+
                 <div>
-                  <p className="text-[10px] font-black text-rose-400 uppercase tracking-widest">Love Connection</p>
-                  <h4 className="text-2xl font-black text-gray-800 flex items-center gap-2">
-                    Level {level} <span className="text-sm font-bold text-rose-300 italic">— Stronger Together</span>
-                  </h4>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] font-black text-gray-400 uppercase">XP to Next Level</p>
-                  <p className="text-xs font-bold text-gray-600">{100 - progress} pts</p>
-                </div>
-              </div>
-              <div className="h-4 bg-rose-50 rounded-full border border-rose-100 p-1 relative z-10">
-                <div
-                  className="h-full bg-gradient-to-r from-rose-400 to-pink-500 rounded-full transition-all duration-1000"
-                  style={{ width: `${progress}%` }}
-                ></div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              <div className={`lg:col-span-4 ${glassStyle} p-8 rounded-[3rem] text-center flex flex-col items-center justify-center relative overflow-hidden`}>
-                <div className="absolute top-4 right-4 text-rose-200 animate-pulse"><Star size={24} fill="currentColor" /></div>
-                <div className="relative w-24 h-24 mb-4 group cursor-pointer">
-                  <div className="w-24 h-24 rounded-full border-4 border-white shadow-xl overflow-hidden flex items-center justify-center">
-                    {user?.avatar ? (
-                      <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-tr from-rose-500 to-pink-400 flex items-center justify-center text-white text-4xl font-black">
-                        {user?.name?.charAt(0)?.toUpperCase()}
-                      </div>
-                    )}
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-serif text-6xl font-black tracking-tight text-white drop-shadow-md">{daysTogether}</span>
+                    <span className="font-serif italic text-2xl text-rose-200">days</span>
                   </div>
-                  {/* Camera overlay on hover */}
-                  <label className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-all cursor-pointer flex items-center justify-center">
-                    {uploadingAvatar ? (
-                      <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <span className="text-white text-xs font-black">📷</span>
-                    )}
-                    <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
-                  </label>
+                  <p className="text-xs text-rose-200/90 font-medium mt-1">
+                    Since {user?.anniversaryDate ? new Date(user.anniversaryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'May 16'} · Level {level}, stronger every day
+                  </p>
                 </div>
-                <h2 className="text-2xl font-black text-gray-800 tracking-tight">{user?.name}</h2>
-                <div className="mt-3 px-4 py-1.5 bg-rose-50 rounded-full text-rose-500 font-bold text-[10px] uppercase tracking-widest border border-rose-100">
-                  Mood: {user?.mood || 'Happy 😊'}
-                </div>
-              </div>
 
-              <div className="lg:col-span-8 bg-gradient-to-br from-rose-500 to-pink-600 rounded-[3.5rem] p-8 text-white relative overflow-hidden shadow-2xl min-h-[300px] flex flex-col justify-center group">
-                <Heart className="absolute -bottom-10 -left-10 opacity-10 group-hover:scale-110 transition-transform duration-1000" size={300} fill="white" />
-                <div className="relative z-10 text-center lg:text-left lg:pl-10">
-                  <h3 className="text-xs font-black mb-2 uppercase tracking-[0.3em] opacity-80 flex items-center gap-2"><Clock size={16} /> Together Since</h3>
-                  <div className="flex items-baseline gap-4">
-                    <span className="text-[8rem] font-black leading-none tracking-tighter drop-shadow-2xl">{daysTogether}</span>
-                    <span className="text-2xl font-bold opacity-80 italic">Days</span>
-                  </div>
-                  <div className="mt-6">
-                    {!showInput ? (
-                      <button onClick={() => setShowInput(true)} className="bg-white/20 backdrop-blur-md text-white px-6 py-3 rounded-2xl font-black text-xs border border-white/30 flex items-center gap-2 hover:bg-white/30 transition-all">
-                        <CalendarIcon size={16} /> {user?.anniversaryDate ? "Change Date" : "Set Anniversary"}
-                      </button>
-                    ) : (
-                      <div className="flex gap-2 bg-white/20 p-3 rounded-2xl backdrop-blur-lg border border-white/30 inline-flex items-center">
-                        <input type="date" value={tempDate} onChange={(e) => setTempDate(e.target.value)} className="bg-white text-gray-800 p-2 rounded-xl outline-none font-bold text-xs" />
-                        <button onClick={handleUpdateDate} className="bg-white text-rose-500 px-4 py-2 rounded-xl font-black text-xs shadow-lg">Lock</button>
-                        <button onClick={() => setShowInput(false)} className="text-white px-2 font-bold text-lg">×</button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Mood & Partner Status */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className={`${glassStyle} p-8 rounded-[3rem]`}>
-                <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2"><Sparkles className="text-rose-400" size={20} /> Current Mood</h3>
-                <div className="flex flex-wrap gap-3">
-                  {moods.map((m) => (
-                    <button key={m.label} onClick={() => handleMoodUpdate(`${m.emoji} ${m.label}`)} className={`text-2xl p-4 rounded-2xl transition-all hover:scale-110 shadow-sm ${m.color}`}>
-                      {m.emoji}
+                <div className="flex gap-2 pt-2">
+                  {!showInput ? (
+                    <button
+                      onClick={() => setShowInput(true)}
+                      className="flex-1 py-3 px-4 bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md rounded-2xl font-bold text-xs text-white flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                    >
+                      <CalendarIcon size={14} /> Change date
                     </button>
-                  ))}
+                  ) : (
+                    <div className="flex-1 flex gap-1 bg-white/10 p-2 rounded-2xl border border-white/20">
+                      <input type="date" value={tempDate} onChange={(e) => setTempDate(e.target.value)} className="bg-white text-gray-800 p-1.5 rounded-xl text-xs flex-1 font-bold outline-none" />
+                      <button onClick={handleUpdateDate} className="bg-rose-500 text-white px-3 rounded-xl font-black text-xs">Lock</button>
+                      <button onClick={() => setShowInput(false)} className="text-white px-2 font-bold">×</button>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => setActiveTab('memories_tab')}
+                    className="flex-1 py-3 px-4 bg-gradient-to-r from-amber-400 to-rose-400 text-slate-950 rounded-2xl font-black text-xs shadow-lg flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                  >
+                    <Sparkles size={14} /> Add a memory
+                  </button>
                 </div>
               </div>
-              <div className={`${glassStyle} p-8 rounded-[3rem]`}>
-                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><User className="text-rose-400" size={20} /> Partner Status</h3>
-                {user.partnerId ? (
-                  <div className="space-y-2">
-                    <p className="text-rose-400 font-bold text-[10px] tracking-widest uppercase flex items-center gap-1"><Heart size={10} fill="currentColor" /> Linked ❤️</p>
-                    <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100 shadow-inner">
-                      <p className="text-[10px] text-rose-400 uppercase font-black mb-1">Partner's Mood</p>
-                      <p className="text-xl font-bold text-gray-800">{user.partnerId?.mood || "Normal 😊"}</p>
+
+              {/* 2. YOUR MOOD TODAY */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 px-1">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">YOUR MOOD TODAY</span>
+                  <div className="flex-1 h-px bg-gray-200/80" />
+                </div>
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                  {moods.map((m) => {
+                    const isSelected = user?.mood?.includes(m.label);
+                    return (
+                      <button
+                        key={m.label}
+                        onClick={() => handleMoodUpdate(`${m.emoji} ${m.label}`)}
+                        className={`flex flex-col items-center justify-center px-4 py-3 rounded-2xl border transition-all shrink-0 min-w-[72px] ${
+                          isSelected
+                            ? 'bg-rose-50 border-rose-400 ring-2 ring-rose-300 text-rose-600 scale-105 shadow-md font-black'
+                            : 'bg-white/80 border-gray-100 text-gray-600 hover:bg-rose-50/50'
+                        }`}
+                      >
+                        <span className="text-2xl mb-1">{m.emoji}</span>
+                        <span className="text-[9px] font-bold uppercase tracking-tight">{m.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 3. Partner Status Card */}
+              <div className="bg-slate-900 text-white p-4 rounded-3xl flex items-center justify-between shadow-xl border border-slate-800">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="relative shrink-0">
+                    <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-rose-500 to-pink-400 flex items-center justify-center font-black text-white text-base border-2 border-white shadow-md">
+                      {user.partnerId?.avatar ? (
+                        <img src={user.partnerId.avatar} alt="Partner" className="w-full h-full rounded-full object-cover" />
+                      ) : (
+                        user.partnerId?.name?.charAt(0) || 'P'
+                      )}
+                    </div>
+                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-slate-900 rounded-full" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-sm font-black text-white truncate leading-tight">{user.partnerId?.name || 'Partner'}</h4>
+                    <p className="text-xs text-rose-200/90 font-medium truncate mt-0.5">
+                      {user.partnerId?.mood ? `${user.partnerId.mood}` : '🥰 Feeling in love right now'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setActiveTab('chat')}
+                  className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all active:scale-95 shrink-0 ml-2"
+                  title="Chat with Partner"
+                >
+                  <MessageSquare size={18} />
+                </button>
+              </div>
+
+              {/* 4. Stats Grid Cards */}
+              <div className="grid grid-cols-12 gap-3">
+                {/* Connection Level */}
+                <div className="col-span-7 bg-white/80 backdrop-blur-xl p-4 rounded-3xl border border-white/60 shadow-lg flex flex-col justify-between space-y-3">
+                  <div>
+                    <div className="flex items-center gap-1 text-[9px] font-black text-rose-400 uppercase tracking-widest mb-1">
+                      <Zap size={12} /> CONNECTION LEVEL
+                    </div>
+                    <h3 className="font-serif text-3xl font-black text-gray-800">Lvl {level}</h3>
+                  </div>
+                  <div className="h-2 bg-rose-50 rounded-full border border-rose-100 overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-rose-400 to-pink-500 rounded-full" style={{ width: `${progress}%` }} />
+                  </div>
+                </div>
+
+                {/* Memories & Milestone */}
+                <div className="col-span-5 flex flex-col gap-3">
+                  <div className="bg-white/80 backdrop-blur-xl p-3.5 rounded-3xl border border-white/60 shadow-lg flex-1">
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">MEMORIES</p>
+                    <p className="font-serif text-2xl font-black text-gray-800">{memories.length}</p>
+                  </div>
+                  <div className="bg-white/80 backdrop-blur-xl p-3.5 rounded-3xl border border-white/60 shadow-lg flex-1">
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">MILESTONE</p>
+                    <p className="font-serif text-2xl font-black text-amber-500">Gold</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 5. COMING UP NEXT */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 px-1">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">COMING UP NEXT</span>
+                  <div className="flex-1 h-px bg-gray-200/80" />
+                </div>
+                <div className="border-2 border-dashed border-rose-200/80 rounded-3xl p-5 text-center bg-white/40 backdrop-blur-md space-y-2">
+                  <div className="w-10 h-10 bg-rose-50 text-rose-400 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+                    <Clock size={20} />
+                  </div>
+                  <p className="text-xs font-serif italic text-rose-500 font-bold">Nothing planned yet</p>
+                  <p className="text-[10px] text-gray-400 font-medium">Tap "Add a memory" or "Daily Routine" to plan your day together</p>
+                </div>
+              </div>
+
+              {/* 6. EXPLORE TOGETHER LIST */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 px-1">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">EXPLORE TOGETHER</span>
+                  <div className="flex-1 h-px bg-gray-200/80" />
+                </div>
+                <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/60 shadow-lg divide-y divide-gray-100 overflow-hidden">
+                  <button
+                    onClick={() => setActiveTab('couple_beats')}
+                    className="w-full p-4 flex items-center justify-between text-left hover:bg-rose-50/50 transition-all active:bg-rose-100/50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-purple-50 text-purple-500 rounded-2xl flex items-center justify-center font-black">
+                        <Radio size={20} />
+                      </div>
+                      <div>
+                        <h5 className="text-xs font-black text-gray-800">Beats Radio</h5>
+                        <p className="text-[10px] text-gray-400 font-medium">Listen to the same song, live</p>
+                      </div>
+                    </div>
+                    <ChevronRight size={16} className="text-gray-300" />
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab('virtual_touch')}
+                    className="w-full p-4 flex items-center justify-between text-left hover:bg-rose-50/50 transition-all active:bg-rose-100/50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-pink-50 text-pink-500 rounded-2xl flex items-center justify-center font-black">
+                        <Touchpad size={20} />
+                      </div>
+                      <div>
+                        <h5 className="text-xs font-black text-gray-800">Virtual Touch</h5>
+                        <p className="text-[10px] text-gray-400 font-medium">Touch the same spot together</p>
+                      </div>
+                    </div>
+                    <ChevronRight size={16} className="text-gray-300" />
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab('watch_together')}
+                    className="w-full p-4 flex items-center justify-between text-left hover:bg-rose-50/50 transition-all active:bg-rose-100/50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center font-black">
+                        <PlaySquare size={20} />
+                      </div>
+                      <div>
+                        <h5 className="text-xs font-black text-gray-800">Watch Together</h5>
+                        <p className="text-[10px] text-gray-400 font-medium">Sync movies & shows live</p>
+                      </div>
+                    </div>
+                    <ChevronRight size={16} className="text-gray-300" />
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            {/* ========================================================================= */}
+            {/* DESKTOP / WEB VIEW: 100% Original Desktop Layout (Untouched) */}
+            {/* ========================================================================= */}
+            <div className="hidden lg:block space-y-8">
+              {/* LOVE-O-METER UI CARD */}
+              <div className={`${glassStyle} p-6 rounded-[2.5rem] relative overflow-hidden group`}>
+                <div className="flex justify-between items-end mb-4 relative z-10">
+                  <div>
+                    <p className="text-[10px] font-black text-rose-400 uppercase tracking-widest">Love Connection</p>
+                    <h4 className="text-2xl font-black text-gray-800 flex items-center gap-2">
+                      Level {level} <span className="text-sm font-bold text-rose-300 italic">— Stronger Together</span>
+                    </h4>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black text-gray-400 uppercase">XP to Next Level</p>
+                    <p className="text-xs font-bold text-gray-600">{100 - progress} pts</p>
+                  </div>
+                </div>
+                <div className="h-4 bg-rose-50 rounded-full border border-rose-100 p-1 relative z-10">
+                  <div
+                    className="h-full bg-gradient-to-r from-rose-400 to-pink-500 rounded-full transition-all duration-1000"
+                    style={{ width: `${progress}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div className={`lg:col-span-4 ${glassStyle} p-8 rounded-[3rem] text-center flex flex-col items-center justify-center relative overflow-hidden`}>
+                  <div className="absolute top-4 right-4 text-rose-200 animate-pulse"><Star size={24} fill="currentColor" /></div>
+                  <div className="relative w-24 h-24 mb-4 group cursor-pointer">
+                    <div className="w-24 h-24 rounded-full border-4 border-white shadow-xl overflow-hidden flex items-center justify-center">
+                      {user?.avatar ? (
+                        <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-tr from-rose-500 to-pink-400 flex items-center justify-center text-white text-4xl font-black">
+                          {user?.name?.charAt(0)?.toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    {/* Camera overlay on hover */}
+                    <label className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-all cursor-pointer flex items-center justify-center">
+                      {uploadingAvatar ? (
+                        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <span className="text-white text-xs font-black">📷</span>
+                      )}
+                      <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+                    </label>
+                  </div>
+                  <h2 className="text-2xl font-black text-gray-800 tracking-tight">{user?.name}</h2>
+                  <div className="mt-3 px-4 py-1.5 bg-rose-50 rounded-full text-rose-500 font-bold text-[10px] uppercase tracking-widest border border-rose-100">
+                    Mood: {user?.mood || 'Happy 😊'}
+                  </div>
+                </div>
+
+                <div className="lg:col-span-8 bg-gradient-to-br from-rose-500 to-pink-600 rounded-[3.5rem] p-8 text-white relative overflow-hidden shadow-2xl min-h-[300px] flex flex-col justify-center group">
+                  <Heart className="absolute -bottom-10 -left-10 opacity-10 group-hover:scale-110 transition-transform duration-1000" size={300} fill="white" />
+                  <div className="relative z-10 text-center lg:text-left lg:pl-10">
+                    <h3 className="text-xs font-black mb-2 uppercase tracking-[0.3em] opacity-80 flex items-center gap-2"><Clock size={16} /> Together Since</h3>
+                    <div className="flex items-baseline gap-4">
+                      <span className="text-[8rem] font-black leading-none tracking-tighter drop-shadow-2xl">{daysTogether}</span>
+                      <span className="text-2xl font-bold opacity-80 italic">Days</span>
+                    </div>
+                    <div className="mt-6">
+                      {!showInput ? (
+                        <button onClick={() => setShowInput(true)} className="bg-white/20 backdrop-blur-md text-white px-6 py-3 rounded-2xl font-black text-xs border border-white/30 flex items-center gap-2 hover:bg-white/30 transition-all">
+                          <CalendarIcon size={16} /> {user?.anniversaryDate ? "Change Date" : "Set Anniversary"}
+                        </button>
+                      ) : (
+                        <div className="flex gap-2 bg-white/20 p-3 rounded-2xl backdrop-blur-lg border border-white/30 inline-flex items-center">
+                          <input type="date" value={tempDate} onChange={(e) => setTempDate(e.target.value)} className="bg-white text-gray-800 p-2 rounded-xl outline-none font-bold text-xs" />
+                          <button onClick={handleUpdateDate} className="bg-white text-rose-500 px-4 py-2 rounded-xl font-black text-xs shadow-lg">Lock</button>
+                          <button onClick={() => setShowInput(false)} className="text-white px-2 font-bold text-lg">×</button>
+                        </div>
+                      )}
                     </div>
                   </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <input type="email" placeholder="Partner's Email" value={partnerEmail} onChange={(e) => setPartnerEmail(e.target.value)} className="flex-1 p-3 bg-white rounded-xl border border-gray-100 outline-none text-sm focus:ring-1 ring-rose-200" />
-                    <button
-                      onClick={handleConnect}
-                      className="bg-gray-900 text-white px-4 py-2 rounded-xl font-bold text-xs">
-                      Invite
-                    </button>
+                </div>
+              </div>
+
+              {/* Mood & Partner Status */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className={`${glassStyle} p-8 rounded-[3rem]`}>
+                  <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2"><Sparkles className="text-rose-400" size={20} /> Current Mood</h3>
+                  <div className="flex flex-wrap gap-3">
+                    {moods.map((m) => (
+                      <button key={m.label} onClick={() => handleMoodUpdate(`${m.emoji} ${m.label}`)} className={`text-2xl p-4 rounded-2xl transition-all hover:scale-110 shadow-sm ${m.color}`}>
+                        {m.emoji}
+                      </button>
+                    ))}
                   </div>
-                )}
+                </div>
+                <div className={`${glassStyle} p-8 rounded-[3rem]`}>
+                  <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><User className="text-rose-400" size={20} /> Partner Status</h3>
+                  {user.partnerId ? (
+                    <div className="space-y-2">
+                      <p className="text-rose-400 font-bold text-[10px] tracking-widest uppercase flex items-center gap-1"><Heart size={10} fill="currentColor" /> Linked ❤️</p>
+                      <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100 shadow-inner">
+                        <p className="text-[10px] text-rose-400 uppercase font-black mb-1">Partner's Mood</p>
+                        <p className="text-xl font-bold text-gray-800">{user.partnerId?.mood || "Normal 😊"}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input type="email" placeholder="Partner's Email" value={partnerEmail} onChange={(e) => setPartnerEmail(e.target.value)} className="flex-1 p-3 bg-white rounded-xl border border-gray-100 outline-none text-sm focus:ring-1 ring-rose-200" />
+                      <button
+                        onClick={handleConnect}
+                        className="bg-gray-900 text-white px-4 py-2 rounded-xl font-bold text-xs">
+                        Invite
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className={`${glassStyle} p-5 rounded-[2rem] text-center`}>
+                  <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Memories</p>
+                  <p className="text-2xl font-black text-rose-500">{memories.length}</p>
+                </div>
+                <div className={`${glassStyle} p-5 rounded-[2rem] text-center`}>
+                  <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Routine</p>
+                  <p className="text-2xl font-black text-rose-500">{tasks.length}</p>
+                </div>
+                <div className={`${glassStyle} p-5 rounded-[2rem] text-center`}>
+                  <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Level</p>
+                  <p className="text-2xl font-black text-rose-500">{level}</p>
+                </div>
+                <div className={`${glassStyle} p-5 rounded-[2rem] text-center`}>
+                  <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Milestone</p>
+                  <p className="text-2xl font-black text-rose-500">Gold</p>
+                </div>
               </div>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className={`${glassStyle} p-5 rounded-[2rem] text-center`}>
-                <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Memories</p>
-                <p className="text-2xl font-black text-rose-500">{memories.length}</p>
-              </div>
-              <div className={`${glassStyle} p-5 rounded-[2rem] text-center`}>
-                <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Routine</p>
-                <p className="text-2xl font-black text-rose-500">{tasks.length}</p>
-              </div>
-              <div className={`${glassStyle} p-5 rounded-[2rem] text-center`}>
-                <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Level</p>
-                <p className="text-2xl font-black text-rose-500">{level}</p>
-              </div>
-              <div className={`${glassStyle} p-5 rounded-[2rem] text-center`}>
-                <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Milestone</p>
-                <p className="text-2xl font-black text-rose-500">Gold</p>
-              </div>
-            </div>
           </div>
         )}
 
