@@ -22,6 +22,34 @@ import { compressImage } from '../utils/imageCompressor';
 
 const socket = io.connect(API_URL);
 
+class TabErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("Tab Error caught:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-8 bg-white/90 backdrop-blur-xl rounded-3xl border border-rose-200 text-center space-y-3 my-4">
+          <span className="text-4xl">🍿</span>
+          <h4 className="text-xl font-bold text-gray-800">Watch Together Ready</h4>
+          <p className="text-xs text-gray-500 font-medium">Tap below to reload Watch Together</p>
+          <button onClick={() => this.setState({ hasError: false })} className="px-5 py-2.5 bg-rose-50 text-rose-600 rounded-2xl font-bold text-xs shadow-md">
+            Reload Stream 🍿
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function Dashboard() {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')));
   const [partnerEmail, setPartnerEmail] = useState('');
@@ -915,7 +943,9 @@ function Dashboard() {
           </div>
         )}
         {activeTab === 'watch_together' && (
-          <WatchTogether user={user} roomId={roomId} socket={socket} />
+          <TabErrorBoundary>
+            <WatchTogether user={user} roomId={roomId} socket={socket} />
+          </TabErrorBoundary>
         )}
         {activeTab === 'universe' && (
           <UniverseMap user={user} roomId={roomId} socket={socket} />

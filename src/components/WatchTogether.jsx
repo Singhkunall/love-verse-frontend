@@ -270,34 +270,45 @@ function WatchTogether({ user, roomId, socket }) {
   // PeerJS WebRTC Stream Setup
   useEffect(() => {
     if (!userId) return;
+    let peer = null;
 
-    const peer = new Peer(`loveverse_stream_${userId}`, {
-      host: '0.peerjs.com',
-      port: 443,
-      secure: true
-    });
-
-    peerRef.current = peer;
-
-    peer.on('call', (call) => {
-      console.log("PeerJS call received from:", call.peer);
-      call.answer();
-      call.on('stream', (remoteStream) => {
-        console.log("PeerJS remoteStream attached successfully!", remoteStream);
-        remoteStreamRef.current = remoteStream;
-        setHasRemoteStream(true);
-        setActiveTab('screen_share');
-        setIsReceivingStream(true);
-        setIsSharingScreen(false);
-        setIsMuted(false);
-        setAutoplayBlocked(false);
-
-        toast.success("Partner's NetMirror Stream Connected Live! 🍿✨", { duration: 5000 });
+    try {
+      peer = new Peer(`loveverse_stream_${userId}`, {
+        host: '0.peerjs.com',
+        port: 443,
+        secure: true
       });
-    });
+
+      peerRef.current = peer;
+
+      peer.on('error', (err) => {
+        console.warn("PeerJS non-fatal error:", err);
+      });
+
+      peer.on('call', (call) => {
+        console.log("PeerJS call received from:", call.peer);
+        call.answer();
+        call.on('stream', (remoteStream) => {
+          console.log("PeerJS remoteStream attached successfully!", remoteStream);
+          remoteStreamRef.current = remoteStream;
+          setHasRemoteStream(true);
+          setActiveTab('screen_share');
+          setIsReceivingStream(true);
+          setIsSharingScreen(false);
+          setIsMuted(false);
+          setAutoplayBlocked(false);
+
+          toast.success("Partner's NetMirror Stream Connected Live! 🍿✨", { duration: 5000 });
+        });
+      });
+    } catch (err) {
+      console.warn("PeerJS setup exception:", err);
+    }
 
     return () => {
-      peer.destroy();
+      try {
+        peer?.destroy();
+      } catch (e) {}
     };
   }, [userId]);
 
