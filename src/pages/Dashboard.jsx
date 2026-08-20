@@ -943,9 +943,7 @@ function Dashboard() {
           </div>
         )}
         {activeTab === 'watch_together' && (
-          <TabErrorBoundary>
-            <WatchTogether user={user} roomId={roomId} socket={socket} />
-          </TabErrorBoundary>
+          <WatchTogether user={user} roomId={roomId} socket={socket} />
         )}
         {activeTab === 'universe' && (
           <UniverseMap user={user} roomId={roomId} socket={socket} />

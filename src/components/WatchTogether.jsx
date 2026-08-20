@@ -7,8 +7,14 @@ import AgoraRTC from 'agora-rtc-sdk-ng';
 import { mobileService } from '../utils/mobileService';
 
 // Disable telemetry & stats collector to prevent AdBlocker ERR_BLOCKED_BY_CLIENT console spam
-AgoraRTC.disableLogUpload();
-AgoraRTC.setLogLevel(4);
+try {
+  if (typeof AgoraRTC !== 'undefined' && AgoraRTC?.disableLogUpload) {
+    AgoraRTC.disableLogUpload();
+    AgoraRTC.setLogLevel(4);
+  }
+} catch (e) {
+  console.warn("AgoraRTC init log level suppressed:", e);
+}
 
 const PRESET_VIDEOS = [
   { name: 'Lo-Fi Girl 🎧', id: 'jfKfPfyJRdk' },
@@ -186,27 +192,31 @@ function WatchTogether({ user, roomId, socket }) {
 
   // Screen Wake Lock while watching streams
   useEffect(() => {
-    if (isSharingScreen || isReceivingStream || activeTab === 'direct') {
-      mobileService.requestWakeLock().then(active => setIsWakeLockActive(active));
-    } else {
-      mobileService.releaseWakeLock();
-      setIsWakeLockActive(false);
-    }
+    try {
+      if (isSharingScreen || isReceivingStream || activeTab === 'direct') {
+        mobileService.requestWakeLock().then(active => setIsWakeLockActive(active)).catch(() => {});
+      } else {
+        mobileService.releaseWakeLock();
+        setIsWakeLockActive(false);
+      }
+    } catch (e) {}
     return () => {
-      mobileService.releaseWakeLock();
+      try { mobileService.releaseWakeLock(); } catch (e) {}
     };
   }, [isSharingScreen, isReceivingStream, activeTab]);
 
   // Media Session Lockscreen Controls
   useEffect(() => {
-    if (isSharingScreen || isReceivingStream) {
-      mobileService.setupMediaSession({
-        title: isSharingScreen ? 'Streaming Cinema Live 📽️' : `${streamerName || 'Partner'}'s NetMirror Stream 🍿`,
-        artist: 'Love-Verse Watch Party',
-        onPlay: () => screenVideoRef.current?.play(),
-        onPause: () => screenVideoRef.current?.pause()
-      });
-    }
+    try {
+      if (isSharingScreen || isReceivingStream) {
+        mobileService.setupMediaSession({
+          title: isSharingScreen ? 'Streaming Cinema Live 📽️' : `${streamerName || 'Partner'}'s NetMirror Stream 🍿`,
+          artist: 'Love-Verse Watch Party',
+          onPlay: () => screenVideoRef.current?.play(),
+          onPause: () => screenVideoRef.current?.pause()
+        });
+      }
+    } catch (e) {}
   }, [isSharingScreen, isReceivingStream, streamerName]);
 
   // Drag Event Handlers
