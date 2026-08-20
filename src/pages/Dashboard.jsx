@@ -849,27 +849,59 @@ function Dashboard() {
                     </button>
                   </div>
 
-                  <div className={`${glassStyle} group p-8 rounded-[3.5rem] hover:scale-[1.03] transition-all border-2 border-transparent hover:border-purple-200 relative overflow-hidden shadow-purple-100/50`}>
-                    <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mb-6 shadow-inner"><span className="text-3xl">❓</span></div>
-                    <h4 className="text-2xl font-black text-gray-800 mb-2">Couple Quiz</h4>
-                    <p className="text-xs text-gray-500 font-bold leading-relaxed mb-6 uppercase tracking-tighter">1v1 Trivia • Secret Choice</p>
+                  <div className={`${glassStyle} group p-6 rounded-[2.5rem] hover:scale-[1.02] transition-all relative overflow-hidden border border-white/60 shadow-xl space-y-4`}>
+                    <div className="w-14 h-14 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center shadow-inner"><span className="text-3xl">⚡</span></div>
+                    <div>
+                      <h4 className="text-xl font-serif font-black text-gray-800">Fastest Finger</h4>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">Reaction Speed • 1v1 Battle</p>
+                    </div>
+                    <button
+                      onClick={() => setCurrentGame('reaction')}
+                      className="w-full py-3 bg-gradient-to-r from-amber-400 to-rose-400 text-slate-950 rounded-2xl font-black text-xs shadow-md transition-all active:scale-95"
+                    >
+                      Test Speed ⚡
+                    </button>
+                  </div>
+
+                  <div className={`${glassStyle} group p-6 rounded-[2.5rem] hover:scale-[1.02] transition-all relative overflow-hidden border border-white/60 shadow-xl space-y-4`}>
+                    <div className="w-14 h-14 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center shadow-inner"><span className="text-3xl">⌨️</span></div>
+                    <div>
+                      <h4 className="text-xl font-serif font-black text-gray-800">Speed Typing Race</h4>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">Love Quotes • WPM Test</p>
+                    </div>
+                    <button
+                      onClick={() => setCurrentGame('typing')}
+                      className="w-full py-3 bg-gradient-to-r from-amber-400 to-rose-400 text-slate-950 rounded-2xl font-black text-xs shadow-md transition-all active:scale-95"
+                    >
+                      Race Now ⌨️
+                    </button>
+                  </div>
+
+                  <div className={`${glassStyle} group p-6 rounded-[2.5rem] hover:scale-[1.02] transition-all border-2 border-transparent hover:border-purple-200 relative overflow-hidden shadow-purple-100/50 space-y-4`}>
+                    <div className="w-14 h-14 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center shadow-inner"><span className="text-3xl">❓</span></div>
+                    <div>
+                      <h4 className="text-xl font-serif font-black text-gray-800">Couple Quiz</h4>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">1v1 Trivia • Secret Choice</p>
+                    </div>
                     <button
                       onClick={() => setCurrentGame('quiz')}
-                      className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-xs group-hover:bg-purple-600 transition-all shadow-lg"
+                      className="w-full py-3 bg-gray-900 text-white hover:bg-purple-600 rounded-2xl font-black text-xs transition-all shadow-md active:scale-95"
                     >
                       Start Quiz ❓
                     </button>
                   </div>
 
-                  <div className={`${glassStyle} group p-8 rounded-[3.5rem] hover:scale-[1.03] transition-all border-2 border-transparent hover:border-rose-200 relative overflow-hidden`}>
-                    <div className="w-16 h-16 bg-rose-100 rounded-2xl flex items-center justify-center mb-6 shadow-inner"><span className="text-3xl">🎲</span></div>
-                    <h4 className="text-2xl font-black text-gray-800 mb-2">Love Ludo</h4>
-                    <p className="text-xs text-gray-500 font-bold leading-relaxed mb-6 uppercase tracking-tighter">Real-time • 2 Players</p>
+                  <div className={`${glassStyle} group p-6 rounded-[2.5rem] hover:scale-[1.02] transition-all border-2 border-transparent hover:border-rose-200 relative overflow-hidden space-y-4`}>
+                    <div className="w-14 h-14 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center shadow-inner"><span className="text-3xl">🎲</span></div>
+                    <div>
+                      <h4 className="text-xl font-serif font-black text-gray-800">Love Ludo</h4>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">Real-time • 2 Players</p>
+                    </div>
                     <button
                       onClick={() => setCurrentGame('ludo')}
-                      className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-xs group-hover:bg-rose-500 transition-all shadow-lg"
+                      className="w-full py-3 bg-gray-900 text-white hover:bg-rose-500 rounded-2xl font-black text-xs transition-all shadow-md active:scale-95"
                     >
-                      Play Now
+                      Play Now 🎲
                     </button>
                   </div>
                 </div>
