@@ -1179,7 +1179,15 @@ function WatchTogether({ user, roomId, socket }) {
             className="w-full h-full object-contain bg-black"
             style={{ backgroundColor: '#000000' }}
           />
-        ) : null}
+        ) : (
+          <iframe
+            src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&enablejsapi=1&rel=0&playsinline=1`}
+            title="Watch Together Fullscreen Video Player"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            className="w-full h-full border-none"
+          />
+        )}
 
         {renderPipCameraOverlay()}
         {renderTranslucentChatOverlay()}
@@ -1342,7 +1350,14 @@ function WatchTogether({ user, roomId, socket }) {
               }`}
               style={{ backgroundColor: '#000000' }}
             >
-              <div id="youtube-player" className="w-full h-full" />
+              <iframe
+                ref={iframeRef}
+                src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&enablejsapi=1&rel=0&playsinline=1`}
+                title="Watch Together Video Player"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                className="w-full h-full border-none rounded-3xl"
+              />
               {renderPipCameraOverlay()}
               {renderTranslucentChatOverlay()}
               {renderReactionFab()}
