@@ -192,16 +192,26 @@ function WatchTogether({ user, roomId, socket }) {
 
   // Screen Wake Lock while watching streams
   useEffect(() => {
-    try {
-      if (isSharingScreen || isReceivingStream || activeTab === 'direct') {
-        mobileService.requestWakeLock().then(active => setIsWakeLockActive(active)).catch(() => {});
-      } else {
-        mobileService.releaseWakeLock();
-        setIsWakeLockActive(false);
+    let isMounted = true;
+    const handleWakeLock = async () => {
+      try {
+        if (isSharingScreen || isReceivingStream || activeTab === 'direct') {
+          const active = await mobileService.requestWakeLock();
+          if (isMounted) setIsWakeLockActive(!!active);
+        } else {
+          await mobileService.releaseWakeLock();
+          if (isMounted) setIsWakeLockActive(false);
+        }
+      } catch (e) {
+        console.warn("Wake lock effect error:", e);
       }
-    } catch (e) {}
+    };
+    handleWakeLock();
     return () => {
-      try { mobileService.releaseWakeLock(); } catch (e) {}
+      isMounted = false;
+      try {
+        mobileService.releaseWakeLock();
+      } catch (e) {}
     };
   }, [isSharingScreen, isReceivingStream, activeTab]);
 

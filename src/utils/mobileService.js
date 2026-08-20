@@ -131,10 +131,17 @@ class MobileService {
     return false;
   }
 
-  releaseWakeLock() {
-    if (this.wakeLock) {
-      this.wakeLock.release();
-      this.wakeLock = null;
+  async releaseWakeLock() {
+    try {
+      if (this.wakeLock) {
+        const lock = this.wakeLock;
+        this.wakeLock = null;
+        if (typeof lock.release === 'function') {
+          await lock.release().catch(() => {});
+        }
+      }
+    } catch (err) {
+      console.warn("Wake lock release error:", err);
     }
   }
 
