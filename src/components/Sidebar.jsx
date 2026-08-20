@@ -59,10 +59,11 @@ const Sidebar = ({ activeTab, setActiveTab, user, handleLogout, sendNudge }) => 
             {/* DESKTOP SIDEBAR */}
             <aside className={`w-[320px] ${glassStyle} rounded-[3rem] p-6 hidden lg:flex flex-col gap-8 sticky top-8 h-[92vh]`}>
                 <div className="flex items-center gap-3 px-4">
-                    <div className="bg-gradient-to-tr from-rose-500 to-pink-500 p-2.5 rounded-2xl shadow-lg shadow-rose-200">
-                        <Heart className="text-white fill-white" size={22} />
+                    <img src="/app-logo.png" alt="Love-Verse Logo" className="w-10 h-10 rounded-2xl shadow-md border border-rose-200 object-cover" />
+                    <div>
+                        <h1 className="text-xl font-black tracking-tighter text-gray-800 italic leading-none">Love-Verse</h1>
+                        <span className="text-[9px] font-bold text-rose-500 uppercase tracking-widest block mt-0.5">Always Connected</span>
                     </div>
-                    <h1 className="text-xl font-black tracking-tighter text-gray-800 italic">Love-Verse</h1>
                 </div>
 
                 <div className="flex flex-col gap-6 flex-1 overflow-y-auto pr-1">
