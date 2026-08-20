@@ -372,10 +372,7 @@ function Dashboard() {
       <main className="flex-1 flex flex-col gap-6 overflow-y-auto">
         {/* Top Navbar */}
         <nav className={`${glassStyle} p-4 px-6 md:px-8 rounded-[2rem] flex justify-between items-center z-20`}>
-          <div className="lg:hidden flex items-center gap-2">
-            <img src="/app-logo.png" alt="Love-Verse" className="w-8 h-8 rounded-xl object-cover border border-rose-200 shadow-sm" />
-            <span className="font-serif italic font-black text-rose-600 text-xl tracking-tight">Love-Verse</span>
-          </div>
+          <div className="lg:hidden font-serif italic font-black text-rose-600 text-2xl tracking-tight">Love-Verse</div>
           <div className="hidden lg:block text-xs font-bold text-gray-400 uppercase tracking-widest italic font-sans">
             "Your digital home for love"
           </div>
