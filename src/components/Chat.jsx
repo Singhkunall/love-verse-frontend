@@ -467,7 +467,7 @@ function Chat({ user }) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white/70 backdrop-blur-2xl rounded-[3rem] shadow-2xl border border-white/60 overflow-hidden relative">
+    <div className="flex flex-col h-[calc(100vh-150px)] lg:h-[82vh] bg-white/80 backdrop-blur-2xl rounded-[2.5rem] shadow-xl border border-white/80 overflow-hidden relative mb-16 lg:mb-0">
       <Toaster position="top-center" />
 
       {/* INCOMING CALL DIALOG MODAL */}
@@ -659,15 +659,15 @@ function Chat({ user }) {
       )}
 
       {/* Messages Feed */}
-      <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-3.5">
+      <div className="flex-1 p-3.5 md:p-5 overflow-y-auto space-y-3">
         {messageList.map((msg, index) => {
           const isMe = msg.sender === userId;
           return (
             <div key={index} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-              <div className={`max-w-[80%] md:max-w-[75%] p-3.5 md:p-4 rounded-[1.8rem] shadow-sm ${
+              <div className={`max-w-[82%] md:max-w-[75%] p-3.5 md:p-4 rounded-[1.6rem] shadow-sm ${
                 isMe
-                  ? 'bg-gradient-to-tr from-rose-500 to-pink-500 text-white rounded-tr-none'
-                  : 'bg-white border border-rose-100 text-gray-800 rounded-tl-none shadow-slate-100'
+                  ? 'bg-gradient-to-r from-rose-950 via-rose-900 to-pink-900 text-white rounded-tr-none'
+                  : 'bg-white border border-rose-100/90 text-gray-800 rounded-tl-none shadow-slate-100'
               }`}>
                 {msg.isVideo ? (
                   <video src={msg.message} controls className="rounded-2xl max-h-60 object-cover" />
