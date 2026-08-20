@@ -776,57 +776,41 @@ function Dashboard() {
                   <p className="text-gray-500 font-bold text-sm italic">"Chalo dekhte hain kaun jitta hai! ❤️"</p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  <div className={`${glassStyle} group p-8 rounded-[3.5rem] hover:scale-[1.03] transition-all border-2 border-transparent hover:border-blue-200 relative overflow-hidden`}>
-                    <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 shadow-inner"><span className="text-3xl">♟️</span></div>
-                    <h4 className="text-2xl font-black text-gray-800 mb-2">Grandmaster Chess</h4>
-                    <p className="text-xs text-gray-500 font-bold leading-relaxed mb-6 uppercase tracking-tighter">Real-time Moves • Rule Enforcement</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className={`${glassStyle} group p-6 rounded-[2.5rem] hover:scale-[1.02] transition-all relative overflow-hidden border border-white/60 shadow-xl space-y-4`}>
+                    <div className="w-14 h-14 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center shadow-inner"><span className="text-3xl">♟️</span></div>
+                    <div>
+                      <h4 className="text-xl font-serif font-black text-gray-800">Grandmaster Chess</h4>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">Real-time Moves • Rule Enforcement</p>
+                    </div>
                     <button
                       onClick={() => setCurrentGame('chess')}
-                      className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-xs group-hover:bg-blue-600 transition-all shadow-lg"
+                      className="w-full py-3 bg-gradient-to-r from-amber-400 to-rose-400 text-slate-950 rounded-2xl font-black text-xs shadow-md transition-all active:scale-95"
                     >
                       Challenge Now
                     </button>
                   </div>
 
-                  <div className={`${glassStyle} group p-8 rounded-[3.5rem] hover:scale-[1.03] transition-all border-2 border-transparent hover:border-yellow-300 relative overflow-hidden`}>
-                    <div className="w-16 h-16 bg-yellow-100 rounded-2xl flex items-center justify-center mb-6 shadow-inner"><span className="text-3xl">🌈</span></div>
-                    <h4 className="text-2xl font-black text-gray-800 mb-2">Love-UNO</h4>
-                    <p className="text-xs text-gray-500 font-bold leading-relaxed mb-6 uppercase tracking-tighter">Fast Paced • Fun</p>
-                    <button className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-xs group-hover:bg-yellow-500 transition-all shadow-lg">Draw Four!</button>
-                  </div>
-
-                  <div className={`${glassStyle} group p-8 rounded-[3.5rem] hover:scale-[1.03] transition-all border-2 border-transparent hover:border-emerald-200 relative overflow-hidden shadow-emerald-100/50`}>
-                    <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mb-6 shadow-inner"><span className="text-3xl">⚡</span></div>
-                    <h4 className="text-2xl font-black text-gray-800 mb-2">Typing Speedster</h4>
-                    <p className="text-xs text-gray-500 font-bold leading-relaxed mb-6 uppercase tracking-tighter">Live Progress • Speed Battle</p>
-                    <button
-                      onClick={() => setCurrentGame('typing')}
-                      className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-xs group-hover:bg-emerald-600 transition-all shadow-lg"
-                    >
-                      Start Typing
+                  <div className={`${glassStyle} group p-6 rounded-[2.5rem] hover:scale-[1.02] transition-all relative overflow-hidden border border-white/60 shadow-xl space-y-4`}>
+                    <div className="w-14 h-14 bg-yellow-50 text-yellow-500 rounded-2xl flex items-center justify-center shadow-inner"><span className="text-3xl">🌈</span></div>
+                    <div>
+                      <h4 className="text-xl font-serif font-black text-gray-800">Love-UNO</h4>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">Fast Paced • Fun</p>
+                    </div>
+                    <button className="w-full py-3 bg-gradient-to-r from-amber-400 to-rose-400 text-slate-950 rounded-2xl font-black text-xs shadow-md transition-all active:scale-95">
+                      Draw Four!
                     </button>
                   </div>
 
-                  <div className={`${glassStyle} group p-8 rounded-[3.5rem] hover:scale-[1.03] transition-all border-2 border-transparent hover:border-purple-200 relative overflow-hidden shadow-purple-100/50`}>
-                    <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mb-6 shadow-inner"><span className="text-3xl">🎯</span></div>
-                    <h4 className="text-2xl font-black text-gray-800 mb-2">Fastest Finger</h4>
-                    <p className="text-xs text-gray-500 font-bold leading-relaxed mb-6 uppercase tracking-tighter">Reflex Test • Milliseconds</p>
-                    <button
-                      onClick={() => setCurrentGame('reaction')}
-                      className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-xs group-hover:bg-purple-600 transition-all shadow-lg"
-                    >
-                      Test Reflexes
-                    </button>
-                  </div>
-
-                  <div className={`${glassStyle} group p-8 rounded-[3.5rem] hover:scale-[1.03] transition-all border-2 border-transparent hover:border-pink-200 relative overflow-hidden shadow-pink-100/50`}>
-                    <div className="w-16 h-16 bg-pink-100 rounded-2xl flex items-center justify-center mb-6 shadow-inner"><span className="text-3xl">🧠</span></div>
-                    <h4 className="text-2xl font-black text-gray-800 mb-2">Memory Pairs</h4>
-                    <p className="text-xs text-gray-500 font-bold leading-relaxed mb-6 uppercase tracking-tighter">Cute Icons • Turn Based</p>
+                  <div className={`${glassStyle} group p-6 rounded-[2.5rem] hover:scale-[1.02] transition-all relative overflow-hidden border border-white/60 shadow-xl space-y-4`}>
+                    <div className="w-14 h-14 bg-pink-50 text-pink-500 rounded-2xl flex items-center justify-center shadow-inner"><span className="text-3xl">🧠</span></div>
+                    <div>
+                      <h4 className="text-xl font-serif font-black text-gray-800">Memory Pairs</h4>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">Cute Icons • Turn Based</p>
+                    </div>
                     <button
                       onClick={() => setCurrentGame('memory')}
-                      className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-xs group-hover:bg-pink-600 transition-all shadow-lg"
+                      className="w-full py-3 bg-gradient-to-r from-amber-400 to-rose-400 text-slate-950 rounded-2xl font-black text-xs shadow-md transition-all active:scale-95"
                     >
                       Flip Cards
                     </button>

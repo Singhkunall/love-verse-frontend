@@ -85,49 +85,51 @@ function Calendar({ user, roomId, socket }) {
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto pb-24 font-sans min-h-screen">
       
-      {/* Header */}
-      <div className={`${glassStyle} flex justify-between items-center mb-10 p-8 rounded-[2.5rem]`}>
-        <div>
-          <h2 className="text-3xl font-black text-gray-800 flex items-center gap-3">
-            <div className="p-3 bg-rose-500 rounded-2xl shadow-lg shadow-rose-200">
-                <CalendarIcon className="text-white" size={24} />
-            </div>
-            Love Calendar
-          </h2>
-          <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] mt-2 ml-1">Days we'll never forget</p>
+      {/* Hero Header Card */}
+      <div className="bg-gradient-to-br from-rose-950 via-rose-900 to-pink-950 text-white p-6 md:p-8 rounded-[2.5rem] shadow-2xl space-y-3 relative overflow-hidden mb-8">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-black tracking-widest uppercase text-rose-200">DAYS WE'LL NEVER FORGET</span>
+          <button 
+            onClick={() => setShowModal(true)}
+            className="bg-gradient-to-r from-amber-400 to-rose-400 text-slate-950 font-black text-xs px-4 py-2.5 rounded-2xl shadow-lg hover:scale-105 transition-all flex items-center gap-1.5 active:scale-95"
+          >
+            <Plus size={16} /> Add a plan
+          </button>
         </div>
-        
-        <button 
-          onClick={() => setShowModal(true)}
-          className="bg-gray-900 text-white p-4 rounded-[1.5rem] shadow-xl hover:bg-rose-500 transition-all hover:scale-105 active:scale-95"
-        >
-          <Plus size={24} />
-        </button>
+        <div>
+          <h2 className="font-serif italic text-3xl md:text-4xl font-black text-white">Love Calendar 📅</h2>
+          <p className="text-xs text-rose-200/90 font-medium mt-1">Plan the next one together and create memories</p>
+        </div>
       </div>
 
       {/* Main Content Area */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        {/* Left Side: Upcoming Highligh (Countdown) */}
-        <div className="lg:col-span-5 space-y-6">
-            <h3 className="text-xs font-black text-rose-400 uppercase tracking-widest ml-2">Coming Up Next</h3>
+        {/* Left Side: Upcoming Highlight (Countdown) */}
+        <div className="lg:col-span-5 space-y-4">
+            <div className="flex items-center gap-2 px-1">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">COMING UP NEXT</span>
+              <div className="flex-1 h-px bg-gray-200/80" />
+            </div>
+
             {events.filter(e => getDaysLeft(e.date) >= 0).slice(0, 1).map(event => (
-                <motion.div initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} key={event._id} className="bg-gradient-to-br from-rose-500 to-pink-600 p-8 rounded-[3rem] text-white shadow-2xl relative overflow-hidden group">
+                <motion.div initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} key={event._id} className="bg-gradient-to-br from-rose-500 to-pink-600 p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden group">
                     <Heart className="absolute -bottom-10 -right-10 opacity-20 group-hover:scale-110 transition-transform duration-700" size={200} fill="white" />
                     <div className="relative z-10">
                         <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-80 mb-2">{event.type}</p>
-                        <h4 className="text-4xl font-black mb-6 leading-tight">{event.title}</h4>
+                        <h4 className="text-3xl font-black mb-6 leading-tight">{event.title}</h4>
                         <div className="flex items-baseline gap-2">
-                            <span className="text-6xl font-black tracking-tighter">{getDaysLeft(event.date)}</span>
+                            <span className="font-serif text-6xl font-black tracking-tighter">{getDaysLeft(event.date)}</span>
                             <span className="text-xl font-bold opacity-80 uppercase italic">Days To Go</span>
                         </div>
                     </div>
                 </motion.div>
             ))}
             {events.filter(e => getDaysLeft(e.date) >= 0).length === 0 && (
-                 <div className="bg-white/40 border-2 border-dashed border-rose-200 p-12 rounded-[3rem] text-center">
-                    <Clock className="mx-auto text-rose-200 mb-4" size={40} />
-                    <p className="text-rose-300 font-bold italic">No upcoming plans...</p>
+                 <div className="bg-white/40 border-2 border-dashed border-rose-200 p-8 rounded-[2.5rem] text-center space-y-2">
+                    <Clock className="mx-auto text-rose-300" size={32} />
+                    <p className="text-rose-400 font-serif italic text-xs font-bold">No upcoming plans...</p>
+                    <p className="text-[10px] text-gray-400 font-medium">Tap "+ Add a plan" above to set a special date</p>
                  </div>
             )}
         </div>

@@ -241,15 +241,15 @@ export default function VirtualTouch({ user, roomId, socket }) {
       {showSparkConfetti && <Confetti recycle={false} numberOfPieces={350} />}
 
       {/* Header */}
-      <div className="text-center space-y-3">
-        <div className="inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-sky-400 to-rose-500 rounded-full text-white font-black text-xs uppercase tracking-widest shadow-md">
-          <Touchpad size={16} /> Real-Time Multi-Device Touch
+      <div className="text-center space-y-2">
+        <div className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-rose-50 border border-rose-100 rounded-full text-rose-500 font-bold text-[10px] uppercase tracking-widest shadow-sm">
+          <Sparkles size={14} className="text-rose-400" /> Real-time multi-device touch
         </div>
-        <h2 className="text-4xl md:text-5xl font-black text-gray-800 italic">
-          Virtual Touch 💖
+        <h2 className="text-3xl md:text-4xl font-serif italic font-black text-gray-800 tracking-tight">
+          Virtual Touch ✨
         </h2>
-        <p className="text-gray-500 font-bold text-sm max-w-md mx-auto italic">
-          "Drag your finger or mouse across the canvas. Touch the same spot together to trigger a Connection Spark!"
+        <p className="text-gray-500 font-medium text-xs max-w-sm mx-auto">
+          Drag your finger across the canvas. Touch the same spot together to spark a connection.
         </p>
       </div>
 
