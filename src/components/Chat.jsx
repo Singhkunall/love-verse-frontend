@@ -10,6 +10,7 @@ AgoraRTC.disableLogUpload();
 AgoraRTC.setLogLevel(4);
 import toast, { Toaster } from 'react-hot-toast';
 import Routine from './Routine';
+import { mobileService } from '../utils/mobileService';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://love-verse-backend.onrender.com';
 const socket = io.connect(API_URL);
@@ -118,6 +119,11 @@ function Chat({ user }) {
       setCallType(data.type);
       setCallStatus('ringing-in');
       playRingtone();
+      mobileService.sendNotification(
+        `Incoming ${data.type === 'video' ? 'Video' : 'Audio'} Call 📞`,
+        `${partnerName} is calling you! Tap to answer.`,
+        data.type === 'video' ? '📹' : '📞'
+      );
       toast(`Incoming ${data.type} call from partner!`, { duration: 5000 });
     };
 
@@ -150,17 +156,22 @@ function Chat({ user }) {
       socket.off("call_ended_signal", handleEndSignal);
       socket.off("call_declined_signal", handleDeclinedSignal);
     };
-  }, []);
+  }, [partnerName]);
 
   // Voice note listener
   useEffect(() => {
     const handleVoiceNote = (data) => {
       setMessageList(prev => [...prev, { ...data, isVoiceNote: true }]);
-      toast(`${data.senderName} sent a Voice Note!`);
+      mobileService.sendNotification(
+        `Voice Note from ${data.senderName || partnerName}`,
+        'Sent a new voice note 🎙️',
+        '🎙️'
+      );
+      toast(`${data.senderName || partnerName} sent a Voice Note!`);
     };
     socket.on("receive_voice_note", handleVoiceNote);
     return () => socket.off("receive_voice_note", handleVoiceNote);
-  }, []);
+  }, [partnerName]);
 
   // --- Ringtone helpers (simple WebAudio beep loop so no asset is required) ---
   const playRingtone = () => {
@@ -251,7 +262,15 @@ function Chat({ user }) {
 
   useEffect(() => {
     const handleReceive = (data) => {
-      if (data.sender !== userId) setMessageList(list => [...list, data]);
+      if (data.sender !== userId) {
+        setMessageList(list => [...list, data]);
+        const bodyText = data.isImage ? 'Sent a photo 📸' : data.isVideo ? 'Sent a video 🎬' : (data.message || 'New message');
+        mobileService.sendNotification(
+          `New Message from ${data.senderName || partnerName}`,
+          bodyText,
+          '💬'
+        );
+      }
     };
     const handleTyping = (data) => {
       if (data.userId !== userId) setIsTyping(data.typing);
@@ -273,7 +292,7 @@ function Chat({ user }) {
       socket.off("display_typing", handleTyping);
       socket.off("receive_msg_reaction", handleReaction);
     };
-  }, [userId]);
+  }, [userId, partnerName]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });

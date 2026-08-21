@@ -19,6 +19,7 @@ import UniverseMap from '../components/UniverseMap';
 import VirtualTouch from '../components/VirtualTouch';
 import NotificationCenter from '../components/NotificationCenter';
 import SecurityLock from '../components/SecurityLock';
+import { mobileService } from '../utils/mobileService';
 import API_URL from '../utils/config';
 import { compressImage } from '../utils/imageCompressor';
 
@@ -227,26 +228,27 @@ function Dashboard() {
     socket.emit("join_chat", roomId);
     socket.on("task_updated", () => { fetchTasks(); });
 
+    mobileService.requestNotificationPermission();
+
     socket.on("partner_connected", () => {
       fetchUserProfile();
       toast.success("Partner connect ho gaya! ❤️");
-
+      mobileService.sendNotification("Partner Connected! ❤️", "Partner is now online in your sanctuary!", "❤️");
+      setNotifs(prev => [{ type: 'love', title: 'Partner Online ❤️', text: 'Partner joined your sanctuary!', time: 'Just now' }, ...prev]);
     });
-    socket.on("partner_mood_updated", () => {
+
+    socket.on("partner_mood_updated", (data) => {
+      fetchUserProfile();
+      const moodStr = data?.mood || "updated mood";
+      mobileService.sendNotification("Partner Mood Update 😊", `Partner is feeling ${moodStr}!`, "😊");
+      setNotifs(prev => [{ type: 'mood', title: 'Partner Mood Update 😊', text: `Partner is feeling ${moodStr}!`, time: 'Just now' }, ...prev]);
+    });
+
+    socket.on("partner_avatar_updated", () => {
       fetchUserProfile();
     });
-    socket.on("partner_avatar_updated", () => {
-      console.log("Event received! Fetching profile...");
-      fetchUserProfile().then(() => {
-        console.log("Profile fetched! Partner avatar:", user.partnerId?.avatar);
-      });
-    });
 
-
-
-    // socket.off("partner_avatar_updated");
-
-    // NAYA: Nudge Receive Logic with Hearts
+    // NAYA: Nudge Receive Logic with Hearts & Native Notification
     socket.on("receive_nudge", (data) => {
       toast(`${data.senderName} ne aapko ek Virtual Hug bheja! 🤗❤️`, {
         icon: '💖',
@@ -258,7 +260,9 @@ function Dashboard() {
           border: '2px solid #fb7185'
         },
       });
-      triggerHearts(); // Trigger hearts on real-time nudge
+      triggerHearts();
+      mobileService.sendNotification("Partner Hug ❤️", `${data.senderName || 'Partner'} sent you a warm virtual hug!`, "❤️");
+      setNotifs(prev => [{ type: 'hug', title: 'Partner Hug Sent ❤️', text: `${data.senderName || 'Partner'} sent a virtual hug!`, time: 'Just now' }, ...prev]);
     });
 
     // NAYA: Offline nudge check logic
@@ -268,6 +272,7 @@ function Dashboard() {
         if (res.data.length > 0) {
           triggerHearts();
           toast("Partner ne aapki absence mein Hug bheja tha! 🤗❤️", { icon: '💖' });
+          mobileService.sendNotification("Missed Partner Hug ❤️", "Partner sent you a hug while you were away!", "❤️");
         }
       } catch (err) { console.log("Offline nudge check failed", err); }
     };
@@ -275,7 +280,7 @@ function Dashboard() {
     fetchUserProfile();
     fetchTasks();
     fetchMemories();
-    checkOfflineNudges(); // Check for missed hugs on mount
+    checkOfflineNudges();
     if (user?.anniversaryDate) calculateDays(user.anniversaryDate);
 
     return () => {
