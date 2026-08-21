@@ -837,18 +837,6 @@ function Chat({ user }) {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => {
-              setIsDisappearingMode(!isDisappearingMode);
-              toast(isDisappearingMode ? "Disappearing Mode Off" : "Secret Disappearing Mode Active");
-            }}
-            className={`w-9 h-9 rounded-full flex items-center justify-center transition-all border active:scale-95 ${
-              isDisappearingMode ? 'bg-amber-500 text-white border-amber-600 shadow-md animate-pulse' : 'bg-rose-50 text-gray-700 hover:bg-rose-100 border-rose-100/80'
-            }`}
-            title={isDisappearingMode ? "Disappearing Mode Active" : "Enable Secret Disappearing Mode"}
-          >
-            <Sparkles size={16} className={isDisappearingMode ? "fill-current" : ""} />
-          </button>
-          <button
             onClick={() => startCall(false)}
             disabled={isCallUIOpen}
             className="w-9 h-9 rounded-full bg-rose-50 text-gray-700 hover:bg-rose-100 flex items-center justify-center transition-all border border-rose-100/80 active:scale-95 disabled:opacity-40"
@@ -889,20 +877,6 @@ function Chat({ user }) {
 
           return (
             <div key={index} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} ${isLastInGroup ? 'mb-2.5' : 'mb-0.5'} relative group`}>
-              {activeReactionMsg === index && (
-                <div className={`absolute -top-10 z-40 bg-white/95 backdrop-blur-md border border-rose-100 rounded-full px-2 py-1 shadow-xl flex items-center gap-1 animate-in zoom-in-95 ${isMe ? 'right-0' : 'left-8'}`}>
-                  {['❤️', '😂', '🔥', '🥺', '😮', '👍'].map((emoji, eIdx) => (
-                    <button
-                      key={eIdx}
-                      onClick={() => handleReactToMsg(index, emoji)}
-                      className="hover:scale-125 text-base transition-transform p-1"
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                  <button onClick={() => setActiveReactionMsg(null)} className="text-gray-400 p-1 text-xs font-bold">✖</button>
-                </div>
-              )}
 
               <div className={`flex items-end gap-2 max-w-[82%] md:max-w-[72%] ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
                 {!isMe && (
@@ -919,14 +893,11 @@ function Chat({ user }) {
                   </div>
                 )}
 
-                <div
-                  onClick={() => setActiveReactionMsg(activeReactionMsg === index ? null : index)}
-                  className={`p-3 md:p-3.5 cursor-pointer relative ${
-                    isMe
-                      ? 'bg-[#aa2c4c] text-white font-bold rounded-2xl rounded-tr-xs shadow-md'
-                      : 'bg-[#fffcf7] text-gray-800 font-bold rounded-2xl rounded-tl-xs shadow-sm border border-rose-100/90'
-                  }`}
-                >
+                <div className={`p-3 md:p-3.5 ${
+                  isMe
+                    ? 'bg-[#aa2c4c] text-white font-bold rounded-2xl rounded-tr-xs shadow-md'
+                    : 'bg-[#fffcf7] text-gray-800 font-bold rounded-2xl rounded-tl-xs shadow-sm border border-rose-100/90'
+                }`}>
                   {msg.replyTo && (
                     <div className={`p-2 rounded-xl text-[10px] mb-1.5 border-l-2 ${
                       isMe ? 'bg-white/15 border-white text-rose-100' : 'bg-rose-50 border-[#aa2c4c] text-gray-700'
@@ -943,13 +914,13 @@ function Chat({ user }) {
                   ) : msg.isVoiceNote ? (
                     <div className="flex items-center gap-3 min-w-[180px]">
                       <button
-                        onClick={(e) => { e.stopPropagation(); toggleVoiceNotePlay(index, msg.message); }}
+                        onClick={() => toggleVoiceNotePlay(index, msg.message)}
                         className={`p-2.5 rounded-full ${isMe ? 'bg-white text-[#aa2c4c]' : 'bg-[#aa2c4c] text-white'}`}
                       >
                         {playingId === index ? <Pause size={16} /> : <Play size={16} />}
                       </button>
                       <div className="flex-1">
-                        <p className={`text-xs font-bold ${isMe ? 'text-white' : 'text-gray-800'}`}>Voice Note</p>
+                        <p className={`text-xs font-bold ${isMe ? 'text-white' : 'text-gray-800'}`}>Voice Note 🎙️</p>
                         <div className={`h-1.5 rounded-full mt-1 ${isMe ? 'bg-white/40' : 'bg-gray-200'}`}>
                           <div className={`h-full rounded-full ${isMe ? 'bg-white' : 'bg-[#aa2c4c]'} ${playingId === index ? 'animate-pulse w-full' : 'w-0'}`} />
                         </div>
@@ -957,14 +928,6 @@ function Chat({ user }) {
                     </div>
                   ) : (
                     <p className="text-xs md:text-sm font-bold leading-relaxed">{msg.message}</p>
-                  )}
-
-                  {msg.reactions && msg.reactions.length > 0 && (
-                    <div className={`absolute -bottom-2 ${isMe ? 'left-2' : 'right-2'} bg-white border border-rose-100 rounded-full px-1.5 py-0.5 text-xs shadow-md flex items-center gap-0.5`}>
-                      {msg.reactions.map((r, rIdx) => (
-                        <span key={rIdx}>{r.emoji}</span>
-                      ))}
-                    </div>
                   )}
 
                   {isLastInGroup && (
