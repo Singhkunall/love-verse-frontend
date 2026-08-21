@@ -113,7 +113,12 @@ function Chat({ user }) {
     };
   }, [userId]);
 
-  // Global listener to unlock AudioContext on user interaction (bypasses browser autoplay restrictions)
+  const callStatusRef = useRef(callStatus);
+  useEffect(() => {
+    callStatusRef.current = callStatus;
+  }, [callStatus]);
+
+  // Global listener to unlock AudioContext + COMPLETE CALL TEARDOWN ON UNMOUNT
   useEffect(() => {
     const unlockAudio = () => {
       if (ringtoneRef.current?.ctx?.state === 'suspended') {
@@ -122,13 +127,37 @@ function Chat({ user }) {
     };
     window.addEventListener('click', unlockAudio);
     window.addEventListener('touchstart', unlockAudio);
+
     return () => {
       window.removeEventListener('click', unlockAudio);
       window.removeEventListener('touchstart', unlockAudio);
       stopRingtone();
       clearRingTimeout();
+
+      // UNMOUNT CALL TEARDOWN: If user leaves Chat component while ringing or in active call
+      if (callStatusRef.current !== 'idle') {
+        socket.emit("end_call_signal", { to: partnerId, from: userId });
+
+        // Synchronously stop and close local microphone & camera tracks
+        try {
+          localTracksRef.current.audio?.stop();
+          localTracksRef.current.audio?.close();
+          localTracksRef.current.video?.stop();
+          localTracksRef.current.video?.close();
+        } catch (e) {
+          console.warn("Unmount track cleanup warning:", e);
+        }
+        localTracksRef.current = { audio: null, video: null };
+
+        if (callTimerRef.current) clearInterval(callTimerRef.current);
+
+        // Leave Agora channel without blocking unmount
+        if (agoraClientRef.current && agoraClientRef.current.connectionState !== 'DISCONNECTED') {
+          agoraClientRef.current.leave().catch(() => {});
+        }
+      }
     };
-  }, []);
+  }, [partnerId, userId]);
 
   // Socket listeners for call signals
   useEffect(() => {
