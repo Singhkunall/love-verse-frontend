@@ -113,9 +113,31 @@ function Chat({ user }) {
     };
   }, [userId]);
 
+  // Global listener to unlock AudioContext on user interaction (bypasses browser autoplay restrictions)
+  useEffect(() => {
+    const unlockAudio = () => {
+      if (ringtoneRef.current?.ctx?.state === 'suspended') {
+        ringtoneRef.current.ctx.resume();
+      }
+    };
+    window.addEventListener('click', unlockAudio);
+    window.addEventListener('touchstart', unlockAudio);
+    return () => {
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('touchstart', unlockAudio);
+      stopRingtone();
+      clearRingTimeout();
+    };
+  }, []);
+
   // Socket listeners for call signals
   useEffect(() => {
     const handleSignal = (data) => {
+      // If user is already in a call, automatically reply with a busy signal
+      if (callStatus !== 'idle') {
+        socket.emit("decline_call_signal", { to: data.from, from: userId, reason: 'busy' });
+        return;
+      }
       setCallType(data.type);
       setCallStatus('ringing-in');
       playRingtone();
@@ -140,8 +162,12 @@ function Chat({ user }) {
     };
 
     // Partner declined before we timed out
-    const handleDeclinedSignal = () => {
-      toast.error("Call declined.");
+    const handleDeclinedSignal = (data) => {
+      if (data?.reason === 'busy') {
+        toast.error("Partner is busy on another call.");
+      } else {
+        toast.error("Call declined.");
+      }
       cleanupCall();
     };
 
@@ -156,7 +182,7 @@ function Chat({ user }) {
       socket.off("call_ended_signal", handleEndSignal);
       socket.off("call_declined_signal", handleDeclinedSignal);
     };
-  }, [partnerName]);
+  }, [partnerName, callStatus, userId]);
 
   // Voice note listener
   useEffect(() => {
@@ -173,12 +199,15 @@ function Chat({ user }) {
     return () => socket.off("receive_voice_note", handleVoiceNote);
   }, [partnerName]);
 
-  // --- Ringtone helpers (simple WebAudio beep loop so no asset is required) ---
+  // --- Ringtone helpers ---
   const playRingtone = () => {
     try {
       stopRingtone();
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       const ctx = new AudioCtx();
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
       const beep = () => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -195,7 +224,7 @@ function Chat({ user }) {
       const interval = setInterval(beep, 1500);
       ringtoneRef.current = { ctx, interval };
     } catch (e) {
-      // Non-fatal — ringtone is a nice-to-have
+      console.warn("Ringtone error:", e);
     }
   };
 
@@ -232,7 +261,9 @@ function Chat({ user }) {
       localTracksRef.current.video?.stop();
       localTracksRef.current.video?.close();
       localTracksRef.current = { audio: null, video: null };
-      await agoraClientRef.current?.leave();
+      if (agoraClientRef.current && agoraClientRef.current.connectionState !== 'DISCONNECTED') {
+        await agoraClientRef.current.leave();
+      }
     } catch (err) {
       console.error("Cleanup error:", err);
     }
@@ -300,15 +331,15 @@ function Chat({ user }) {
 
   // --- START CALL FUNCTION (caller side) ---
   const startCall = async (isVideo) => {
+    const appId = import.meta.env.VITE_AGORA_APP_ID;
+    if (!appId) {
+      toast.error("Voice/Video chat not configured.");
+      return;
+    }
+
     setCallType(isVideo ? "video" : "audio");
     setCallStatus('ringing-out');
     try {
-      const appId = import.meta.env.VITE_AGORA_APP_ID;
-      if (!appId) {
-        toast.error("Voice/Video chat not configured.");
-        setCallStatus('idle');
-        return;
-      }
       const uid = Math.floor(Math.random() * 100000);
 
       let token = null;
@@ -346,12 +377,13 @@ function Chat({ user }) {
         to: partnerId,
         from: userId,
         type: isVideo ? "video" : "audio",
+        roomId
       });
 
       // Reliability: don't ring forever — auto-cancel if nobody answers
       ringTimeoutRef.current = setTimeout(() => {
         toast.error("No answer.");
-        socket.emit("end_call_signal", { to: partnerId });
+        socket.emit("end_call_signal", { to: partnerId, from: userId });
         cleanupCall();
       }, CALL_RING_TIMEOUT);
 
@@ -406,8 +438,7 @@ function Chat({ user }) {
       const tracksToPublish = callType === 'video' ? [audioTrack, videoTrack] : [audioTrack];
       await agoraClientRef.current.publish(tracksToPublish);
 
-      // Let the caller know we picked up — this is what flips their "ringing-out" UI to "connected"
-      socket.emit("call_accepted_signal", { to: partnerId });
+      socket.emit("accept_call_signal", { to: partnerId, from: userId });
       startCallTimer();
 
     } catch (err) {
@@ -420,12 +451,12 @@ function Chat({ user }) {
   // Decline an incoming call before answering — tell the caller so their screen doesn't hang
   const declineCall = () => {
     stopRingtone();
-    socket.emit("call_declined_signal", { to: partnerId });
+    socket.emit("decline_call_signal", { to: partnerId, from: userId, reason: 'declined' });
     cleanupCall();
   };
 
   const endCall = () => {
-    socket.emit("end_call_signal", { to: partnerId });
+    socket.emit("end_call_signal", { to: partnerId, from: userId });
     cleanupCall();
   };
 
@@ -837,6 +868,18 @@ function Chat({ user }) {
 
         <div className="flex items-center gap-2">
           <button
+            onClick={() => {
+              setIsDisappearingMode(!isDisappearingMode);
+              toast(isDisappearingMode ? "Disappearing Mode Off" : "Secret Disappearing Mode Active 🤫✨");
+            }}
+            className={`w-9 h-9 rounded-full flex items-center justify-center transition-all border active:scale-95 ${
+              isDisappearingMode ? 'bg-amber-500 text-white border-amber-600 shadow-md animate-pulse' : 'bg-rose-50 text-gray-700 hover:bg-rose-100 border-rose-100/80'
+            }`}
+            title={isDisappearingMode ? "Disappearing Mode Active" : "Enable Secret Disappearing Mode"}
+          >
+            <Sparkles size={16} className={isDisappearingMode ? "fill-current text-amber-500" : ""} />
+          </button>
+          <button
             onClick={() => startCall(false)}
             disabled={isCallUIOpen}
             className="w-9 h-9 rounded-full bg-rose-50 text-gray-700 hover:bg-rose-100 flex items-center justify-center transition-all border border-rose-100/80 active:scale-95 disabled:opacity-40"
@@ -878,6 +921,22 @@ function Chat({ user }) {
           return (
             <div key={index} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} ${isLastInGroup ? 'mb-2.5' : 'mb-0.5'} relative group`}>
 
+              {/* Reaction Floating Picker */}
+              {activeReactionMsg === index && (
+                <div className={`absolute -top-10 z-40 bg-white/95 backdrop-blur-md border border-rose-100 rounded-full px-2 py-1 shadow-xl flex items-center gap-1 animate-in zoom-in-95 ${isMe ? 'right-0' : 'left-8'}`}>
+                  {['❤️', '😂', '🔥', '🥺', '😮', '👍'].map((emoji, eIdx) => (
+                    <button
+                      key={eIdx}
+                      onClick={() => handleReactToMsg(index, emoji)}
+                      className="hover:scale-125 text-base transition-transform p-1"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                  <button onClick={() => setActiveReactionMsg(null)} className="text-gray-400 p-1 text-xs font-bold">✖</button>
+                </div>
+              )}
+
               <div className={`flex items-end gap-2 max-w-[82%] md:max-w-[72%] ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
                 {!isMe && (
                   <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#aa2c4c] to-[#c9436a] text-white flex items-center justify-center font-bold text-[9px] shrink-0 overflow-hidden shadow-sm">
@@ -893,7 +952,9 @@ function Chat({ user }) {
                   </div>
                 )}
 
-                <div className={`p-3 md:p-3.5 ${
+                <div 
+                  onClick={() => setActiveReactionMsg(activeReactionMsg === index ? null : index)}
+                  className={`p-3 md:p-3.5 cursor-pointer relative ${
                   isMe
                     ? 'bg-[#aa2c4c] text-white font-bold rounded-2xl rounded-tr-xs shadow-md'
                     : 'bg-[#fffcf7] text-gray-800 font-bold rounded-2xl rounded-tl-xs shadow-sm border border-rose-100/90'
@@ -914,7 +975,7 @@ function Chat({ user }) {
                   ) : msg.isVoiceNote ? (
                     <div className="flex items-center gap-3 min-w-[180px]">
                       <button
-                        onClick={() => toggleVoiceNotePlay(index, msg.message)}
+                        onClick={(e) => { e.stopPropagation(); toggleVoiceNotePlay(index, msg.message); }}
                         className={`p-2.5 rounded-full ${isMe ? 'bg-white text-[#aa2c4c]' : 'bg-[#aa2c4c] text-white'}`}
                       >
                         {playingId === index ? <Pause size={16} /> : <Play size={16} />}
@@ -930,6 +991,15 @@ function Chat({ user }) {
                     <p className="text-xs md:text-sm font-bold leading-relaxed">{msg.message}</p>
                   )}
 
+                  {/* Reaction Pill Badge */}
+                  {msg.reactions && msg.reactions.length > 0 && (
+                    <div className={`absolute -bottom-2 ${isMe ? 'left-2' : 'right-2'} bg-white border border-rose-100 rounded-full px-1.5 py-0.5 text-xs shadow-md flex items-center gap-0.5 z-20`}>
+                      {msg.reactions.map((r, rIdx) => (
+                        <span key={rIdx}>{r.emoji}</span>
+                      ))}
+                    </div>
+                  )}
+
                   {isLastInGroup && (
                     <div className={`flex items-center justify-end gap-1 mt-1 text-[10px] font-medium ${isMe ? 'text-rose-100' : 'text-gray-400'}`}>
                       {msg.isDisappearing && <Sparkles size={10} className="text-amber-300" title="Disappearing Message" />}
@@ -939,13 +1009,22 @@ function Chat({ user }) {
                   )}
                 </div>
 
-                <button
-                  onClick={() => setReplyingTo(msg)}
-                  className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-rose-500 transition-opacity"
-                  title="Reply to message"
-                >
-                  <MessageSquare size={14} />
-                </button>
+                <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setActiveReactionMsg(activeReactionMsg === index ? null : index); }}
+                    className="p-1 text-gray-400 hover:text-amber-500 transition-colors"
+                    title="React to message"
+                  >
+                    <Smile size={14} />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setReplyingTo(msg); }}
+                    className="p-1 text-gray-400 hover:text-rose-500 transition-colors"
+                    title="Reply to message"
+                  >
+                    <MessageSquare size={14} />
+                  </button>
+                </div>
               </div>
             </div>
           );
