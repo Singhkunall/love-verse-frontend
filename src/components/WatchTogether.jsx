@@ -64,6 +64,7 @@ function WatchTogether({ user, roomId, socket }) {
   const [isMuted, setIsMuted] = useState(true);
   const [isTheaterMode, setIsTheaterMode] = useState(false);
   const [isCinemaFullscreen, setIsCinemaFullscreen] = useState(false);
+  const [forceCssLandscape, setForceCssLandscape] = useState(false); // Problem 1: CSS 90-degree Rotation Fallback
 
   // Live Voice & Camera State
   const [isVoiceConnected, setIsVoiceConnected] = useState(false);
@@ -179,23 +180,39 @@ function WatchTogether({ user, roomId, socket }) {
   const userId = user ? (user._id || user.id || '')?.toString() : '';
   const partnerId = user?.partnerId ? (user.partnerId._id || user.partnerId || '')?.toString() : '';
 
-  // Helper to resolve current active camera DOM IDs.
+  // Helper to resolve current active camera DOM IDs
   const getCameraDOMIds = (isFull = isCinemaFullscreenRef.current) => {
     return isFull
       ? { remoteId: 'watch-remote-video-fs', localId: 'watch-local-video-fs' }
       : { remoteId: 'watch-remote-video', localId: 'watch-local-video' };
   };
 
+  // Safe track playback helper with 5-attempt retry logic for mobile DOM rendering (Problem 3 Fix)
+  const tryPlayTrack = (track, elementId, attempts = 5) => {
+    if (!track) return;
+    const el = document.getElementById(elementId);
+    console.log(`[tryPlayTrack] Attempting to play track into '${elementId}' (attempts left: ${attempts}):`, el);
+    if (el) {
+      try {
+        track.play(elementId, { fit: 'cover' });
+      } catch (e) {
+        console.warn("Track play exception:", e);
+      }
+    } else if (attempts > 0) {
+      setTimeout(() => tryPlayTrack(track, elementId, attempts - 1), 200);
+    }
+  };
+
   const playActiveCameraTracks = (isFull = isCinemaFullscreenRef.current) => {
     const { remoteId, localId } = getCameraDOMIds(isFull);
     setTimeout(() => {
-      if (remoteUserRef.current?.videoTrack && document.getElementById(remoteId)) {
-        try { remoteUserRef.current.videoTrack.play(remoteId, { fit: 'cover' }); } catch (e) {}
+      if (remoteUserRef.current?.videoTrack) {
+        tryPlayTrack(remoteUserRef.current.videoTrack, remoteId, 5);
       }
-      if (localVideoTrackRef.current && document.getElementById(localId)) {
-        try { localVideoTrackRef.current.play(localId, { fit: 'cover' }); } catch (e) {}
+      if (localVideoTrackRef.current) {
+        tryPlayTrack(localVideoTrackRef.current, localId, 5);
       }
-    }, 300);
+    }, 200);
   };
 
   // PiP toggle function
@@ -541,7 +558,7 @@ function WatchTogether({ user, roomId, socket }) {
     }
   };
 
-  // Smart Fullscreen Orientation Lock Effect
+  // Problem 1 Fix: Capacitor Native Screen Orientation Lock + Smart CSS 90-degree Rotate Fallback
   useEffect(() => {
     try {
       if (isCinemaFullscreen) {
@@ -549,24 +566,34 @@ function WatchTogether({ user, roomId, socket }) {
         document.body.style.overflow = 'hidden';
 
         const pref = preferredOrientationRef.current;
-        const currentOrientation = window.screen?.orientation?.type?.includes('landscape') ? 'landscape' : 'portrait';
 
-        if (pref === 'landscape' && currentOrientation !== 'landscape' && window.screen?.orientation?.lock) {
-          try {
-            const res = window.screen.orientation.lock('landscape');
-            if (res && typeof res.catch === 'function') res.catch(() => {});
-          } catch (e) {}
+        if (pref === 'landscape') {
+          // Native Capacitor Plugin Lock (Solution A)
+          mobileService.lockOrientationLandscape();
+
+          // CSS Rotate Fallback Check (Solution B)
+          const checkPhysicalOrientation = () => {
+            const isPhysicallyLandscape = window.innerWidth > window.innerHeight;
+            setForceCssLandscape(!isPhysicallyLandscape);
+          };
+
+          checkPhysicalOrientation();
+          window.addEventListener('resize', checkPhysicalOrientation);
+          window.addEventListener('orientationchange', checkPhysicalOrientation);
+
+          return () => {
+            window.removeEventListener('resize', checkPhysicalOrientation);
+            window.removeEventListener('orientationchange', checkPhysicalOrientation);
+            setForceCssLandscape(false);
+          };
+        } else {
+          setForceCssLandscape(false);
         }
       } else {
         document.body.classList.remove('cinema-fullscreen-active');
         document.body.style.overflow = 'auto';
-
-        if (window.screen?.orientation?.unlock) {
-          try {
-            const res = window.screen.orientation.unlock();
-            if (res && typeof res.catch === 'function') res.catch(() => {});
-          } catch (e) {}
-        }
+        mobileService.unlockOrientation();
+        setForceCssLandscape(false);
       }
     } catch (e) {}
 
@@ -574,10 +601,8 @@ function WatchTogether({ user, roomId, socket }) {
       try {
         document.body.classList.remove('cinema-fullscreen-active');
         document.body.style.overflow = 'auto';
-        if (window.screen?.orientation?.unlock) {
-          const res = window.screen.orientation.unlock();
-          if (res && typeof res.catch === 'function') res.catch(() => {});
-        }
+        mobileService.unlockOrientation();
+        setForceCssLandscape(false);
       } catch (e) {}
     };
   }, [isCinemaFullscreen]);
@@ -899,11 +924,7 @@ function WatchTogether({ user, roomId, socket }) {
             remoteUserRef.current = remoteUser;
             setHasRemoteVideo(true);
             const { remoteId } = getCameraDOMIds(); // uses ref internally, always current
-            setTimeout(() => {
-              if (document.getElementById(remoteId)) {
-                remoteUser.videoTrack?.play(remoteId, { fit: 'cover' });
-              }
-            }, 300);
+            tryPlayTrack(remoteUser.videoTrack, remoteId, 5); // Problem 3 Fix: 5-attempt retry helper
             toast.success("Partner Turned On Live Camera! 📹✨");
           }
         });
@@ -976,11 +997,7 @@ function WatchTogether({ user, roomId, socket }) {
         await agoraVoiceClientRef.current?.publish([videoTrack]);
         setIsCameraOn(true);
         const { localId } = getCameraDOMIds();
-        setTimeout(() => {
-          if (document.getElementById(localId)) {
-            videoTrack.play(localId, { fit: 'cover' });
-          }
-        }, 300);
+        tryPlayTrack(videoTrack, localId, 5); // Problem 3 Fix: 5-attempt retry helper
         toast.success("Live Camera Turned On! Partner can see your reactions 📹✨");
       } catch (err) {
         console.error("Camera turn on error:", err);
@@ -1251,7 +1268,25 @@ function WatchTogether({ user, roomId, socket }) {
     if (!isCinemaFullscreen) return null;
 
     return ReactDOM.createPortal(
-      <div className="fixed inset-0 z-[9999999] w-screen h-screen bg-black flex flex-col items-center justify-center overflow-hidden m-0 p-0 pointer-events-auto select-none" style={{ backgroundColor: '#000000' }}>
+      <div
+        className="fixed inset-0 z-[9999999] bg-black flex flex-col items-center justify-center overflow-hidden m-0 p-0 pointer-events-auto select-none transition-all duration-300"
+        style={
+          forceCssLandscape
+            ? {
+                width: '100vh',
+                height: '100vw',
+                transform: 'rotate(90deg)',
+                transformOrigin: 'center center',
+                position: 'fixed',
+                top: '50%',
+                left: '50%',
+                marginTop: '-50vw',
+                marginLeft: '-50vh',
+                backgroundColor: '#000000'
+              }
+            : { backgroundColor: '#000000' }
+        }
+      >
         {/* Sleek Top Glass Control Bar */}
         <div className="absolute top-4 left-4 right-4 z-50 flex items-center justify-between bg-black/75 backdrop-blur-xl border border-white/20 px-4 py-2.5 rounded-full text-white shadow-2xl pointer-events-auto">
           <div className="flex items-center gap-2">
@@ -1582,6 +1617,13 @@ function WatchTogether({ user, roomId, socket }) {
                 )}
               </div>
             </div>
+
+            {/* Problem 2 Fix: Screen Share Clean Stream Tip Banner */}
+            {isSharingScreen && (
+              <p className="text-[11px] text-amber-300 font-bold text-center mt-1 bg-amber-500/10 border border-amber-400/30 rounded-xl p-2 animate-in fade-in">
+                💡 <strong>Pro Tip:</strong> Video ko pehle YouTube/Movie player ke apne Fullscreen button se fullscreen karo, phir share karo — clean 1080p stream milega! 🍿
+              </p>
+            )}
 
             {/* Screen Video Container */}
             <div

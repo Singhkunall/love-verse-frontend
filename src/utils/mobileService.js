@@ -1,6 +1,7 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
+import { ScreenOrientation } from '@capacitor/screen-orientation';
 import toast from 'react-hot-toast';
 
 class MobileService {
@@ -32,6 +33,42 @@ class MobileService {
         console.log("Tab foregrounded");
       }
     });
+  }
+
+  // Lock Device Screen to Landscape Orientation (Native Capacitor & Web fallback)
+  async lockOrientationLandscape() {
+    try {
+      if (this.isNative) {
+        await ScreenOrientation.lock({ orientation: 'landscape' });
+        console.log("Capacitor Native ScreenOrientation locked to landscape 📱🔄");
+        return true;
+      } else if (window.screen?.orientation?.lock) {
+        const res = window.screen.orientation.lock('landscape');
+        if (res && typeof res.catch === 'function') res.catch(() => {});
+        return true;
+      }
+    } catch (err) {
+      console.warn("lockOrientationLandscape warning:", err);
+    }
+    return false;
+  }
+
+  // Unlock Device Screen Orientation
+  async unlockOrientation() {
+    try {
+      if (this.isNative) {
+        await ScreenOrientation.unlock();
+        console.log("Capacitor Native ScreenOrientation unlocked 📱");
+        return true;
+      } else if (window.screen?.orientation?.unlock) {
+        const res = window.screen.orientation.unlock();
+        if (res && typeof res.catch === 'function') res.catch(() => {});
+        return true;
+      }
+    } catch (err) {
+      console.warn("unlockOrientation warning:", err);
+    }
+    return false;
   }
 
   // Request Notification Permissions (Native & Web)
