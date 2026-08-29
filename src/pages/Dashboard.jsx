@@ -82,6 +82,10 @@ function Dashboard() {
   // ✅ Fix 2: roomId now uses proper string IDs
   const roomId = [userId.toString(), partnerId.toString()].sort().join("_");
 
+  const partnerName = (typeof user?.partnerId === 'object' && user.partnerId?.name)
+    || user?.partnerName
+    || (user?.partnerEmail ? user.partnerEmail.split('@')[0] : "Partner");
+
   const moods = [
     { emoji: '😊', label: 'Happy', color: 'bg-yellow-100' },
     { emoji: '🥰', label: 'Romantic', color: 'bg-rose-100' },
