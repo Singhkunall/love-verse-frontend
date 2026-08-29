@@ -389,7 +389,11 @@ function Dashboard() {
     };
   };
 
-  const glassStyle = "bg-white/70 backdrop-blur-2xl border border-white/50 shadow-xl";
+  const handleSendAnniversaryToast = () => {
+    socket.emit("send_anniversary_toast", { roomId, senderName: user.name || "Your Love" });
+    triggerHearts();
+    toast.success("1-Year Anniversary Phone Notification Sent to Partner! 🥂🎉", { duration: 5000 });
+  };
 
   return (
     <div className="min-h-screen bg-[#fff0f3] flex gap-6 p-4 md:p-6 lg:p-8 font-sans overflow-x-hidden relative">
@@ -404,6 +408,7 @@ function Dashboard() {
         user={user}
         handleLogout={handleLogout}
         sendNudge={sendNudge}
+        onSendAnniversaryToast={handleSendAnniversaryToast}
       />
 
       <main className="flex-1 flex flex-col gap-6 overflow-y-auto">
@@ -470,48 +475,6 @@ function Dashboard() {
         {/* --- DYNAMIC TABS --- */}
         {activeTab === 'home' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
-
-            {/* GOLDEN 1-YEAR ANNIVERSARY HERO BANNER */}
-            <div className="bg-gradient-to-r from-[#2b0816] via-[#4a0d24] to-[#1a040d] p-5 rounded-[2.2rem] border-2 border-amber-400/50 shadow-2xl text-white relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-400 to-rose-500 flex items-center justify-center text-white shadow-xl shadow-amber-500/30 animate-pulse shrink-0">
-                  <Trophy size={28} />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black tracking-widest uppercase px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/40">
-                      GRAND MILESTONE
-                    </span>
-                    <span className="text-xs font-bold text-rose-200">365 Days Together</span>
-                  </div>
-                  <h3 className="text-xl font-black italic tracking-tight text-white mt-1">
-                    Happy 1st Anniversary! 🎉🥂
-                  </h3>
-                  <p className="text-xs text-rose-200/80 font-medium">
-                    Celebrate 1 Year of Pure Love & Magical Memories in Love-Verse!
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-2.5 w-full md:w-auto shrink-0">
-                <button
-                  onClick={() => {
-                    socket.emit("send_anniversary_toast", { roomId, senderName: user.name || "Your Love" });
-                    triggerHearts();
-                    toast.success("Anniversary Toast & Phone Notification Sent to Partner! 🥂🎉");
-                  }}
-                  className="px-5 py-3 bg-gradient-to-r from-amber-400 via-rose-500 to-pink-500 hover:from-amber-500 hover:to-pink-600 text-white rounded-2xl font-black text-xs shadow-lg shadow-rose-500/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2"
-                >
-                  <Sparkles size={16} /> Send Phone Notification to Partner 🥂
-                </button>
-                <button
-                  onClick={() => setShowAnniversaryModal(true)}
-                  className="px-4 py-3 bg-white/10 hover:bg-white/20 border border-amber-400/30 text-rose-100 rounded-2xl font-bold text-xs active:scale-95 transition-all flex items-center justify-center gap-2"
-                >
-                  <Trophy size={16} className="text-amber-400" /> Celebration Sanctuary 🎉
-                </button>
-              </div>
-            </div>
 
             {/* ========================================================================= */}
             {/* MOBILE ONLY VIEW: Exact Mockup Card Layout Structure (Rose/Pink Theme) */}

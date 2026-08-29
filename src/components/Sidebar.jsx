@@ -32,7 +32,7 @@ function BottomNavBtn({ icon, label, active, onClick }) {
     );
 }
 
-const Sidebar = ({ activeTab, setActiveTab, user, handleLogout, sendNudge }) => {
+const Sidebar = ({ activeTab, setActiveTab, user, handleLogout, sendNudge, onSendAnniversaryToast }) => {
     const glassStyle = "bg-white/70 backdrop-blur-2xl border border-white/50 shadow-xl";
     const [isNudging, setIsNudging] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -74,6 +74,7 @@ const Sidebar = ({ activeTab, setActiveTab, user, handleLogout, sendNudge }) => 
                     </div>
                     <div className="space-y-1">
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-4 mb-2">Our Connection</p>
+                        <SidebarBtn icon={<Trophy size={20} className="text-amber-500" />} label="Send 1-Year Surprise 🎁" active={false} onClick={onSendAnniversaryToast} />
                         <SidebarBtn icon={<Radio size={20} />} label="Couple Beats Radio" active={activeTab === 'couple_beats'} onClick={() => setActiveTab('couple_beats')} />
                         <SidebarBtn icon={<Touchpad size={20} />} label="Virtual Touch" active={activeTab === 'virtual_touch'} onClick={() => setActiveTab('virtual_touch')} />
                         <SidebarBtn icon={<Zap size={20} />} label="Daily Routine" active={activeTab === 'routine'} onClick={() => setActiveTab('routine')} />
