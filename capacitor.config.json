@@ -2,10 +2,6 @@
   "appId": "com.loveverse.app",
   "appName": "LoveVerse",
   "webDir": "dist",
-  "server": {
-    "url": "https://love-verse-frontend.vercel.app",
-    "cleartext": true
-  },
   "plugins": {
     "CapacitorHttp": {
       "enabled": true
