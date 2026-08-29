@@ -1,12 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
-import { PlaySquare, Link as LinkIcon, Search, Sparkles, Film, AlertCircle, Tv, Monitor, ExternalLink, Globe, Play, RefreshCw, Video, StopCircle, Maximize2, Volume2, VolumeX, Minimize2, Radio, Mic, MicOff, PhoneOff, VideoOff, GripVertical, MessageSquare, Send, Heart, Flame, Smile, ThumbsUp, X, ShieldCheck, Sliders, Volume1, Info, Bell, Smartphone } from 'lucide-react';
+import { 
+  PlaySquare, Link as LinkIcon, Search, Sparkles, Film, AlertCircle, Tv, Monitor, 
+  ExternalLink, Globe, Play, RefreshCw, Video, StopCircle, Maximize2, Volume2, 
+  VolumeX, Minimize2, Radio, Mic, MicOff, PhoneOff, VideoOff, GripVertical, 
+  MessageSquare, Send, Heart, Flame, Smile, ThumbsUp, X, ShieldCheck, Sliders, 
+  Volume1, Info, Bell, Smartphone 
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import Peer from 'peerjs';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 import { mobileService } from '../utils/mobileService';
 
-// Disable telemetry & stats collector to prevent AdBlocker ERR_BLOCKED_BY_CLIENT console spam
+// Disable telemetry & stats collector to prevent console spam
 try {
   if (typeof AgoraRTC !== 'undefined' && AgoraRTC?.disableLogUpload) {
     AgoraRTC.disableLogUpload();
@@ -21,25 +27,20 @@ const PRESET_VIDEOS = [
   { name: 'Romantic Piano 🎹', id: '77ZozI0rw7w' },
   { name: 'Nature Relax 🌿', id: 'eKFTSSKCzWA' },
   { name: 'Movie Trailer 🍿', id: 'aWzlQ2N6qqg' }
-
 ];
 
 const QUICK_EMOJIS = ['❤️', '🍿', '😂', '😱', '🔥', '💖'];
-
 const NETMIRROR_DEFAULT_URL = 'https://net77.cc/home';
 
 // Helper to extract clean 11-character YouTube Video ID
 const getYouTubeVideoId = (rawUrl) => {
   if (!rawUrl) return 'jfKfPfyJRdk';
   const cleaned = rawUrl.trim();
-
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|shorts\/|watch\?v=|\&v=)([^#\&\?]*).*/;
   const match = cleaned.match(regExp);
-
   if (match && match[2] && match[2].length === 11) {
     return match[2];
   }
-
   if (cleaned.length === 11) return cleaned;
   return 'jfKfPfyJRdk';
 };
@@ -59,14 +60,14 @@ function WatchTogether({ user, roomId, socket }) {
   const [isTheaterMode, setIsTheaterMode] = useState(false);
   const [isCinemaFullscreen, setIsCinemaFullscreen] = useState(false);
 
-  // Live Voice & Camera State inside Watch Together
+  // Live Voice & Camera State
   const [isVoiceConnected, setIsVoiceConnected] = useState(false);
   const [isVoiceMicMuted, setIsVoiceMicMuted] = useState(false);
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [hasRemoteVideo, setHasRemoteVideo] = useState(false);
 
   // Anti-Echo & Voice Activity Gate State
-  const [voiceMode, setVoiceMode] = useState('auto_gate'); // 'auto_gate' | 'push_to_talk' | 'always_on'
+  const [voiceMode, setVoiceMode] = useState('auto_gate');
   const [gateThreshold, setGateThreshold] = useState(14);
   const [micLevel, setMicLevel] = useState(0);
   const [isPttPressed, setIsPttPressed] = useState(false);
@@ -81,7 +82,7 @@ function WatchTogether({ user, roomId, socket }) {
   const vadAnimFrameRef = useRef(null);
   const silenceTimerRef = useRef(null);
 
-  // Sync refs with state to prevent stale closures
+  // Sync refs with state
   const voiceModeRef = useRef('auto_gate');
   const isVoiceMicMutedRef = useRef(false);
   const gateThresholdRef = useRef(14);
@@ -91,6 +92,10 @@ function WatchTogether({ user, roomId, socket }) {
   useEffect(() => { isVoiceMicMutedRef.current = isVoiceMicMuted; }, [isVoiceMicMuted]);
   useEffect(() => { gateThresholdRef.current = gateThreshold; }, [gateThreshold]);
   useEffect(() => { isPttPressedRef.current = isPttPressed; }, [isPttPressed]);
+
+  // Orientation & Drag Refs
+  const preferredOrientationRef = useRef('landscape');
+  const animFrameRef = useRef(null);
 
   // Push to talk keyboard handler (Space bar)
   useEffect(() => {
@@ -161,6 +166,30 @@ function WatchTogether({ user, roomId, socket }) {
   const remoteUserRef = useRef(null);
   const chatBottomRef = useRef(null);
   const overlayChatBottomRef = useRef(null);
+  const iframeRef = useRef(null);
+  const videoRef = useRef(null);
+
+  const userId = user ? (user._id || user.id || '')?.toString() : '';
+  const partnerId = user?.partnerId ? (user.partnerId._id || user.partnerId || '')?.toString() : '';
+
+  // Helper to resolve current active camera DOM IDs (Fixes Bug 2.1)
+  const getCameraDOMIds = (isFull = isCinemaFullscreen) => {
+    return isFull
+      ? { remoteId: 'watch-remote-video-fs', localId: 'watch-local-video-fs' }
+      : { remoteId: 'watch-remote-video', localId: 'watch-local-video' };
+  };
+
+  const playActiveCameraTracks = (isFull = isCinemaFullscreen) => {
+    const { remoteId, localId } = getCameraDOMIds(isFull);
+    setTimeout(() => {
+      if (remoteUserRef.current?.videoTrack && document.getElementById(remoteId)) {
+        try { remoteUserRef.current.videoTrack.play(remoteId, { fit: 'cover' }); } catch (e) {}
+      }
+      if (localVideoTrackRef.current && document.getElementById(localId)) {
+        try { localVideoTrackRef.current.play(localId, { fit: 'cover' }); } catch (e) {}
+      }
+    }, 300);
+  };
 
   // PiP toggle function
   const handleTogglePiP = async () => {
@@ -199,57 +228,38 @@ function WatchTogether({ user, roomId, socket }) {
       try {
         if (isSharingScreen || isReceivingStream || activeTab === 'direct') {
           const active = await mobileService.requestWakeLock();
-          if (isMounted) setIsWakeLockActive(!!active);
-        } else {
-          await mobileService.releaseWakeLock();
-          if (isMounted) setIsWakeLockActive(false);
+          if (isMounted) setIsWakeLockActive(active);
         }
-      } catch (e) {
-        console.warn("Wake lock effect error:", e);
-      }
+      } catch (e) {}
     };
+
     handleWakeLock();
     return () => {
       isMounted = false;
-      try {
-        mobileService.releaseWakeLock();
-      } catch (e) {}
+      mobileService.releaseWakeLock();
     };
   }, [isSharingScreen, isReceivingStream, activeTab]);
 
-  // Media Session Lockscreen Controls
-  useEffect(() => {
-    try {
-      if (isSharingScreen || isReceivingStream) {
-        mobileService.setupMediaSession({
-          title: isSharingScreen ? 'Streaming Cinema Live 📽️' : `${streamerName || 'Partner'}'s NetMirror Stream 🍿`,
-          artist: 'Love-Verse Watch Party',
-          onPlay: () => screenVideoRef.current?.play(),
-          onPause: () => screenVideoRef.current?.pause()
-        });
-      }
-    } catch (e) {}
-  }, [isSharingScreen, isReceivingStream, streamerName]);
-
-  // Drag Event Handlers
+  // Clamped Draggable PIP Overlay Handler (Fixes Bug 2.5)
   const handleDragStart = (clientX, clientY) => {
     setIsDraggingPip(true);
     dragStartRef.current = { x: clientX, y: clientY };
     initialPosRef.current = { ...pipPosition };
   };
 
-  const animFrameRef = useRef(null);
-
   const handleDragMove = (clientX, clientY) => {
     if (!isDraggingPip) return;
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-
     animFrameRef.current = requestAnimationFrame(() => {
       const deltaX = clientX - dragStartRef.current.x;
       const deltaY = clientY - dragStartRef.current.y;
+      
+      const maxX = Math.max(0, window.innerWidth - 140);
+      const maxY = Math.max(0, window.innerHeight - 180);
+
       setPipPosition({
-        x: initialPosRef.current.x + deltaX,
-        y: initialPosRef.current.y + deltaY
+        x: Math.min(Math.max(initialPosRef.current.x + deltaX, -maxX), 0),
+        y: Math.min(Math.max(initialPosRef.current.y + deltaY, -maxY), 0)
       });
     });
   };
@@ -283,13 +293,20 @@ function WatchTogether({ user, roomId, socket }) {
     };
   }, [isDraggingPip]);
 
-  const iframeRef = useRef(null);
-  const videoRef = useRef(null);
+  // Reset PIP Position on Tab Change or Device Orientation Change (Fixes Bug 2.5 & Section 4.4)
+  useEffect(() => {
+    setPipPosition({ x: 0, y: 0 });
+  }, [activeTab]);
 
-  const userId = user ? (user._id || user.id || '')?.toString() : '';
-  const partnerId = user?.partnerId ? (user.partnerId._id || user.partnerId || '')?.toString() : '';
+  useEffect(() => {
+    const handleOrientationChange = () => {
+      setPipPosition({ x: 0, y: 0 });
+    };
+    window.addEventListener('orientationchange', handleOrientationChange);
+    return () => window.removeEventListener('orientationchange', handleOrientationChange);
+  }, []);
 
-  // PeerJS WebRTC Stream Setup
+  // PeerJS WebRTC Stream Setup with STUN + TURN Relays (Fixes Bug 2.3)
   useEffect(() => {
     if (!userId) return;
     let peer = null;
@@ -298,7 +315,17 @@ function WatchTogether({ user, roomId, socket }) {
       peer = new Peer(`loveverse_stream_${userId}`, {
         host: '0.peerjs.com',
         port: 443,
-        secure: true
+        secure: true,
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
+            { urls: 'turn:openrelay.metered.ca:80', username: 'openrelay', credential: 'openrelay' },
+            { urls: 'turn:openrelay.metered.ca:443', username: 'openrelay', credential: 'openrelay' },
+            { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelay', credential: 'openrelay' }
+          ]
+        }
       });
 
       peerRef.current = peer;
@@ -334,7 +361,7 @@ function WatchTogether({ user, roomId, socket }) {
     };
   }, [userId]);
 
-  // Screen stream binding helper (guarantees stream attaches to video element on mobile & desktop)
+  // Screen stream binding helper
   const bindScreenVideoStream = () => {
     try {
       const vid = screenVideoRef.current;
@@ -373,12 +400,13 @@ function WatchTogether({ user, roomId, socket }) {
     }
   };
 
-  // Screen stream binding effect
+  // Event-Driven Screen Stream Binding (Fixes Bug 2.4 - Battery Drain Removed!)
   useEffect(() => {
     if (activeTab === 'screen_share') {
       bindScreenVideoStream();
-      const interval = setInterval(bindScreenVideoStream, 2000);
-      return () => clearInterval(interval);
+      // Single short safety retry instead of infinite polling interval
+      const timer = setTimeout(bindScreenVideoStream, 500);
+      return () => clearTimeout(timer);
     }
   }, [activeTab, isSharingScreen, isReceivingStream, hasRemoteStream]);
 
@@ -416,20 +444,12 @@ function WatchTogether({ user, roomId, socket }) {
     };
   }, []);
 
-  // Persistent video playback on Native Fullscreen Enter / Exit
+  // Camera Track Video Playback on Fullscreen Enter/Exit
   useEffect(() => {
     const handleFullscreenChange = () => {
       const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement);
       setIsCinemaFullscreen(isFull);
-
-      setTimeout(() => {
-        if (remoteUserRef.current?.videoTrack && document.getElementById('watch-remote-video')) {
-          remoteUserRef.current.videoTrack.play('watch-remote-video', { fit: 'cover' });
-        }
-        if (localVideoTrackRef.current && document.getElementById('watch-local-video')) {
-          localVideoTrackRef.current.play('watch-local-video', { fit: 'cover' });
-        }
-      }, 350);
+      playActiveCameraTracks(isFull);
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -441,14 +461,74 @@ function WatchTogether({ user, roomId, socket }) {
     };
   }, []);
 
-  // Lock screen to Landscape orientation & hide bottom nav bar during full-screen mode
+  // Smart Aspect-Ratio Orientation Lock (Fixes Section 4.1 & 4.2)
+  const getPreferredOrientation = () => {
+    const hasVideoContent =
+      activeTab === 'youtube' ||
+      activeTab === 'screen_share' ||
+      (activeTab === 'direct' && directMovieUrl);
+
+    if (!hasVideoContent) return 'portrait';
+
+    if (activeTab === 'direct' && videoRef.current?.videoWidth && videoRef.current?.videoHeight) {
+      return videoRef.current.videoWidth >= videoRef.current.videoHeight ? 'landscape' : 'portrait';
+    }
+    if (activeTab === 'screen_share' && screenVideoRef.current?.videoWidth && screenVideoRef.current?.videoHeight) {
+      return screenVideoRef.current.videoWidth >= screenVideoRef.current.videoHeight ? 'landscape' : 'portrait';
+    }
+    return 'landscape'; // Default for YouTube 16:9
+  };
+
+  // Fullscreen Helper with Orientation Decision and iOS Support (Section 4.3)
+  const handleFullscreenCinema = () => {
+    preferredOrientationRef.current = getPreferredOrientation();
+    const vid = screenVideoRef.current || videoRef.current;
+
+    // 1. Try native webkitEnterFullscreen for iOS Safari
+    if (vid && typeof vid.webkitEnterFullscreen === 'function') {
+      try {
+        vid.webkitEnterFullscreen();
+        return;
+      } catch (e) {
+        console.warn("webkitEnterFullscreen fallback:", e);
+      }
+    }
+
+    // 2. HTML5 requestFullscreen
+    const container = (activeTab === 'youtube' ? youtubeContainerRef.current : cinemaContainerRef.current) || vid;
+    if (container) {
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        if (container.requestFullscreen) {
+          container.requestFullscreen().catch(() => setIsCinemaFullscreen(prev => !prev));
+        } else if (container.webkitRequestFullscreen) {
+          container.webkitRequestFullscreen();
+        } else {
+          setIsCinemaFullscreen(prev => !prev);
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        }
+        setIsCinemaFullscreen(false);
+      }
+    } else {
+      setIsCinemaFullscreen(prev => !prev);
+    }
+  };
+
+  // Smart Fullscreen Orientation Lock Effect (Section 4.3)
   useEffect(() => {
     try {
       if (isCinemaFullscreen) {
         document.body.classList.add('cinema-fullscreen-active');
         document.body.style.overflow = 'hidden';
 
-        if (window.screen?.orientation?.lock) {
+        const pref = preferredOrientationRef.current;
+        const currentOrientation = window.screen?.orientation?.type?.includes('landscape') ? 'landscape' : 'portrait';
+
+        if (pref === 'landscape' && currentOrientation !== 'landscape' && window.screen?.orientation?.lock) {
           try {
             const res = window.screen.orientation.lock('landscape');
             if (res && typeof res.catch === 'function') res.catch(() => {});
@@ -505,7 +585,6 @@ function WatchTogether({ user, roomId, socket }) {
         streamerPeerIdRef.current = data.streamerPeerId;
       }
 
-      // Request stream retry from streamer via socket if stream not yet received
       if (socket && peerRef.current) {
         setTimeout(() => {
           if (!remoteStreamRef.current) {
@@ -650,91 +729,83 @@ function WatchTogether({ user, roomId, socket }) {
   };
 
   const setupVoiceGate = (audioTrack) => {
+    stopVoiceGate();
+    if (!audioTrack) return;
+
     try {
-      const rawTrack = audioTrack.getMediaStreamTrack();
-      if (!rawTrack) return;
+      const mediaStreamTrack = audioTrack.getMediaStreamTrack();
+      if (!mediaStreamTrack) return;
 
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContextClass) return;
+      const mediaStream = new MediaStream([mediaStreamTrack]);
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
 
-      stopVoiceGate();
-
-      const audioCtx = new AudioContextClass();
+      const audioCtx = new AudioCtx();
       audioCtxRef.current = audioCtx;
-      const source = audioCtx.createMediaStreamSource(new MediaStream([rawTrack]));
+
+      const source = audioCtx.createMediaStreamSource(mediaStream);
       const analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 256;
-      source.connect(analyser);
+      analyser.fftSize = 512;
+      analyser.smoothingTimeConstant = 0.4;
       analyserRef.current = analyser;
+      source.connect(analyser);
 
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
-      let isGateOpen = false;
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
 
-      const analyzeAudio = () => {
-        if (!localAudioTrackRef.current) return;
-        analyser.getByteFrequencyData(dataArray);
+      const checkVolume = () => {
+        if (!analyserRef.current) return;
 
+        analyserRef.current.getByteFrequencyData(dataArray);
         let sum = 0;
-        for (let i = 0; i < dataArray.length; i++) {
+        for (let i = 0; i < bufferLength; i++) {
           sum += dataArray[i];
         }
-        const avg = sum / dataArray.length;
-        const volumePct = Math.min(100, Math.round((avg / 128) * 100));
-        setMicLevel(volumePct);
+        const average = sum / bufferLength;
+        const normalizedLevel = Math.min(Math.round((average / 128) * 100), 100);
+
+        setMicLevel(normalizedLevel);
 
         const currentMode = voiceModeRef.current;
-        const isMuted = isVoiceMicMutedRef.current;
+        const currentIsMuted = isVoiceMicMutedRef.current;
+        const currentThreshold = gateThresholdRef.current;
 
-        if (isMuted) {
-          if (isGateOpen) {
-            isGateOpen = false;
+        if (localAudioTrackRef.current) {
+          if (currentIsMuted) {
             localAudioTrackRef.current.setEnabled(false);
-          }
-        } else if (currentMode === 'auto_gate') {
-          const threshold = gateThresholdRef.current;
-          if (volumePct > threshold) {
-            if (!isGateOpen) {
-              isGateOpen = true;
-              localAudioTrackRef.current.setEnabled(true);
-            }
-            if (silenceTimerRef.current) {
-              clearTimeout(silenceTimerRef.current);
-              silenceTimerRef.current = null;
-            }
-          } else {
-            if (isGateOpen && !silenceTimerRef.current) {
-              silenceTimerRef.current = setTimeout(() => {
-                isGateOpen = false;
-                if (localAudioTrackRef.current && voiceModeRef.current === 'auto_gate') {
-                  localAudioTrackRef.current.setEnabled(false);
-                }
-                silenceTimerRef.current = null;
-              }, 400);
-            }
-          }
-        } else if (currentMode === 'push_to_talk') {
-          const pttOn = isPttPressedRef.current;
-          if (pttOn !== isGateOpen) {
-            isGateOpen = pttOn;
-            localAudioTrackRef.current.setEnabled(pttOn);
-          }
-        } else if (currentMode === 'always_on') {
-          if (!isGateOpen) {
-            isGateOpen = true;
+          } else if (currentMode === 'always_on') {
             localAudioTrackRef.current.setEnabled(true);
+          } else if (currentMode === 'push_to_talk') {
+            localAudioTrackRef.current.setEnabled(isPttPressedRef.current);
+          } else if (currentMode === 'auto_gate') {
+            if (normalizedLevel > currentThreshold) {
+              localAudioTrackRef.current.setEnabled(true);
+              if (silenceTimerRef.current) {
+                clearTimeout(silenceTimerRef.current);
+                silenceTimerRef.current = null;
+              }
+            } else {
+              if (!silenceTimerRef.current) {
+                silenceTimerRef.current = setTimeout(() => {
+                  if (localAudioTrackRef.current && voiceModeRef.current === 'auto_gate') {
+                    localAudioTrackRef.current.setEnabled(false);
+                  }
+                  silenceTimerRef.current = null;
+                }, 400);
+              }
+            }
           }
         }
 
-        vadAnimFrameRef.current = requestAnimationFrame(analyzeAudio);
+        vadAnimFrameRef.current = requestAnimationFrame(checkVolume);
       };
 
-      vadAnimFrameRef.current = requestAnimationFrame(analyzeAudio);
+      checkVolume();
     } catch (err) {
-      console.error("Voice gate setup error:", err);
+      console.warn("Voice Gate setup exception:", err);
     }
   };
 
-  // LIVE VOICE & CAMERA CHAT TOGGLE (AGORA RTC)
   const toggleVoiceChatWatch = async () => {
     if (isVoiceConnected) {
       try {
@@ -750,56 +821,53 @@ function WatchTogether({ user, roomId, socket }) {
           localVideoTrackRef.current = null;
         }
         await agoraVoiceClientRef.current?.leave();
-        setIsVoiceConnected(false);
-        setIsVoiceMicMuted(false);
-        setIsCameraOn(false);
-        setHasRemoteVideo(false);
-        toast.success("Voice & Video Chat Disconnected 🎙️");
-      } catch (err) {
-        console.error("Voice leave error:", err);
+        agoraVoiceClientRef.current = null;
+      } catch (e) {
+        console.warn("Agora leave exception:", e);
       }
+      setIsVoiceConnected(false);
+      setIsCameraOn(false);
+      setHasRemoteVideo(false);
+      toast.success("Voice & Video Disconnected");
     } else {
       try {
-        const appId = import.meta.env.VITE_AGORA_APP_ID || "a5839042b3224b1a8d052b610c666579";
-        const uid = Math.floor(Math.random() * 100000);
-        const voiceChannel = `watch_voice_${roomId}`;
-
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/agora/token`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ channelName: voiceChannel, uid })
+        const res = await axios.post(`${API_URL}/api/agora/token`, {
+          channelName: roomId,
+          uid: userId
         });
-        const data = await res.json();
 
-        const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'h264' });
+        const data = res.data;
+        const appId = data.appId || "30a6c6a6f1d542fb90234a9b6c008f5d";
+
+        if (!data.token) {
+          toast.error("Could not fetch Agora Voice token!");
+          return;
+        }
+
+        const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
         agoraVoiceClientRef.current = client;
 
-        // Enable Audio Volume Indicator for Partner Audio Ducking & Detection
-        client.enableAudioVolumeIndicator();
-        client.on("volume-indicator", (volumes) => {
-          const partnerSpeaking = volumes.some(v => v.uid !== uid && v.level > 12);
-          setIsPartnerSpeaking(partnerSpeaking);
-          if (isAudioDucking) {
-            if (screenVideoRef.current) {
-              screenVideoRef.current.volume = partnerSpeaking ? 0.25 : 1.0;
-            }
-            if (videoRef.current) {
-              videoRef.current.volume = partnerSpeaking ? 0.25 : 1.0;
-            }
-          }
-        });
+        const uid = data.uid || userId;
 
-        client.on('user-published', async (remoteUser, mediaType) => {
+        client.on("user-published", async (remoteUser, mediaType) => {
           await client.subscribe(remoteUser, mediaType);
-          if (mediaType === 'audio') {
+          console.log("Remote user published in Watch Together:", remoteUser.uid, mediaType);
+
+          if (mediaType === "audio") {
             remoteUser.audioTrack?.play();
-            toast.success("Partner Connected to Voice Chat! 🎙️✨");
+            if (isAudioDucking) {
+              setIsPartnerSpeaking(true);
+              setTimeout(() => setIsPartnerSpeaking(false), 3000);
+            }
           }
-          if (mediaType === 'video') {
+          if (mediaType === "video") {
             remoteUserRef.current = remoteUser;
             setHasRemoteVideo(true);
+            const { remoteId } = getCameraDOMIds();
             setTimeout(() => {
-              remoteUser.videoTrack?.play('watch-remote-video', { fit: 'cover' });
+              if (document.getElementById(remoteId)) {
+                remoteUser.videoTrack?.play(remoteId, { fit: 'cover' });
+              }
             }, 300);
             toast.success("Partner Turned On Live Camera! 📹✨");
           }
@@ -811,7 +879,7 @@ function WatchTogether({ user, roomId, socket }) {
           toast("Partner disconnected voice/video.");
         });
 
-        await client.join(appId, voiceChannel, data.token, uid);
+        await client.join(appId, voiceChannelName(roomId), data.token, uid);
         let audioTrack = null;
         try {
           audioTrack = await AgoraRTC.createMicrophoneAudioTrack({
@@ -837,6 +905,8 @@ function WatchTogether({ user, roomId, socket }) {
       }
     }
   };
+
+  const voiceChannelName = (rId) => `watch_voice_${rId}`;
 
   const toggleMicMuteWatch = () => {
     if (localAudioTrackRef.current) {
@@ -871,8 +941,11 @@ function WatchTogether({ user, roomId, socket }) {
         localVideoTrackRef.current = videoTrack;
         await agoraVoiceClientRef.current?.publish([videoTrack]);
         setIsCameraOn(true);
+        const { localId } = getCameraDOMIds();
         setTimeout(() => {
-          videoTrack.play('watch-local-video', { fit: 'cover' });
+          if (document.getElementById(localId)) {
+            videoTrack.play(localId, { fit: 'cover' });
+          }
         }, 300);
         toast.success("Live Camera Turned On! Partner can see your reactions 📹✨");
       } catch (err) {
@@ -949,44 +1022,6 @@ function WatchTogether({ user, roomId, socket }) {
     toast.success("Virtual Cinema Ended!");
   };
 
-  // Fullscreen helper - Native Android/iOS Video Fullscreen + HTML5 & Viewport Overlay Fallback!
-  const handleFullscreenCinema = () => {
-    const vid = screenVideoRef.current;
-
-    // 1. Try native webkitEnterFullscreen on video tag for Android/iOS mobile browsers
-    if (vid && typeof vid.webkitEnterFullscreen === 'function') {
-      try {
-        vid.webkitEnterFullscreen();
-        return;
-      } catch (e) {
-        console.warn("webkitEnterFullscreen fallback:", e);
-      }
-    }
-
-    // 2. Try HTML5 requestFullscreen on container
-    const container = (activeTab === 'youtube' ? youtubeContainerRef.current : cinemaContainerRef.current) || vid;
-    if (container) {
-      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-        if (container.requestFullscreen) {
-          container.requestFullscreen().catch(() => setIsCinemaFullscreen(prev => !prev));
-        } else if (container.webkitRequestFullscreen) {
-          container.webkitRequestFullscreen();
-        } else {
-          setIsCinemaFullscreen(prev => !prev);
-        }
-      } else {
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) {
-          document.webkitExitFullscreen();
-        }
-        setIsCinemaFullscreen(false);
-      }
-    } else {
-      setIsCinemaFullscreen(prev => !prev);
-    }
-  };
-
   const toggleMuteCinema = () => {
     if (screenVideoRef.current) {
       screenVideoRef.current.muted = !isMuted;
@@ -1045,9 +1080,8 @@ function WatchTogether({ user, roomId, socket }) {
 
   const glassStyle = "bg-white/80 backdrop-blur-2xl border border-white/60 shadow-xl rounded-[2.5rem]";
 
-  // Shared Draggable Camera PIP Component
-  const renderPipCameraOverlay = () => {
-    // If voice is not connected OR both local & remote cameras are off -> HIDE FLOATING CONTAINER COMPLETELY!
+  // Shared Draggable Camera PIP Component (Unique DOM IDs Fix 2.1 & 2.2)
+  const renderPipCameraOverlay = (idSuffix = '') => {
     if (!isVoiceConnected || (!isCameraOn && !hasRemoteVideo)) {
       return null;
     }
@@ -1071,15 +1105,15 @@ function WatchTogether({ user, roomId, socket }) {
 
           {/* MAIN STREAM: Render Remote video if active, else Local video if active */}
           {hasRemoteVideo ? (
-            <div id="watch-remote-video" className="w-full h-full object-cover" />
+            <div id={`watch-remote-video${idSuffix}`} className="w-full h-full object-cover" />
           ) : isCameraOn ? (
-            <div id="watch-local-video" className="w-full h-full object-cover" />
+            <div id={`watch-local-video${idSuffix}`} className="w-full h-full object-cover" />
           ) : null}
 
-          {/* SECONDARY INSET STREAM: Only if BOTH remote & local videos are active! */}
+          {/* SECONDARY INSET STREAM: Only if BOTH remote & local videos are active! (Valid Tailwind Class Fix 2.2) */}
           {hasRemoteVideo && isCameraOn && (
-            <div className="absolute bottom-2 right-2 w-14 h-20 md:w-18 md:h-24 rounded-2xl overflow-hidden border-2 border-white shadow-lg bg-black z-20">
-              <div id="watch-local-video" className="w-full h-full object-cover" />
+            <div className="absolute bottom-2 right-2 w-14 h-20 md:w-16 md:h-24 rounded-2xl overflow-hidden border-2 border-white shadow-lg bg-black z-20">
+              <div id={`watch-local-video${idSuffix}`} className="w-full h-full object-cover" />
             </div>
           )}
         </div>
@@ -1177,6 +1211,7 @@ function WatchTogether({ user, roomId, socket }) {
       </button>
     </div>
   );
+
   // Shared Fullscreen Portal Overlay Component (attaches directly to document.body)
   const renderFullscreenPortal = () => {
     if (!isCinemaFullscreen) return null;
@@ -1241,7 +1276,25 @@ function WatchTogether({ user, roomId, socket }) {
           />
         )}
 
-        {renderPipCameraOverlay()}
+        {/* Autoplay Blocked Tap-to-Play Overlay (Fixes Bug 2.6) */}
+        {autoplayBlocked && (
+          <button
+            onClick={() => {
+              const vid = screenVideoRef.current || videoRef.current;
+              if (vid) {
+                vid.play().then(() => setAutoplayBlocked(false)).catch(() => {});
+              }
+            }}
+            className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 text-white p-4 space-y-3 cursor-pointer"
+          >
+            <div className="w-16 h-16 bg-rose-500 rounded-full flex items-center justify-center shadow-lg animate-bounce">
+              <Play size={32} className="ml-1 fill-white" />
+            </div>
+            <p className="text-sm font-black">Tap to Resume Movie Playback 🍿</p>
+          </button>
+        )}
+
+        {renderPipCameraOverlay('-fs')}
         {renderTranslucentChatOverlay()}
         {renderReactionFab()}
 
@@ -1267,7 +1320,8 @@ function WatchTogether({ user, roomId, socket }) {
 
       {/* Global CSS for PIP Camera Video Tags & Floating Reaction Animations */}
       <style>{`
-        #watch-remote-video div, #watch-remote-video video, #watch-local-video div, #watch-local-video video {
+        #watch-remote-video div, #watch-remote-video video, #watch-local-video div, #watch-local-video video,
+        #watch-remote-video-fs div, #watch-remote-video-fs video, #watch-local-video-fs div, #watch-local-video-fs video {
           width: 100% !important;
           height: 100% !important;
           object-fit: cover !important;
@@ -1296,10 +1350,6 @@ function WatchTogether({ user, roomId, socket }) {
             opacity: 0;
             transform: translateY(-240px) scale(1);
           }
-        }
-
-        .floating-emoji-item {
-          animation: floatUpEmoji 2.8s ease-out forwards;
         }
       `}</style>
 
@@ -1500,7 +1550,7 @@ function WatchTogether({ user, roomId, socket }) {
               className={`relative rounded-3xl overflow-hidden shadow-2xl bg-black border border-gray-800 transition-all ${
                 isCinemaFullscreen
                   ? 'fixed inset-0 z-[99999] w-screen h-screen rounded-none border-none'
-                  : (isTheaterMode ? 'h-[75vh] md:h-[85vh]' : 'h-[45vh] min-h-[250px] md:h-[60vh]')
+                  : 'h-[45vh] min-h-[260px] md:h-[60vh]'
               }`}
               style={{ backgroundColor: '#000000' }}
             >
@@ -1512,9 +1562,27 @@ function WatchTogether({ user, roomId, socket }) {
                 x5-playsinline="true"
                 controls={isSharingScreen || isReceivingStream}
                 muted={isSharingScreen}
-                className="absolute top-0 left-0 w-full h-full object-contain bg-black"
+                className="w-full h-full object-contain bg-black"
                 style={{ backgroundColor: '#000000' }}
               />
+
+              {/* Autoplay Blocked Tap-to-Play Overlay (Fixes Bug 2.6) */}
+              {autoplayBlocked && (
+                <button
+                  onClick={() => {
+                    const vid = screenVideoRef.current;
+                    if (vid) {
+                      vid.play().then(() => setAutoplayBlocked(false)).catch(() => {});
+                    }
+                  }}
+                  className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 text-white p-4 space-y-3 cursor-pointer"
+                >
+                  <div className="w-16 h-16 bg-rose-500 rounded-full flex items-center justify-center shadow-lg animate-bounce">
+                    <Play size={32} className="ml-1 fill-white" />
+                  </div>
+                  <p className="text-sm font-black">Tap to Resume Movie Playback 🍿</p>
+                </button>
+              )}
 
               {renderPipCameraOverlay()}
               {renderTranslucentChatOverlay()}
@@ -1536,14 +1604,14 @@ function WatchTogether({ user, roomId, socket }) {
           </div>
         )}
 
-        {/* TAB 3: DIRECT MOVIE MP4 PLAYER */}
+        {/* TAB 3: DIRECT MP4 / VIDEO PLAYER */}
         {activeTab === 'direct' && (
           <div className="space-y-3">
             <div
               className={`relative rounded-3xl overflow-hidden shadow-2xl bg-black border border-gray-800 transition-all ${
                 isCinemaFullscreen
                   ? 'fixed inset-0 z-[99999] w-screen h-screen rounded-none border-none'
-                  : (isTheaterMode ? 'h-[75vh] md:h-[85vh]' : 'h-[45vh] min-h-[250px] md:h-[60vh]')
+                  : 'h-[45vh] min-h-[250px] md:h-[60vh]'
               }`}
               style={{ backgroundColor: '#000000' }}
             >
@@ -1558,158 +1626,119 @@ function WatchTogether({ user, roomId, socket }) {
                   style={{ backgroundColor: '#000000' }}
                 />
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-gray-400 space-y-3">
+                <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 p-6 text-center space-y-3">
                   <Film size={48} className="text-rose-400 opacity-60" />
-                  <h4 className="text-base font-black text-white">Direct Movie Player 🎥</h4>
-                  <p className="text-xs max-w-md font-medium text-gray-300">
-                    Paste any direct MP4 / video stream URL above to watch together live!
-                  </p>
+                  <p className="text-xs font-bold text-gray-300">Paste any direct MP4 / video link above to play together!</p>
                 </div>
               )}
+
+              {/* Autoplay Blocked Tap-to-Play Overlay (Fixes Bug 2.6) */}
+              {autoplayBlocked && (
+                <button
+                  onClick={() => {
+                    const vid = videoRef.current;
+                    if (vid) {
+                      vid.play().then(() => setAutoplayBlocked(false)).catch(() => {});
+                    }
+                  }}
+                  className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 text-white p-4 space-y-3 cursor-pointer"
+                >
+                  <div className="w-16 h-16 bg-rose-500 rounded-full flex items-center justify-center shadow-lg animate-bounce">
+                    <Play size={32} className="ml-1 fill-white" />
+                  </div>
+                  <p className="text-sm font-black">Tap to Resume Movie Playback 🍿</p>
+                </button>
+              )}
+
               {renderPipCameraOverlay()}
               {renderTranslucentChatOverlay()}
               {renderReactionFab()}
+
+              {/* Floating Emojis Animation Container */}
+              <div className="absolute inset-0 pointer-events-none overflow-hidden z-40">
+                {floatingReactions.map((item) => (
+                  <div
+                    key={item.id}
+                    style={{ left: `${item.leftPos || 50}%` }}
+                    className="absolute bottom-10 text-4xl floating-emoji-item drop-shadow-lg"
+                  >
+                    {item.emoji}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
-        {/* TAB 4: OTT GUIDE */}
+        {/* TAB 4: OTT GUIDE (TELEPARTY & NETFLIX) */}
         {activeTab === 'ott_guide' && (
-          <div className={`${glassStyle} p-6 space-y-4 text-center`}>
-            <div className="w-16 h-16 bg-rose-500/10 text-rose-500 rounded-3xl flex items-center justify-center mx-auto shadow-inner">
-              <Tv size={32} />
+          <div className={`${glassStyle} p-6 space-y-4 text-gray-800`}>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-rose-500 text-white flex items-center justify-center shadow-lg font-black text-xl">
+                🎬
+              </div>
+              <div>
+                <h4 className="text-lg font-black italic tracking-tight">Netflix, Prime Video & Disney Hotstar Teleparty</h4>
+                <p className="text-xs text-gray-400 font-bold">Watch official OTT subscription content together in 4K HDR!</p>
+              </div>
             </div>
-            <h4 className="text-xl font-black text-gray-800">Netflix, Prime & Disney+ Hotstar Guide 🎬</h4>
-            <p className="text-xs text-gray-500 font-bold max-w-md mx-auto">
-              How to watch premium DRM protected OTT platforms together with 100% video sync:
-            </p>
-            <div className="bg-rose-50/60 p-4 rounded-2xl border border-rose-100 text-left space-y-2 max-w-lg mx-auto">
-              <ol className="text-xs space-y-2 text-gray-600 font-bold list-decimal ml-4">
-                <li>Install free **Teleparty extension** on Google Chrome or Edge.</li>
-                <li>Open Netflix / Prime / Disney+ Hotstar and start the movie.</li>
-                <li>Click Teleparty extension icon and send the sync link to your partner!</li>
+
+            <div className="bg-rose-50/70 p-4 rounded-2xl border border-rose-100 space-y-2 text-xs font-bold text-gray-700">
+              <p className="text-rose-600 font-black">💡 How to Watch Netflix Together:</p>
+              <ol className="list-decimal list-inside space-y-1 text-gray-600 font-medium">
+                <li>Install the <strong>Teleparty (Netflix Party)</strong> Chrome Extension on Laptop/PC.</li>
+                <li>Open Netflix or Prime Video and play your favorite show.</li>
+                <li>Click the Teleparty icon to generate a party link and send it to your partner!</li>
               </ol>
             </div>
           </div>
         )}
       </div>
 
-      {/* 4. PARTNER STATUS CARD */}
-      <div className={`${glassStyle} p-4 flex items-center justify-between`}>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500 font-bold text-lg shadow-inner">
-            🍿
-          </div>
-          <div>
-            <h5 className="text-xs font-black text-gray-800">Partner Status</h5>
-            <p className="text-[10px] text-gray-400 font-bold">Watching Live</p>
-          </div>
-        </div>
-        <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 rounded-full font-black text-[10px] flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" /> LIVE
-        </span>
-      </div>
-
-      {/* 5. FLOATING MOVIE REACTIONS CARD */}
-      <div className={`${glassStyle} p-4 space-y-3`}>
-        <h5 className="text-xs font-black text-gray-800 flex items-center gap-1.5">
-          <Sparkles size={14} className="text-amber-500" /> Floating Movie Reactions
-        </h5>
-        <div className="grid grid-cols-6 gap-2">
-          {QUICK_EMOJIS.map((emoji, idx) => (
-            <button
-              key={idx}
-              onClick={() => triggerEmojiReaction(emoji)}
-              className="py-2.5 bg-rose-50/70 hover:bg-rose-100 border border-rose-100 rounded-2xl text-xl flex items-center justify-center transition-all active:scale-95 shadow-sm"
-            >
-              {emoji}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* 6. IN-MOVIE LIVE CHAT CARD */}
-      <div className={`${glassStyle} p-4 space-y-3`}>
-        <h5 className="text-xs font-black text-gray-800 flex items-center gap-1.5">
-          <MessageSquare size={14} className="text-rose-500" /> In-Movie Live Chat
-        </h5>
-        <div className="max-h-48 overflow-y-auto space-y-2 pr-1 text-xs">
-          {cinemaMessages.map((msg, idx) => (
-            <div key={idx} className={`flex flex-col ${msg.sender === userId ? 'items-end' : 'items-start'}`}>
-              <span className="text-[9px] text-gray-400 font-bold mb-0.5">{msg.sender === userId ? 'You' : msg.senderName}</span>
-              <div className={`px-3 py-2 rounded-2xl text-xs font-bold max-w-[85%] ${
-                msg.sender === userId ? 'bg-rose-500 text-white rounded-br-none' : 'bg-gray-100 text-gray-800 rounded-bl-none'
-              }`}>
-                {msg.message}
-              </div>
-            </div>
-          ))}
-          {cinemaMessages.length === 0 && (
-            <p className="text-[10px] text-gray-400 font-bold italic text-center py-4">No comments yet. Type a message to chat live during movie! 💬</p>
-          )}
-          <div ref={chatBottomRef} />
-        </div>
-        <form onSubmit={handleSendChatMessage} className="flex gap-2">
-          <input
-            type="text"
-            placeholder="Type comment..."
-            value={chatInput}
-            onChange={(e) => setChatInput(e.target.value)}
-            className="flex-1 bg-gray-50 border border-gray-100 rounded-2xl px-3 py-2 text-xs font-bold outline-none focus:border-rose-300"
-          />
-          <button type="submit" className="px-4 py-2 bg-rose-500 text-white rounded-2xl font-black text-xs shadow-md">
-            <Send size={14} />
+      {/* FOOTER CAMERA & MIC CONTROL BAR */}
+      <div className="bg-white/80 backdrop-blur-xl p-4 rounded-[2.5rem] border border-rose-100 shadow-xl flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleMicMuteWatch}
+            className={`px-4 py-2.5 rounded-2xl font-black text-xs transition-all flex items-center gap-1.5 active:scale-95 ${
+              isVoiceMicMuted ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+            }`}
+          >
+            {isVoiceMicMuted ? <MicOff size={16} /> : <Mic size={16} />}
+            <span>{isVoiceMicMuted ? 'Mic Muted' : 'Mic On'}</span>
           </button>
-        </form>
-      </div>
 
-      {/* 7. SLIM SINGLE-ROW VOICE & CAMERA CONTROL BAR */}
-      <div className="bg-slate-950 p-3.5 rounded-[2rem] border border-slate-800 text-white shadow-2xl space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={toggleMicMuteWatch}
-              className={`w-10 h-10 rounded-2xl flex items-center justify-center text-white transition-all shadow-md ${
-                isVoiceMicMuted ? 'bg-rose-600' : 'bg-rose-500/80 hover:bg-rose-500'
-              }`}
-              title={isVoiceMicMuted ? "Unmute Mic" : "Mute Mic"}
-            >
-              {isVoiceMicMuted ? <MicOff size={18} /> : <Mic size={18} />}
-            </button>
+          <button
+            onClick={toggleCameraWatch}
+            className={`px-4 py-2.5 rounded-2xl font-black text-xs transition-all flex items-center gap-1.5 active:scale-95 ${
+              isCameraOn ? 'bg-purple-600 text-white shadow-md' : 'bg-purple-50 text-purple-600 border border-purple-200'
+            }`}
+          >
+            {isCameraOn ? <Video size={16} /> : <VideoOff size={16} />}
+            <span>{isCameraOn ? 'Camera On' : 'Camera Off'}</span>
+          </button>
+        </div>
 
-            <button
-              onClick={toggleCameraWatch}
-              className={`w-10 h-10 rounded-2xl flex items-center justify-center text-white transition-all shadow-md ${
-                isCameraOn ? 'bg-emerald-500' : 'bg-white/10 hover:bg-white/20'
-              }`}
-              title={isCameraOn ? "Turn Off Camera" : "Turn On Camera"}
-            >
-              {isCameraOn ? <Video size={18} /> : <VideoOff size={18} />}
-            </button>
-
-            <button
-              onClick={() => setIsAudioDucking(!isAudioDucking)}
-              className={`w-10 h-10 rounded-2xl flex items-center justify-center text-white transition-all shadow-md ${
-                isAudioDucking ? 'bg-amber-500' : 'bg-white/10 hover:bg-white/20'
-              }`}
-              title="Toggle Audio Ducking"
-            >
-              <Volume2 size={18} />
-            </button>
-          </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleTogglePiP}
+            className={`px-4 py-2.5 rounded-2xl font-black text-xs transition-all flex items-center gap-1.5 active:scale-95 ${
+              isPiPActive ? 'bg-rose-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+            title="Pop-out Floating Mini Video Window"
+          >
+            <Maximize2 size={14} /> {isPiPActive ? 'Exit Mini Window' : 'Pop-out Mini Window'}
+          </button>
 
           <button
             onClick={toggleVoiceChatWatch}
-            className={`px-5 py-2.5 rounded-2xl font-black text-xs transition-all shadow-lg flex items-center gap-2 ${
+            className={`px-5 py-2.5 rounded-2xl font-black text-xs transition-all shadow-lg flex items-center gap-2 active:scale-95 ${
               isVoiceConnected ? 'bg-red-600 text-white' : 'bg-gradient-to-r from-rose-500 to-pink-500 text-white'
             }`}
           >
             <PhoneOff size={16} /> {isVoiceConnected ? 'Disconnect' : 'Connect'}
           </button>
         </div>
-        <p className="text-[10px] text-gray-400 font-bold text-center flex items-center justify-center gap-1">
-          <ShieldCheck size={12} className="text-emerald-400" /> Anti-echo: Auto Gate — tap 🎙️ to adjust
-        </p>
       </div>
 
       {/* EXPANDABLE ANTI-ECHO & VOICE GATE SETTINGS DRAWER */}
@@ -1827,6 +1856,7 @@ function WatchTogether({ user, roomId, socket }) {
           </div>
         </div>
       )}
+
       {/* FULLSCREEN PORTAL DIRECTLY ON BODY WHEN FULLSCREEN IS ACTIVE */}
       {renderFullscreenPortal()}
     </div>
