@@ -19,6 +19,7 @@ import UniverseMap from '../components/UniverseMap';
 import VirtualTouch from '../components/VirtualTouch';
 import NotificationCenter from '../components/NotificationCenter';
 import SecurityLock from '../components/SecurityLock';
+import AnniversaryModal from '../components/AnniversaryModal';
 import { mobileService } from '../utils/mobileService';
 import API_URL from '../utils/config';
 import { compressImage } from '../utils/imageCompressor';
@@ -73,6 +74,7 @@ function Dashboard() {
     { type: 'mood', title: 'Partner Mood Updated 😊', text: 'Partner is feeling Romantic today!', time: '1h ago' }
   ]);
   const [showSecurityLock, setShowSecurityLock] = useState(false);
+  const [showAnniversaryModal, setShowAnniversaryModal] = useState(true);
 
   const userId = user._id || user.id;
   // ✅ Fix 1: safely extract partnerId as string regardless of object or string
@@ -265,6 +267,29 @@ function Dashboard() {
       setNotifs(prev => [{ type: 'hug', title: 'Partner Hug Sent ❤️', text: `${data.senderName || 'Partner'} sent a virtual hug!`, time: 'Just now' }, ...prev]);
     });
 
+    // 1-YEAR ANNIVERSARY SOCKET LISTENERS
+    socket.on("receive_anniversary_toast", (data) => {
+      toast.success(`${data.senderName || 'Partner'} ne 1-Year Anniversary Toast & Fireworks bheja hai! 🥂🎉`, { duration: 6000 });
+      triggerHearts();
+      mobileService.sendNotification(
+        "HAPPY 1st ANNIVERSARY! 🎉❤️🥂",
+        `${data.senderName || 'Partner'} sent a 1-Year Anniversary Toast & Fireworks! Tap to celebrate!`,
+        "🥂"
+      );
+      setNotifs(prev => [{ type: 'love', title: '1-Year Anniversary Toast 🥂', text: `${data.senderName || 'Partner'} sent Anniversary Toast & Fireworks!`, time: 'Just now' }, ...prev]);
+    });
+
+    socket.on("receive_anniversary_letter", (data) => {
+      toast.success(`${data.senderName || 'Partner'} ne 1-Year Anniversary Love Letter likha hai! 💌💖`, { duration: 6000 });
+      triggerHearts();
+      mobileService.sendNotification(
+        "1-Year Anniversary Love Letter 💌",
+        `${data.senderName || 'Partner'} wrote a secret 1-Year Anniversary letter for you!`,
+        "💌"
+      );
+      setNotifs(prev => [{ type: 'love', title: 'Anniversary Love Letter 💌', text: `${data.senderName || 'Partner'} wrote a secret 1-Year letter!`, time: 'Just now' }, ...prev]);
+    });
+
     // NAYA: Offline nudge check logic
     const checkOfflineNudges = async () => {
       try {
@@ -289,6 +314,8 @@ function Dashboard() {
       socket.off("partner_connected");
       socket.off("partner_mood_updated");
       socket.off("partner_avatar_updated");
+      socket.off("receive_anniversary_toast");
+      socket.off("receive_anniversary_letter");
     };
   }, [roomId, userId]);
 
@@ -425,9 +452,49 @@ function Dashboard() {
           onUnlock={() => setShowSecurityLock(false)}
         />
 
+        {/* 1-Year Anniversary Celebration Modal */}
+        <AnniversaryModal
+          isOpen={showAnniversaryModal}
+          onClose={() => setShowAnniversaryModal(false)}
+          user={user}
+          partnerName={partnerName}
+          socket={socket}
+          roomId={roomId}
+        />
+
         {/* --- DYNAMIC TABS --- */}
         {activeTab === 'home' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
+
+            {/* GOLDEN 1-YEAR ANNIVERSARY HERO BANNER */}
+            <div className="bg-gradient-to-r from-[#2b0816] via-[#4a0d24] to-[#1a040d] p-5 rounded-[2.2rem] border-2 border-amber-400/50 shadow-2xl text-white relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-400 to-rose-500 flex items-center justify-center text-white shadow-xl shadow-amber-500/30 animate-pulse shrink-0">
+                  <Trophy size={28} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black tracking-widest uppercase px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/40">
+                      GRAND MILESTONE
+                    </span>
+                    <span className="text-xs font-bold text-rose-200">365 Days Together</span>
+                  </div>
+                  <h3 className="text-xl font-black italic tracking-tight text-white mt-1">
+                    Happy 1st Anniversary! 🎉🥂
+                  </h3>
+                  <p className="text-xs text-rose-200/80 font-medium">
+                    Celebrate 1 Year of Pure Love & Magical Memories in Love-Verse!
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowAnniversaryModal(true)}
+                className="w-full md:w-auto px-6 py-3 bg-gradient-to-r from-amber-400 via-rose-500 to-pink-500 hover:from-amber-500 hover:to-pink-600 text-white rounded-2xl font-black text-xs shadow-lg shadow-rose-500/30 hover:scale-105 active:scale-95 transition-all shrink-0 flex items-center justify-center gap-2"
+              >
+                <Sparkles size={16} /> Open Celebration Sanctuary 🎉
+              </button>
+            </div>
 
             {/* ========================================================================= */}
             {/* MOBILE ONLY VIEW: Exact Mockup Card Layout Structure (Rose/Pink Theme) */}
