@@ -74,7 +74,7 @@ function Dashboard() {
     { type: 'mood', title: 'Partner Mood Updated 😊', text: 'Partner is feeling Romantic today!', time: '1h ago' }
   ]);
   const [showSecurityLock, setShowSecurityLock] = useState(false);
-  const [showAnniversaryModal, setShowAnniversaryModal] = useState(true);
+  const [showAnniversaryModal, setShowAnniversaryModal] = useState(false);
 
   const userId = user._id || user.id;
   // ✅ Fix 1: safely extract partnerId as string regardless of object or string
@@ -275,6 +275,7 @@ function Dashboard() {
     socket.on("receive_anniversary_toast", (data) => {
       toast.success(`${data.senderName || 'Partner'} ne 1-Year Anniversary Toast & Fireworks bheja hai! 🥂🎉`, { duration: 6000 });
       triggerHearts();
+      setShowAnniversaryModal(true);
       mobileService.sendNotification(
         "HAPPY 1st ANNIVERSARY! 🎉❤️🥂",
         `${data.senderName || 'Partner'} sent a 1-Year Anniversary Toast & Fireworks! Tap to celebrate!`,
@@ -492,12 +493,24 @@ function Dashboard() {
                 </div>
               </div>
 
-              <button
-                onClick={() => setShowAnniversaryModal(true)}
-                className="w-full md:w-auto px-6 py-3 bg-gradient-to-r from-amber-400 via-rose-500 to-pink-500 hover:from-amber-500 hover:to-pink-600 text-white rounded-2xl font-black text-xs shadow-lg shadow-rose-500/30 hover:scale-105 active:scale-95 transition-all shrink-0 flex items-center justify-center gap-2"
-              >
-                <Sparkles size={16} /> Open Celebration Sanctuary 🎉
-              </button>
+              <div className="flex flex-col sm:flex-row gap-2.5 w-full md:w-auto shrink-0">
+                <button
+                  onClick={() => {
+                    socket.emit("send_anniversary_toast", { roomId, senderName: user.name || "Your Love" });
+                    triggerHearts();
+                    toast.success("Anniversary Toast & Phone Notification Sent to Partner! 🥂🎉");
+                  }}
+                  className="px-5 py-3 bg-gradient-to-r from-amber-400 via-rose-500 to-pink-500 hover:from-amber-500 hover:to-pink-600 text-white rounded-2xl font-black text-xs shadow-lg shadow-rose-500/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2"
+                >
+                  <Sparkles size={16} /> Send Phone Notification to Partner 🥂
+                </button>
+                <button
+                  onClick={() => setShowAnniversaryModal(true)}
+                  className="px-4 py-3 bg-white/10 hover:bg-white/20 border border-amber-400/30 text-rose-100 rounded-2xl font-bold text-xs active:scale-95 transition-all flex items-center justify-center gap-2"
+                >
+                  <Trophy size={16} className="text-amber-400" /> Celebration Sanctuary 🎉
+                </button>
+              </div>
             </div>
 
             {/* ========================================================================= */}
