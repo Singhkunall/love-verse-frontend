@@ -10,6 +10,8 @@ import {
 import toast from 'react-hot-toast';
 import Peer from 'peerjs';
 import AgoraRTC from 'agora-rtc-sdk-ng';
+import axios from 'axios';
+import API_URL from '../utils/config';
 import { mobileService } from '../utils/mobileService';
 
 // Disable telemetry & stats collector to prevent console spam
