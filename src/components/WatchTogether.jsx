@@ -833,23 +833,24 @@ function WatchTogether({ user, roomId, socket }) {
       toast.success("Voice & Video Disconnected");
     } else {
       try {
-        const res = await axios.post(`${API_URL}/api/agora/token`, {
-          channelName: roomId,
-          uid: userId
-        });
+        const numericUid = Math.floor(Math.random() * 1000000);
+        let token = null;
+        let targetAppId = "a5839042b3224b1a8d052b610c666579";
 
-        const data = res.data;
-        const appId = data.appId || "30a6c6a6f1d542fb90234a9b6c008f5d";
+        try {
+          const res = await axios.post(`${API_URL}/api/agora/token`, {
+            channelName: voiceChannelName(roomId),
+            uid: numericUid
+          });
 
-        if (!data.token) {
-          toast.error("Could not fetch Agora Voice token!");
-          return;
+          if (res.data?.appId) targetAppId = res.data.appId;
+          token = res.data?.token || null;
+        } catch (tokenErr) {
+          console.warn("Agora token fetch warning, attempting direct join:", tokenErr);
         }
 
         const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
         agoraVoiceClientRef.current = client;
-
-        const uid = data.uid || userId;
 
         client.on("user-published", async (remoteUser, mediaType) => {
           await client.subscribe(remoteUser, mediaType);
@@ -881,7 +882,7 @@ function WatchTogether({ user, roomId, socket }) {
           toast("Partner disconnected voice/video.");
         });
 
-        await client.join(appId, voiceChannelName(roomId), data.token, uid);
+        await client.join(targetAppId, voiceChannelName(roomId), token, numericUid);
         let audioTrack = null;
         try {
           audioTrack = await AgoraRTC.createMicrophoneAudioTrack({
