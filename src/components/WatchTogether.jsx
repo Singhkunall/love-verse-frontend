@@ -47,6 +47,9 @@ const getYouTubeVideoId = (rawUrl) => {
   return 'jfKfPfyJRdk';
 };
 
+// Single source of truth for the voice/video Agora channel name
+const voiceChannelName = (rId) => `watch_voice_${rId}`;
+
 function WatchTogether({ user, roomId, socket }) {
   const [activeTab, setActiveTab] = useState('youtube'); // 'youtube' | 'screen_share' | 'direct' | 'ott_guide'
   const [videoId, setVideoId] = useState('jfKfPfyJRdk');
@@ -84,16 +87,18 @@ function WatchTogether({ user, roomId, socket }) {
   const vadAnimFrameRef = useRef(null);
   const silenceTimerRef = useRef(null);
 
-  // Sync refs with state
+  // Sync refs with state (prevents stale closures in async callbacks / rAF loops)
   const voiceModeRef = useRef('auto_gate');
   const isVoiceMicMutedRef = useRef(false);
   const gateThresholdRef = useRef(14);
   const isPttPressedRef = useRef(false);
+  const isCinemaFullscreenRef = useRef(false);
 
   useEffect(() => { voiceModeRef.current = voiceMode; }, [voiceMode]);
   useEffect(() => { isVoiceMicMutedRef.current = isVoiceMicMuted; }, [isVoiceMicMuted]);
   useEffect(() => { gateThresholdRef.current = gateThreshold; }, [gateThreshold]);
   useEffect(() => { isPttPressedRef.current = isPttPressed; }, [isPttPressed]);
+  useEffect(() => { isCinemaFullscreenRef.current = isCinemaFullscreen; }, [isCinemaFullscreen]);
 
   // Orientation & Drag Refs
   const preferredOrientationRef = useRef('landscape');
@@ -174,14 +179,14 @@ function WatchTogether({ user, roomId, socket }) {
   const userId = user ? (user._id || user.id || '')?.toString() : '';
   const partnerId = user?.partnerId ? (user.partnerId._id || user.partnerId || '')?.toString() : '';
 
-  // Helper to resolve current active camera DOM IDs (Fixes Bug 2.1)
-  const getCameraDOMIds = (isFull = isCinemaFullscreen) => {
+  // Helper to resolve current active camera DOM IDs.
+  const getCameraDOMIds = (isFull = isCinemaFullscreenRef.current) => {
     return isFull
       ? { remoteId: 'watch-remote-video-fs', localId: 'watch-local-video-fs' }
       : { remoteId: 'watch-remote-video', localId: 'watch-local-video' };
   };
 
-  const playActiveCameraTracks = (isFull = isCinemaFullscreen) => {
+  const playActiveCameraTracks = (isFull = isCinemaFullscreenRef.current) => {
     const { remoteId, localId } = getCameraDOMIds(isFull);
     setTimeout(() => {
       if (remoteUserRef.current?.videoTrack && document.getElementById(remoteId)) {
@@ -230,7 +235,10 @@ function WatchTogether({ user, roomId, socket }) {
       try {
         if (isSharingScreen || isReceivingStream || activeTab === 'direct') {
           const active = await mobileService.requestWakeLock();
-          if (isMounted) setIsWakeLockActive(active);
+          if (isMounted) setIsWakeLockActive(!!active);
+        } else {
+          await mobileService.releaseWakeLock();
+          if (isMounted) setIsWakeLockActive(false);
         }
       } catch (e) {}
     };
@@ -238,11 +246,25 @@ function WatchTogether({ user, roomId, socket }) {
     handleWakeLock();
     return () => {
       isMounted = false;
-      mobileService.releaseWakeLock();
+      try { mobileService.releaseWakeLock(); } catch (e) {}
     };
   }, [isSharingScreen, isReceivingStream, activeTab]);
 
-  // Clamped Draggable PIP Overlay Handler (Fixes Bug 2.5)
+  // Media Session lockscreen/notification playback controls while streaming
+  useEffect(() => {
+    try {
+      if (isSharingScreen || isReceivingStream) {
+        mobileService.setupMediaSession({
+          title: isSharingScreen ? 'Streaming Cinema Live 📽️' : `${streamerName || 'Partner'}'s NetMirror Stream 🍿`,
+          artist: 'Love-Verse Watch Party',
+          onPlay: () => screenVideoRef.current?.play(),
+          onPause: () => screenVideoRef.current?.pause()
+        });
+      }
+    } catch (e) {}
+  }, [isSharingScreen, isReceivingStream, streamerName]);
+
+  // Clamped Draggable PIP Overlay Handler
   const handleDragStart = (clientX, clientY) => {
     setIsDraggingPip(true);
     dragStartRef.current = { x: clientX, y: clientY };
@@ -295,7 +317,7 @@ function WatchTogether({ user, roomId, socket }) {
     };
   }, [isDraggingPip]);
 
-  // Reset PIP Position on Tab Change or Device Orientation Change (Fixes Bug 2.5 & Section 4.4)
+  // Reset PIP Position on Tab Change or Device Orientation Change
   useEffect(() => {
     setPipPosition({ x: 0, y: 0 });
   }, [activeTab]);
@@ -308,7 +330,7 @@ function WatchTogether({ user, roomId, socket }) {
     return () => window.removeEventListener('orientationchange', handleOrientationChange);
   }, []);
 
-  // PeerJS WebRTC Stream Setup with STUN + TURN Relays (Fixes Bug 2.3)
+  // PeerJS WebRTC Stream Setup with STUN + TURN Relays
   useEffect(() => {
     if (!userId) return;
     let peer = null;
@@ -402,11 +424,10 @@ function WatchTogether({ user, roomId, socket }) {
     }
   };
 
-  // Event-Driven Screen Stream Binding (Fixes Bug 2.4 - Battery Drain Removed!)
+  // Event-Driven Screen Stream Binding
   useEffect(() => {
     if (activeTab === 'screen_share') {
       bindScreenVideoStream();
-      // Single short safety retry instead of infinite polling interval
       const timer = setTimeout(bindScreenVideoStream, 500);
       return () => clearTimeout(timer);
     }
@@ -463,7 +484,7 @@ function WatchTogether({ user, roomId, socket }) {
     };
   }, []);
 
-  // Smart Aspect-Ratio Orientation Lock (Fixes Section 4.1 & 4.2)
+  // Smart Aspect-Ratio Orientation Lock
   const getPreferredOrientation = () => {
     const hasVideoContent =
       activeTab === 'youtube' ||
@@ -481,7 +502,7 @@ function WatchTogether({ user, roomId, socket }) {
     return 'landscape'; // Default for YouTube 16:9
   };
 
-  // Fullscreen Helper with Orientation Decision and iOS Support (Section 4.3)
+  // Fullscreen Helper with Orientation Decision and iOS Support
   const handleFullscreenCinema = () => {
     preferredOrientationRef.current = getPreferredOrientation();
     const vid = screenVideoRef.current || videoRef.current;
@@ -520,7 +541,7 @@ function WatchTogether({ user, roomId, socket }) {
     }
   };
 
-  // Smart Fullscreen Orientation Lock Effect (Section 4.3)
+  // Smart Fullscreen Orientation Lock Effect
   useEffect(() => {
     try {
       if (isCinemaFullscreen) {
@@ -808,6 +829,7 @@ function WatchTogether({ user, roomId, socket }) {
     }
   };
 
+  // LIVE VOICE & CAMERA CHAT TOGGLE (AGORA RTC)
   const toggleVoiceChatWatch = async () => {
     if (isVoiceConnected) {
       try {
@@ -830,19 +852,20 @@ function WatchTogether({ user, roomId, socket }) {
       setIsVoiceConnected(false);
       setIsCameraOn(false);
       setHasRemoteVideo(false);
+      setIsPartnerSpeaking(false);
       toast.success("Voice & Video Disconnected");
     } else {
       try {
+        const voiceChannel = voiceChannelName(roomId);
         const numericUid = Math.floor(Math.random() * 1000000);
         let token = null;
         let targetAppId = "a5839042b3224b1a8d052b610c666579";
 
         try {
           const res = await axios.post(`${API_URL}/api/agora/token`, {
-            channelName: voiceChannelName(roomId),
+            channelName: voiceChannel,
             uid: numericUid
           });
-
           if (res.data?.appId) targetAppId = res.data.appId;
           token = res.data?.token || null;
         } catch (tokenErr) {
@@ -852,21 +875,30 @@ function WatchTogether({ user, roomId, socket }) {
         const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
         agoraVoiceClientRef.current = client;
 
+        const uid = numericUid;
+
+        // Real-time partner-speaking detection + automatic movie-volume ducking
+        client.enableAudioVolumeIndicator();
+        client.on("volume-indicator", (volumes) => {
+          const partnerSpeaking = volumes.some(v => v.uid !== uid && v.level > 12);
+          setIsPartnerSpeaking(partnerSpeaking);
+          if (isAudioDucking) {
+            if (screenVideoRef.current) screenVideoRef.current.volume = partnerSpeaking ? 0.25 : 1.0;
+            if (videoRef.current) videoRef.current.volume = partnerSpeaking ? 0.25 : 1.0;
+          }
+        });
+
         client.on("user-published", async (remoteUser, mediaType) => {
           await client.subscribe(remoteUser, mediaType);
           console.log("Remote user published in Watch Together:", remoteUser.uid, mediaType);
 
           if (mediaType === "audio") {
             remoteUser.audioTrack?.play();
-            if (isAudioDucking) {
-              setIsPartnerSpeaking(true);
-              setTimeout(() => setIsPartnerSpeaking(false), 3000);
-            }
           }
           if (mediaType === "video") {
             remoteUserRef.current = remoteUser;
             setHasRemoteVideo(true);
-            const { remoteId } = getCameraDOMIds();
+            const { remoteId } = getCameraDOMIds(); // uses ref internally, always current
             setTimeout(() => {
               if (document.getElementById(remoteId)) {
                 remoteUser.videoTrack?.play(remoteId, { fit: 'cover' });
@@ -879,10 +911,11 @@ function WatchTogether({ user, roomId, socket }) {
         client.on('user-left', () => {
           remoteUserRef.current = null;
           setHasRemoteVideo(false);
+          setIsPartnerSpeaking(false);
           toast("Partner disconnected voice/video.");
         });
 
-        await client.join(targetAppId, voiceChannelName(roomId), token, numericUid);
+        await client.join(targetAppId, voiceChannel, token, uid);
         let audioTrack = null;
         try {
           audioTrack = await AgoraRTC.createMicrophoneAudioTrack({
@@ -908,8 +941,6 @@ function WatchTogether({ user, roomId, socket }) {
       }
     }
   };
-
-  const voiceChannelName = (rId) => `watch_voice_${rId}`;
 
   const toggleMicMuteWatch = () => {
     if (localAudioTrackRef.current) {
@@ -1083,7 +1114,7 @@ function WatchTogether({ user, roomId, socket }) {
 
   const glassStyle = "bg-white/80 backdrop-blur-2xl border border-white/60 shadow-xl rounded-[2.5rem]";
 
-  // Shared Draggable Camera PIP Component (Unique DOM IDs Fix 2.1 & 2.2)
+  // Shared Draggable Camera PIP Component (unique DOM IDs via idSuffix)
   const renderPipCameraOverlay = (idSuffix = '') => {
     if (!isVoiceConnected || (!isCameraOn && !hasRemoteVideo)) {
       return null;
@@ -1113,7 +1144,7 @@ function WatchTogether({ user, roomId, socket }) {
             <div id={`watch-local-video${idSuffix}`} className="w-full h-full object-cover" />
           ) : null}
 
-          {/* SECONDARY INSET STREAM: Only if BOTH remote & local videos are active! (Valid Tailwind Class Fix 2.2) */}
+          {/* SECONDARY INSET STREAM: Only if BOTH remote & local videos are active! */}
           {hasRemoteVideo && isCameraOn && (
             <div className="absolute bottom-2 right-2 w-14 h-20 md:w-16 md:h-24 rounded-2xl overflow-hidden border-2 border-white shadow-lg bg-black z-20">
               <div id={`watch-local-video${idSuffix}`} className="w-full h-full object-cover" />
@@ -1279,7 +1310,7 @@ function WatchTogether({ user, roomId, socket }) {
           />
         )}
 
-        {/* Autoplay Blocked Tap-to-Play Overlay (Fixes Bug 2.6) */}
+        {/* Autoplay Blocked Tap-to-Play Overlay */}
         {autoplayBlocked && (
           <button
             onClick={() => {
@@ -1368,6 +1399,11 @@ function WatchTogether({ user, roomId, socket }) {
               <span className="px-2 py-0.5 bg-white/20 backdrop-blur-md rounded-full text-[9px] font-black uppercase border border-white/30 text-rose-100">
                 ANTI-ECHO ✓
               </span>
+              {isPartnerSpeaking && (
+                <span className="px-2 py-0.5 bg-emerald-400/90 rounded-full text-[9px] font-black uppercase text-emerald-950 animate-pulse">
+                  🎙️ Partner speaking
+                </span>
+              )}
             </div>
             <p className="text-[10px] md:text-[11px] font-medium text-pink-100 mt-0.5">Connect mic & camera to talk live during movie</p>
           </div>
@@ -1569,7 +1605,7 @@ function WatchTogether({ user, roomId, socket }) {
                 style={{ backgroundColor: '#000000' }}
               />
 
-              {/* Autoplay Blocked Tap-to-Play Overlay (Fixes Bug 2.6) */}
+              {/* Autoplay Blocked Tap-to-Play Overlay */}
               {autoplayBlocked && (
                 <button
                   onClick={() => {
@@ -1635,7 +1671,7 @@ function WatchTogether({ user, roomId, socket }) {
                 </div>
               )}
 
-              {/* Autoplay Blocked Tap-to-Play Overlay (Fixes Bug 2.6) */}
+              {/* Autoplay Blocked Tap-to-Play Overlay */}
               {autoplayBlocked && (
                 <button
                   onClick={() => {
@@ -1700,7 +1736,7 @@ function WatchTogether({ user, roomId, socket }) {
 
       {/* FOOTER CAMERA & MIC CONTROL BAR */}
       <div className="bg-white/80 backdrop-blur-xl p-4 rounded-[2.5rem] border border-rose-100 shadow-xl flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={toggleMicMuteWatch}
             className={`px-4 py-2.5 rounded-2xl font-black text-xs transition-all flex items-center gap-1.5 active:scale-95 ${
@@ -1719,6 +1755,17 @@ function WatchTogether({ user, roomId, socket }) {
           >
             {isCameraOn ? <Video size={16} /> : <VideoOff size={16} />}
             <span>{isCameraOn ? 'Camera On' : 'Camera Off'}</span>
+          </button>
+
+          <button
+            onClick={() => setIsAudioDucking(!isAudioDucking)}
+            className={`px-4 py-2.5 rounded-2xl font-black text-xs transition-all flex items-center gap-1.5 active:scale-95 ${
+              isAudioDucking ? 'bg-amber-50 text-amber-600 border border-amber-200' : 'bg-gray-100 text-gray-500 border border-gray-200'
+            }`}
+            title="Auto-lower movie volume when partner speaks"
+          >
+            <Volume2 size={16} />
+            <span>{isAudioDucking ? 'Ducking On' : 'Ducking Off'}</span>
           </button>
         </div>
 
