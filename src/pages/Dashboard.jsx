@@ -389,6 +389,8 @@ function Dashboard() {
     };
   };
 
+  const glassStyle = "bg-white/70 backdrop-blur-2xl border border-white/50 shadow-xl";
+
   const handleSendAnniversaryToast = () => {
     socket.emit("send_anniversary_toast", { roomId, senderName: user.name || "Your Love" });
     triggerHearts();
