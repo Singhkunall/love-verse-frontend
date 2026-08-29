@@ -27,10 +27,6 @@ const LoveDoodleBoard = ({ user, roomId, socket, onBack, partnerName = "Partner"
   const [previewDoodle, setPreviewDoodle] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // Mobile Bottom Sheet Toolbar state
-  const [showMobileTools, setShowMobileTools] = useState(false);
-  const [activeToolTab, setActiveToolTab] = useState('brush'); // 'brush' | 'color' | 'stamp' | 'template'
-
   const userId = user._id || user.id;
   const myName = user.name || "Your Love";
 
@@ -58,7 +54,7 @@ const LoveDoodleBoard = ({ user, roomId, socket, onBack, partnerName = "Partner"
     const initCanvasSize = () => {
       const rect = canvas.getBoundingClientRect();
       const w = rect.width || 320;
-      const h = rect.height || 450;
+      const h = rect.height || 380;
       const dpr = window.devicePixelRatio || 1;
 
       canvas.width = w * dpr;
@@ -74,9 +70,7 @@ const LoveDoodleBoard = ({ user, roomId, socket, onBack, partnerName = "Partner"
     initCanvasSize();
     fetchSavedDoodles();
 
-    // Window resize handler
     const handleResize = () => {
-      // Re-init canvas size on resize
       initCanvasSize();
     };
     window.addEventListener('resize', handleResize);
@@ -98,7 +92,7 @@ const LoveDoodleBoard = ({ user, roomId, socket, onBack, partnerName = "Partner"
     if (!ctx) return;
     const canvas = canvasRef.current;
     const w = width || (canvas ? canvas.clientWidth : 320);
-    const h = height || (canvas ? canvas.clientHeight : 450);
+    const h = height || (canvas ? canvas.clientHeight : 380);
 
     ctx.save();
     if (tmpl === 'starry') {
@@ -140,7 +134,7 @@ const LoveDoodleBoard = ({ user, roomId, socket, onBack, partnerName = "Partner"
     if (socket) socket.emit("canvas_clear", { roomId });
   };
 
-  // Undo History Save (Safe against 0-dimension canvas DOMException)
+  // Undo History Save
   const saveState = () => {
     const canvas = canvasRef.current;
     if (!canvas || !ctxRef.current) return;
@@ -435,7 +429,7 @@ const LoveDoodleBoard = ({ user, roomId, socket, onBack, partnerName = "Partner"
             <button
               key={size}
               onClick={() => setBrushSize(size)}
-              className={`flex-1 py-2.5 rounded-xl text-xs font-black border transition-all flex items-center justify-center ${
+              className={`flex-1 py-2 rounded-xl text-xs font-black border transition-all flex items-center justify-center ${
                 brushSize === size ? 'bg-rose-500 text-white border-rose-500 shadow-md' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-rose-50'
               }`}
             >
@@ -450,10 +444,10 @@ const LoveDoodleBoard = ({ user, roomId, socket, onBack, partnerName = "Partner"
         <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
           Brush Style
         </label>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <button
             onClick={() => { setBrushMode('brush'); setActiveStamp(null); }}
-            className={`p-2.5 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 ${
+            className={`p-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 ${
               brushMode === 'brush' && !activeStamp ? 'bg-rose-500 text-white border-rose-500 shadow-md' : 'bg-gray-50 border-gray-200 text-gray-700'
             }`}
           >
@@ -462,16 +456,16 @@ const LoveDoodleBoard = ({ user, roomId, socket, onBack, partnerName = "Partner"
 
           <button
             onClick={() => { setBrushMode('neon'); setActiveStamp(null); }}
-            className={`p-2.5 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 ${
+            className={`p-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 ${
               brushMode === 'neon' && !activeStamp ? 'bg-purple-600 text-white border-purple-600 shadow-md' : 'bg-purple-50 text-purple-700 border-purple-200'
             }`}
           >
-            ✨ Neon Glow
+            ✨ Neon
           </button>
 
           <button
             onClick={() => { setBrushMode('rainbow'); setActiveStamp(null); }}
-            className={`p-2.5 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 ${
+            className={`p-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 ${
               brushMode === 'rainbow' && !activeStamp ? 'bg-amber-500 text-white border-amber-500 shadow-md' : 'bg-amber-50 text-amber-700 border-amber-200'
             }`}
           >
@@ -480,7 +474,7 @@ const LoveDoodleBoard = ({ user, roomId, socket, onBack, partnerName = "Partner"
 
           <button
             onClick={() => { setBrushMode('eraser'); setActiveStamp(null); }}
-            className={`p-2.5 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 ${
+            className={`p-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 ${
               brushMode === 'eraser' && !activeStamp ? 'bg-slate-700 text-white border-slate-700 shadow-md' : 'bg-slate-50 text-slate-700 border-slate-200'
             }`}
           >
@@ -494,24 +488,24 @@ const LoveDoodleBoard = ({ user, roomId, socket, onBack, partnerName = "Partner"
         <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
           Color Palette
         </label>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
           {colors.map((c) => (
             <button
               key={c}
               onClick={() => { setColor(c); if (brushMode === 'eraser') setBrushMode('brush'); }}
-              className={`w-full h-10 rounded-xl transition-all border-2 shadow-sm ${
+              className={`w-9 h-9 shrink-0 rounded-xl transition-all border-2 shadow-sm ${
                 color === c ? 'border-gray-800 scale-110 shadow-md' : 'border-white hover:scale-105'
               }`}
               style={{ backgroundColor: c }}
             />
           ))}
+          <input
+            type="color"
+            value={color}
+            onChange={(e) => { setColor(e.target.value); if (brushMode === 'eraser') setBrushMode('brush'); }}
+            className="w-9 h-9 shrink-0 rounded-xl cursor-pointer bg-white p-0.5 border border-gray-200"
+          />
         </div>
-        <input
-          type="color"
-          value={color}
-          onChange={(e) => { setColor(e.target.value); if (brushMode === 'eraser') setBrushMode('brush'); }}
-          className="mt-2 w-full h-9 rounded-xl cursor-pointer bg-white p-1 border border-gray-200"
-        />
       </div>
 
       {/* Stamps & Stickers */}
@@ -519,12 +513,12 @@ const LoveDoodleBoard = ({ user, roomId, socket, onBack, partnerName = "Partner"
         <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
           Love Stamps & Stickers 💖
         </label>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
           {stamps.map((s) => (
             <button
               key={s}
               onClick={() => setActiveStamp(activeStamp === s ? null : s)}
-              className={`h-11 rounded-xl text-xl flex items-center justify-center border transition-all ${
+              className={`h-10 rounded-xl text-lg flex items-center justify-center border transition-all ${
                 activeStamp === s ? 'bg-rose-100 border-rose-500 scale-110 shadow-md ring-2 ring-rose-300' : 'bg-gray-50 border-gray-200 hover:bg-rose-50'
               }`}
             >
@@ -533,8 +527,8 @@ const LoveDoodleBoard = ({ user, roomId, socket, onBack, partnerName = "Partner"
           ))}
         </div>
         {activeStamp && (
-          <p className="text-[10px] text-rose-500 font-bold mt-1.5 italic text-center">
-            Tap anywhere on canvas to place {activeStamp}!
+          <p className="text-[10px] text-rose-500 font-bold mt-1 italic text-center">
+            Tap on canvas to place {activeStamp}!
           </p>
         )}
       </div>
@@ -569,53 +563,59 @@ const LoveDoodleBoard = ({ user, roomId, socket, onBack, partnerName = "Partner"
   );
 
   return (
-    <div className={`space-y-6 animate-in fade-in duration-300 ${isFullscreen ? 'fixed inset-0 z-50 bg-slate-900 p-4 overflow-y-auto' : 'pb-24 lg:pb-16'}`}>
+    <div className={`space-y-4 animate-in fade-in duration-300 pb-32 lg:pb-16 ${isFullscreen ? 'fixed inset-0 z-50 bg-slate-900 p-3 overflow-y-auto' : ''}`}>
       
-      {/* Navigation Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 bg-white/80 backdrop-blur-xl p-4 md:p-6 rounded-[2.5rem] border border-rose-100 shadow-xl">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onBack}
-            className="p-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-2xl transition-all active:scale-95 flex items-center gap-2 text-xs font-bold"
-          >
-            <ArrowLeft size={16} /> Back
-          </button>
-          <div>
-            <h3 className="text-xl md:text-2xl font-black italic tracking-tight text-gray-800 flex items-center gap-2">
-              Love Doodle Board 🎨
-            </h3>
-            <p className="text-xs text-gray-400 font-medium">
-              Draw real-time with <span className="font-bold text-rose-500">{partnerName}</span>
-            </p>
+      {/* Ultra-Clean Responsive Navigation Header */}
+      <div className="bg-white/80 backdrop-blur-xl p-3 md:p-5 rounded-[2rem] border border-rose-100 shadow-xl space-y-3">
+        {/* Row 1: Back + Title */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <button
+              onClick={onBack}
+              className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition-all active:scale-95 flex items-center gap-1 text-xs font-bold shrink-0"
+            >
+              <ArrowLeft size={14} /> Back
+            </button>
+            <div className="min-w-0">
+              <h3 className="text-base md:text-xl font-black italic tracking-tight text-gray-800 truncate">
+                Love Doodle 🎨
+              </h3>
+              <p className="text-[10px] text-gray-400 font-medium truncate">
+                with <span className="font-bold text-rose-500">{partnerName}</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all active:scale-95 text-xs font-bold"
+              title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+            >
+              {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+            </button>
+
+            <button
+              onClick={triggerUndo}
+              className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-xs font-black transition-all active:scale-95 flex items-center gap-1"
+            >
+              <Undo size={13} /> Undo
+            </button>
+
+            <button
+              onClick={triggerClear}
+              className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-black transition-all active:scale-95 flex items-center gap-1"
+            >
+              <Trash2 size={13} /> Clear
+            </button>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl transition-all active:scale-95"
-            title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-          >
-            {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-          </button>
-
-          <button
-            onClick={triggerUndo}
-            className="px-4 py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-2xl text-xs font-black transition-all active:scale-95 flex items-center gap-1.5"
-          >
-            <Undo size={14} /> Undo ⌫
-          </button>
-
-          <button
-            onClick={triggerClear}
-            className="px-4 py-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-2xl text-xs font-black transition-all active:scale-95 flex items-center gap-1.5"
-          >
-            <Trash2 size={14} /> Clear 🧹
-          </button>
-
+        {/* Row 2: Action Buttons */}
+        <div className="flex items-center gap-2">
           <button
             onClick={handleDownloadPNG}
-            className="px-4 py-3 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-2xl text-xs font-black transition-all active:scale-95 flex items-center gap-1.5"
+            className="flex-1 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl text-xs font-black transition-all active:scale-95 flex items-center justify-center gap-1"
           >
             <Download size={14} /> PNG 📥
           </button>
@@ -623,23 +623,23 @@ const LoveDoodleBoard = ({ user, roomId, socket, onBack, partnerName = "Partner"
           <button
             onClick={handleSaveDoodle}
             disabled={isSaving}
-            className="px-5 py-3 bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white rounded-2xl text-xs font-black shadow-lg shadow-rose-500/30 transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+            className="flex-[2] py-2 bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white rounded-xl text-xs font-black shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5"
           >
-            <Save size={16} /> {isSaving ? "Saving..." : "Save to Memories 🖼️"}
+            <Save size={14} /> {isSaving ? "Saving..." : "Save to Memories 💖"}
           </button>
         </div>
       </div>
 
       {/* Main Single-Canvas Workspace Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         
         {/* Desktop Left Toolbar Sidebar */}
         <div className="hidden lg:block lg:col-span-1 bg-white/80 backdrop-blur-xl p-5 rounded-[2.5rem] border border-rose-100 shadow-xl">
           <ControlsToolbar />
         </div>
 
-        {/* Single Shared Canvas Container (Mobile & Desktop) */}
-        <div className="lg:col-span-3 bg-white/90 backdrop-blur-xl p-4 md:p-6 rounded-[2.5rem] border border-rose-100 shadow-xl relative flex flex-col items-center justify-center min-h-[460px]">
+        {/* Single Shared Canvas Container */}
+        <div className="lg:col-span-3 bg-white/90 backdrop-blur-xl p-3 md:p-5 rounded-[2.5rem] border border-rose-100 shadow-xl relative flex flex-col items-center justify-center">
           
           {/* Partner Cursor Overlay */}
           {partnerCursor && (
@@ -657,7 +657,7 @@ const LoveDoodleBoard = ({ user, roomId, socket, onBack, partnerName = "Partner"
             </div>
           )}
 
-          {/* SINGLE CANVAS DOM ELEMENT */}
+          {/* SINGLE CANVAS DOM ELEMENT (Perfect 380px Mobile Height) */}
           <canvas
             ref={canvasRef}
             onMouseDown={startDrawing}
@@ -667,51 +667,33 @@ const LoveDoodleBoard = ({ user, roomId, socket, onBack, partnerName = "Partner"
             onTouchStart={startDrawing}
             onTouchMove={draw}
             onTouchEnd={stopDrawing}
-            className="w-full h-[450px] md:h-[550px] rounded-2xl cursor-crosshair touch-none border border-rose-100 shadow-inner bg-white"
+            className="w-full h-[380px] md:h-[550px] rounded-2xl cursor-crosshair touch-none border border-rose-100 shadow-inner bg-white"
           />
 
-          <div className="mt-3 flex items-center justify-between w-full text-xs text-gray-400 font-medium px-2">
+          <div className="mt-2.5 flex items-center justify-between w-full text-[10px] md:text-xs text-gray-400 font-medium px-2">
             <span>🎨 Tip: Draw together live with {partnerName}!</span>
-            <span className="flex items-center gap-1.5 font-bold text-rose-500">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" /> Real-time Sync Active
+            <span className="flex items-center gap-1 font-bold text-rose-500">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" /> Real-time
             </span>
           </div>
         </div>
 
-      </div>
-
-      {/* Mobile Floating Bottom Sheet Toolbar Toggle */}
-      <div className="lg:hidden fixed bottom-6 left-4 right-4 z-40">
-        <button
-          onClick={() => setShowMobileTools(!showMobileTools)}
-          className="w-full py-3.5 bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 text-white rounded-2xl font-black text-xs shadow-2xl flex items-center justify-center gap-2 border border-white/40 active:scale-95 transition-all"
-        >
-          <Palette size={18} />
-          {showMobileTools ? "Close Tools Panel" : "Open Drawing Tools & Palette 🎨"}
-          {showMobileTools ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-        </button>
-
-        {/* Mobile Bottom Sheet Panel */}
-        {showMobileTools && (
-          <div className="mt-3 bg-white/95 backdrop-blur-2xl p-5 rounded-[2.5rem] border border-rose-100 shadow-2xl max-h-[60vh] overflow-y-auto animate-in slide-in-from-bottom duration-300">
-            <div className="flex justify-between items-center pb-3 mb-3 border-b border-rose-100">
-              <h4 className="text-xs font-black text-gray-800 uppercase tracking-widest">Canvas Tools & Color Palette</h4>
-              <button
-                onClick={() => setShowMobileTools(false)}
-                className="p-1.5 text-gray-400 hover:text-gray-600 bg-gray-100 rounded-full"
-              >
-                <X size={14} />
-              </button>
-            </div>
-            <ControlsToolbar />
+        {/* Mobile In-Line Controls Toolbar (No Overlapping Floating Sheets!) */}
+        <div className="lg:hidden col-span-1 bg-white/90 backdrop-blur-xl p-4 rounded-[2rem] border border-rose-100 shadow-xl space-y-4">
+          <div className="flex items-center justify-between border-b border-rose-100 pb-2">
+            <h4 className="text-xs font-black text-gray-800 uppercase tracking-wider flex items-center gap-1.5">
+              <Palette size={15} className="text-rose-500" /> Drawing Tools & Palette
+            </h4>
           </div>
-        )}
+          <ControlsToolbar />
+        </div>
+
       </div>
 
       {/* Saved Doodles Gallery */}
-      <div className="bg-white/80 backdrop-blur-xl p-6 rounded-[2.5rem] border border-rose-100 shadow-xl space-y-4">
+      <div className="bg-white/80 backdrop-blur-xl p-5 rounded-[2.5rem] border border-rose-100 shadow-xl space-y-4">
         <div className="flex items-center justify-between">
-          <h4 className="text-lg font-black italic tracking-tight text-gray-800 flex items-center gap-2">
+          <h4 className="text-base md:text-lg font-black italic tracking-tight text-gray-800 flex items-center gap-2">
             Saved Love Doodles ({savedDoodles.length}) 🖼️
           </h4>
           <button
@@ -724,19 +706,19 @@ const LoveDoodleBoard = ({ user, roomId, socket, onBack, partnerName = "Partner"
         </div>
 
         {savedDoodles.length === 0 ? (
-          <div className="text-center py-8 text-gray-400 text-xs italic bg-rose-50/50 rounded-2xl border border-dashed border-rose-200">
+          <div className="text-center py-6 text-gray-400 text-xs italic bg-rose-50/50 rounded-2xl border border-dashed border-rose-200">
             No saved doodles yet. Draw something romantic together and click "Save to Memories"! 🎨💖
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {savedDoodles.map((d) => (
               <div key={d._id} className="group relative bg-white p-2 rounded-2xl border border-rose-100 shadow-sm hover:shadow-lg transition-all overflow-hidden">
                 <img
                   src={d.imageUrl}
                   alt={d.title}
-                  className="w-full h-32 object-cover rounded-xl border border-gray-100"
+                  className="w-full h-28 md:h-32 object-cover rounded-xl border border-gray-100"
                 />
-                <div className="p-2 space-y-1">
+                <div className="p-1.5 space-y-0.5">
                   <p className="text-xs font-black text-gray-800 truncate">{d.title}</p>
                   <p className="text-[9px] text-gray-400 font-medium">By {d.savedByName}</p>
                 </div>
@@ -745,14 +727,14 @@ const LoveDoodleBoard = ({ user, roomId, socket, onBack, partnerName = "Partner"
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all rounded-2xl flex items-center justify-center gap-2 p-2">
                   <button
                     onClick={() => setPreviewDoodle(d)}
-                    className="p-2.5 bg-white text-gray-800 rounded-xl hover:bg-rose-50 transition-all"
+                    className="p-2 bg-white text-gray-800 rounded-xl hover:bg-rose-50 transition-all"
                     title="View Fullscreen"
                   >
                     <Eye size={16} />
                   </button>
                   <button
                     onClick={() => handleDeleteDoodle(d._id)}
-                    className="p-2.5 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all"
+                    className="p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all"
                     title="Delete"
                   >
                     <Trash2 size={16} />
@@ -767,10 +749,10 @@ const LoveDoodleBoard = ({ user, roomId, socket, onBack, partnerName = "Partner"
       {/* Preview Fullscreen Modal */}
       {previewDoodle && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-          <div className="relative max-w-2xl w-full bg-white p-6 rounded-[2.5rem] shadow-2xl space-y-4">
+          <div className="relative max-w-2xl w-full bg-white p-5 rounded-[2.5rem] shadow-2xl space-y-4">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="text-lg font-black text-gray-800">{previewDoodle.title}</h3>
+                <h3 className="text-base md:text-lg font-black text-gray-800">{previewDoodle.title}</h3>
                 <p className="text-xs text-gray-400">Saved by {previewDoodle.savedByName}</p>
               </div>
               <button
@@ -783,7 +765,7 @@ const LoveDoodleBoard = ({ user, roomId, socket, onBack, partnerName = "Partner"
             <img
               src={previewDoodle.imageUrl}
               alt={previewDoodle.title}
-              className="w-full max-h-[70vh] object-contain rounded-2xl border border-gray-100 shadow-inner"
+              className="w-full max-h-[65vh] object-contain rounded-2xl border border-gray-100 shadow-inner"
             />
             <div className="flex justify-end gap-2">
               <a
@@ -791,7 +773,7 @@ const LoveDoodleBoard = ({ user, roomId, socket, onBack, partnerName = "Partner"
                 download="LoveDoodle.png"
                 target="_blank"
                 rel="noreferrer"
-                className="px-5 py-2.5 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold text-xs shadow-md transition-all"
+                className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold text-xs shadow-md transition-all"
               >
                 Download PNG 📥
               </a>
