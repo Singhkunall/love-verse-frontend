@@ -20,6 +20,7 @@ import VirtualTouch from '../components/VirtualTouch';
 import NotificationCenter from '../components/NotificationCenter';
 import SecurityLock from '../components/SecurityLock';
 import AnniversaryModal from '../components/AnniversaryModal';
+import LoveDoodleBoard from '../components/LoveDoodleBoard';
 import { mobileService } from '../utils/mobileService';
 import API_URL from '../utils/config';
 import { compressImage } from '../utils/imageCompressor';
@@ -892,6 +893,8 @@ function Dashboard() {
               <Ludo user={user} roomId={roomId} socket={socket} onBack={() => setCurrentGame(null)} />
             ) : currentGame === 'quiz' ? (
               <CoupleQuiz user={user} roomId={roomId} socket={socket} onBack={() => setCurrentGame(null)} />
+            ) : currentGame === 'doodle' ? (
+              <LoveDoodleBoard user={user} roomId={roomId} socket={socket} partnerName={partnerName} onBack={() => setCurrentGame(null)} />
             ) : (
               <div className="space-y-10 animate-in slide-in-from-right duration-500">
 
@@ -907,6 +910,21 @@ function Dashboard() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {/* LOVE DOODLE BOARD CARD */}
+                  <div className={`${glassStyle} group p-6 rounded-[2.5rem] hover:scale-[1.02] transition-all relative overflow-hidden border border-white/60 shadow-xl space-y-4`}>
+                    <div className="w-14 h-14 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center shadow-inner"><span className="text-3xl">🎨</span></div>
+                    <div>
+                      <h4 className="text-xl font-serif font-black text-gray-800">Love Doodle Board</h4>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">Real-time Drawing • Stickers • Neon Glow</p>
+                    </div>
+                    <button
+                      onClick={() => setCurrentGame('doodle')}
+                      className="w-full py-3 bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 text-white rounded-2xl font-black text-xs shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                    >
+                      Start Drawing Together 🎨
+                    </button>
+                  </div>
+
                   <div className={`${glassStyle} group p-6 rounded-[2.5rem] hover:scale-[1.02] transition-all relative overflow-hidden border border-white/60 shadow-xl space-y-4`}>
                     <div className="w-14 h-14 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center shadow-inner"><span className="text-3xl">♟️</span></div>
                     <div>
