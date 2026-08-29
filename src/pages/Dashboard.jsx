@@ -55,7 +55,8 @@ class TabErrorBoundary extends React.Component {
 }
 
 function Dashboard() {
-  const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')));
+  const glassStyle = "bg-white/70 backdrop-blur-2xl border border-white/50 shadow-xl";
+  const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')) || {});
   const [partnerEmail, setPartnerEmail] = useState('');
   const [daysTogether, setDaysTogether] = useState(0);
   const [showInput, setShowInput] = useState(false);
@@ -388,8 +389,6 @@ function Dashboard() {
       setUploadingAvatar(false);
     };
   };
-
-  const glassStyle = "bg-white/70 backdrop-blur-2xl border border-white/50 shadow-xl";
 
   const handleSendAnniversaryToast = () => {
     socket.emit("send_anniversary_toast", { roomId, senderName: user.name || "Your Love" });
