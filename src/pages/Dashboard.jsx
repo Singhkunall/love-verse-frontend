@@ -414,15 +414,24 @@ function Dashboard() {
       />
 
       <main className="flex-1 flex flex-col gap-6 overflow-y-auto">
-        {/* --- TOP NAVBAR HEADER (Matches reference screenshot 1-to-1) --- */}
+        {/* --- TOP NAVBAR HEADER --- */}
         <nav className={`${glassStyle} p-3.5 px-5 md:px-8 rounded-[2.2rem] flex justify-between items-center z-20`}>
-          <div>
+          {/* Mobile App Branding */}
+          <div className="lg:hidden">
             <p className="text-[11px] font-bold text-gray-500">Hello, {user?.name || 'Kunal'} 👋</p>
-            <h1 className="text-xl md:text-2xl font-black tracking-tight text-gray-900 flex items-center gap-1 font-sans">
+            <h1 className="text-xl font-black tracking-tight text-gray-900 flex items-center gap-1 font-sans">
               <span>Love</span>
               <span className="text-pink-500">-Verse</span>
               <Heart size={14} className="text-pink-500 fill-pink-500 inline ml-0.5" />
             </h1>
+          </div>
+
+          {/* Desktop Web Branding */}
+          <div className="hidden lg:block font-serif italic font-black text-rose-600 text-2xl tracking-tight">
+            Love-Verse
+          </div>
+          <div className="hidden lg:block text-xs font-bold text-gray-400 uppercase tracking-widest italic font-sans">
+            "Your digital home for love"
           </div>
 
           <div className="flex items-center gap-2 md:gap-3">
@@ -450,14 +459,14 @@ function Dashboard() {
             </button>
 
             {/* 3. User Avatar Initials Pill */}
-            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-pink-600 to-rose-500 text-white font-black text-xs flex items-center justify-center border-2 border-white shadow-md">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-pink-600 to-rose-500 text-white font-black text-xs flex items-center justify-center border-2 border-white shadow-md lg:hidden">
               {user?.name?.charAt(0) || 'K'}
             </div>
 
             {/* 4. Logout Button */}
             <button 
               onClick={handleLogout} 
-              className="p-2.5 rounded-full bg-white hover:bg-rose-50 text-gray-400 hover:text-rose-500 border border-rose-100/80 shadow-sm transition-all active:scale-95 flex items-center justify-center"
+              className="p-2.5 rounded-full bg-white hover:bg-rose-50 text-gray-400 hover:text-rose-500 border border-rose-100/80 shadow-sm transition-all active:scale-95 flex items-center justify-center lg:hidden"
               title="Logout"
             >
               <LogOut size={18} />
@@ -493,6 +502,11 @@ function Dashboard() {
         {/* --- DYNAMIC TABS --- */}
         {activeTab === 'home' && (
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-16">
+
+            {/* ========================================================================= */}
+            {/* MOBILE APP ONLY VIEW (lg:hidden): Matches Screenshot Reference 1-to-1 */}
+            {/* ========================================================================= */}
+            <div className="lg:hidden space-y-4">
 
             {/* 1. HERO DAYS TOGETHER CARD (Matches reference screenshot 1-to-1) */}
             <div className="bg-gradient-to-r from-[#4d0b22] via-[#6d1334] to-[#360618] text-white rounded-[2.5rem] p-6 shadow-2xl relative overflow-hidden border border-pink-500/20 space-y-4">
@@ -713,6 +727,7 @@ function Dashboard() {
                 </div>
               </div>
             </div>
+          </div>
 
             {/* ========================================================================= */}
             {/* DESKTOP / WEB VIEW: 100% Original Desktop Layout (Untouched) */}
