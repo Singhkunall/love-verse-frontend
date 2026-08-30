@@ -511,58 +511,58 @@ function Dashboard() {
             {/* 1. HERO DAYS TOGETHER CARD (Matches reference screenshot 1-to-1) */}
             <div className="bg-gradient-to-r from-[#4d0b22] via-[#6d1334] to-[#360618] text-white rounded-[2.5rem] p-6 shadow-2xl relative overflow-hidden border border-pink-500/20 space-y-4">
               
-              {/* Bright Vivid Couple Sunset Heart Graphic (Matches reference screenshot 1-to-1) */}
-              <div className="absolute top-0 right-0 w-52 md:w-72 h-full pointer-events-none z-0 overflow-hidden rounded-r-[2.5rem]">
-                <svg viewBox="0 0 220 200" className="w-full h-full">
+              {/* Bright Vivid Couple Sunset Heart Graphic (100% Guaranteed Visible on all screens) */}
+              <div className="absolute top-0 right-0 w-[170px] sm:w-[220px] h-full pointer-events-none z-0 overflow-hidden rounded-r-[2.5rem]">
+                <svg viewBox="0 0 170 180" className="w-full h-full">
                   <defs>
                     <radialGradient id="heroHeartSun" cx="50%" cy="45%" r="55%">
                       <stop offset="0%" stopColor="#ffccd5" stopOpacity="1" />
                       <stop offset="45%" stopColor="#ff4d8d" stopOpacity="0.95" />
-                      <stop offset="85%" stopColor="#c41253" stopOpacity="0.8" />
+                      <stop offset="85%" stopColor="#c41253" stopOpacity="0.85" />
                       <stop offset="100%" stopColor="#540826" stopOpacity="0" />
                     </radialGradient>
                   </defs>
 
                   {/* Big Glowing Pink Heart Sun in Sky */}
                   <path
-                    d="M 140,140 C 85,95 50,55 50,28 C 50,8 70,-8 96,-8 C 112,-8 127,0 135,10 C 143,0 158,-8 174,-8 C 200,-8 220,8 220,28 C 220,55 185,95 140,140 Z"
+                    d="M 95,120 C 50,80 20,48 20,24 C 20,6 38,-8 60,-8 C 74,-8 87,0 95,10 C 103,0 116,-8 130,-8 C 152,-8 170,6 170,24 C 170,48 140,80 95,120 Z"
                     fill="url(#heroHeartSun)"
                   />
                   <path
-                    d="M 140,125 C 95,85 65,50 65,25 C 65,8 80,-4 100,-4 C 112,-4 125,2 135,10 C 145,2 158,-4 170,-4 C 190,-4 205,8 205,25 C 205,50 175,85 140,125 Z"
+                    d="M 95,105 C 58,70 32,40 32,20 C 32,5 46,-4 64,-4 C 75,-4 86,2 95,10 C 104,2 115,-4 126,-4 C 144,-4 158,5 158,20 C 158,40 132,70 95,105 Z"
                     fill="#ffe3ea"
                     opacity="0.95"
                   />
 
                   {/* Glowing Star Sparkles */}
-                  <circle cx="100" cy="15" r="2.5" fill="#ffffff" opacity="0.95" />
-                  <circle cx="175" cy="20" r="2.5" fill="#ffffff" opacity="0.95" />
-                  <circle cx="75" cy="40" r="2" fill="#ffe3ea" opacity="0.9" />
+                  <circle cx="60" cy="15" r="2.5" fill="#ffffff" opacity="0.95" />
+                  <circle cx="130" cy="20" r="2.5" fill="#ffffff" opacity="0.95" />
+                  <circle cx="40" cy="35" r="2" fill="#ffe3ea" opacity="0.9" />
 
                   {/* Dark Hill Ground with Trees Contour */}
                   <path
-                    d="M 20,175 C 80,135 150,135 220,165 L 220,200 L 20,200 Z"
+                    d="M 0,150 C 40,118 110,118 170,145 L 170,180 L 0,180 Z"
                     fill="#360416"
                   />
                   <path
-                    d="M 60,180 C 110,145 180,145 220,175 L 220,200 L 60,200 Z"
+                    d="M 30,155 C 80,125 140,125 170,155 L 170,180 L 30,180 Z"
                     fill="#170108"
                   />
 
                   {/* Male Silhouette */}
                   <path
-                    d="M 125,138 C 125,128 131,120 136,120 C 141,120 145,128 145,138 L 143,162 L 125,162 Z"
+                    d="M 80,122 C 80,113 85,106 90,106 C 95,106 99,113 99,122 L 97,144 L 80,144 Z"
                     fill="#080004"
                   />
-                  <circle cx="135.5" cy="114" r="5.5" fill="#080004" />
+                  <circle cx="89.5" cy="100" r="5" fill="#080004" />
 
                   {/* Female Silhouette sitting beside him */}
                   <path
-                    d="M 147,140 C 147,130 153,122 158,122 C 163,122 167,130 167,140 L 165,162 L 147,162 Z"
+                    d="M 100,124 C 100,115 105,108 110,108 C 115,108 119,115 119,124 L 117,144 L 100,144 Z"
                     fill="#080004"
                   />
-                  <circle cx="157.5" cy="116" r="5" fill="#080004" />
-                  <path d="M 154,117 Q 164,123 162,133" stroke="#080004" strokeWidth="3" strokeLinecap="round" />
+                  <circle cx="109.5" cy="102" r="4.5" fill="#080004" />
+                  <path d="M 106,103 Q 115,108 113,117" stroke="#080004" strokeWidth="2.5" strokeLinecap="round" />
                 </svg>
               </div>
 
