@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Heart, LogOut, User, Clock, Calendar as CalendarIcon, Sparkles, Image as ImageIcon, Plus, Trash2, Zap, Gamepad2, Star, ListTodo, CheckCircle2, Circle, ChevronRight, Radio, Touchpad, PlaySquare, MessageSquare, Bell, Lock, Trophy } from 'lucide-react';
+import { Heart, LogOut, User, Clock, Calendar as CalendarIcon, Sparkles, Image as ImageIcon, Plus, Trash2, Zap, Gamepad2, Star, ListTodo, CheckCircle2, Circle, ChevronRight, Radio, Touchpad, PlaySquare, MessageSquare, Bell, Lock, Trophy, Shield } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import Chat from '../components/Chat';
