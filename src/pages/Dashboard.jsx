@@ -78,13 +78,13 @@ function Dashboard() {
   const [showSecurityLock, setShowSecurityLock] = useState(false);
   const [showAnniversaryModal, setShowAnniversaryModal] = useState(false);
 
-  const userId = user._id || user.id;
+  const userId = user?._id || user?.id || "guest";
   // ✅ Fix 1: safely extract partnerId as string regardless of object or string
-  const partnerId = user.partnerId?._id?.toString() || user.partnerId?.toString() || "";
-  // ✅ Fix 2: roomId now uses proper string IDs
-  const roomId = [userId.toString(), partnerId.toString()].sort().join("_");
+  const partnerId = user?.partnerId?._id?.toString() || user?.partnerId?.toString() || "";
+  // ✅ Fix 2: roomId now uses proper string IDs safely
+  const roomId = [String(userId), String(partnerId)].sort().join("_");
 
-  const partnerName = (typeof user?.partnerId === 'object' && user.partnerId?.name)
+  const partnerName = (typeof user?.partnerId === 'object' && user?.partnerId?.name)
     || user?.partnerName
     || (user?.partnerEmail ? user.partnerEmail.split('@')[0] : "Partner");
 
@@ -595,16 +595,16 @@ function Dashboard() {
               <div className="flex items-center gap-3 min-w-0">
                 <div className="relative shrink-0">
                   <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-rose-500 to-pink-400 flex items-center justify-center font-black text-white text-base border-2 border-white shadow-md overflow-hidden">
-                    {user.partnerId?.avatar ? (
+                    {user?.partnerId?.avatar ? (
                       <img src={user.partnerId.avatar} alt="Partner" className="w-full h-full object-cover" />
                     ) : (
-                      user.partnerId?.name?.charAt(0) || 'P'
+                      user?.partnerId?.name?.charAt(0) || 'P'
                     )}
                   </div>
                   <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-[#181a29] rounded-full animate-pulse" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h4 className="text-sm font-black text-white truncate leading-tight">{user.partnerId?.name || partnerName || 'Kunal Kumar'}</h4>
+                  <h4 className="text-sm font-black text-white truncate leading-tight">{user?.partnerId?.name || partnerName || 'Kunal Kumar'}</h4>
                   <p className="text-xs text-rose-300 font-medium truncate mt-0.5 flex items-center gap-1">
                     <span>🥰 Romantic</span>
                   </p>
