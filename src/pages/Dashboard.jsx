@@ -511,22 +511,58 @@ function Dashboard() {
             {/* 1. HERO DAYS TOGETHER CARD (Matches reference screenshot 1-to-1) */}
             <div className="bg-gradient-to-r from-[#4d0b22] via-[#6d1334] to-[#360618] text-white rounded-[2.5rem] p-6 shadow-2xl relative overflow-hidden border border-pink-500/20 space-y-4">
               
-              {/* Background Archway Couple Illustration */}
-              <div className="absolute top-0 right-0 w-44 md:w-60 h-full pointer-events-none opacity-40 md:opacity-60 flex items-center justify-end pr-2">
-                <svg viewBox="0 0 200 200" className="w-full h-full">
+              {/* Bright Vivid Couple Sunset Heart Graphic (Matches reference screenshot 1-to-1) */}
+              <div className="absolute top-0 right-0 w-52 md:w-72 h-full pointer-events-none z-0 overflow-hidden rounded-r-[2.5rem]">
+                <svg viewBox="0 0 220 200" className="w-full h-full">
                   <defs>
-                    <radialGradient id="heroSunGlow" cx="50%" cy="50%" r="50%">
-                      <stop offset="0%" stopColor="#ffb3c6" stopOpacity="0.9" />
-                      <stop offset="70%" stopColor="#ff2a6d" stopOpacity="0.5" />
-                      <stop offset="100%" stopColor="#360618" stopOpacity="0" />
+                    <radialGradient id="heroHeartSun" cx="50%" cy="45%" r="55%">
+                      <stop offset="0%" stopColor="#ffccd5" stopOpacity="1" />
+                      <stop offset="45%" stopColor="#ff4d8d" stopOpacity="0.95" />
+                      <stop offset="85%" stopColor="#c41253" stopOpacity="0.8" />
+                      <stop offset="100%" stopColor="#540826" stopOpacity="0" />
                     </radialGradient>
                   </defs>
-                  <circle cx="120" cy="90" r="45" fill="url(#heroSunGlow)" />
-                  <path d="M 60,170 Q 120,140 180,170 L 180,200 L 60,200 Z" fill="#20030d" />
-                  <circle cx="110" cy="135" r="5" fill="#120107" />
-                  <path d="M 102,150 L 118,150 L 116,170 L 104,170 Z" fill="#120107" />
-                  <circle cx="128" cy="137" r="4.5" fill="#120107" />
-                  <path d="M 120,152 L 136,152 L 134,170 L 122,170 Z" fill="#120107" />
+
+                  {/* Big Glowing Pink Heart Sun in Sky */}
+                  <path
+                    d="M 140,140 C 85,95 50,55 50,28 C 50,8 70,-8 96,-8 C 112,-8 127,0 135,10 C 143,0 158,-8 174,-8 C 200,-8 220,8 220,28 C 220,55 185,95 140,140 Z"
+                    fill="url(#heroHeartSun)"
+                  />
+                  <path
+                    d="M 140,125 C 95,85 65,50 65,25 C 65,8 80,-4 100,-4 C 112,-4 125,2 135,10 C 145,2 158,-4 170,-4 C 190,-4 205,8 205,25 C 205,50 175,85 140,125 Z"
+                    fill="#ffe3ea"
+                    opacity="0.95"
+                  />
+
+                  {/* Glowing Star Sparkles */}
+                  <circle cx="100" cy="15" r="2.5" fill="#ffffff" opacity="0.95" />
+                  <circle cx="175" cy="20" r="2.5" fill="#ffffff" opacity="0.95" />
+                  <circle cx="75" cy="40" r="2" fill="#ffe3ea" opacity="0.9" />
+
+                  {/* Dark Hill Ground with Trees Contour */}
+                  <path
+                    d="M 20,175 C 80,135 150,135 220,165 L 220,200 L 20,200 Z"
+                    fill="#360416"
+                  />
+                  <path
+                    d="M 60,180 C 110,145 180,145 220,175 L 220,200 L 60,200 Z"
+                    fill="#170108"
+                  />
+
+                  {/* Male Silhouette */}
+                  <path
+                    d="M 125,138 C 125,128 131,120 136,120 C 141,120 145,128 145,138 L 143,162 L 125,162 Z"
+                    fill="#080004"
+                  />
+                  <circle cx="135.5" cy="114" r="5.5" fill="#080004" />
+
+                  {/* Female Silhouette sitting beside him */}
+                  <path
+                    d="M 147,140 C 147,130 153,122 158,122 C 163,122 167,130 167,140 L 165,162 L 147,162 Z"
+                    fill="#080004"
+                  />
+                  <circle cx="157.5" cy="116" r="5" fill="#080004" />
+                  <path d="M 154,117 Q 164,123 162,133" stroke="#080004" strokeWidth="3" strokeLinecap="round" />
                 </svg>
               </div>
 
