@@ -116,21 +116,21 @@ const Sidebar = ({ activeTab, setActiveTab, user, handleLogout, sendNudge, onSen
                 </div>
             </aside>
 
-            {/* MOBILE BOTTOM NAV */}
-            <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-t border-rose-100 shadow-2xl">
-                <div className="flex items-center px-2 py-1">
+            {/* MOBILE FLOATING GLASS BOTTOM DOCK (Matches reference screenshot 1-to-1) */}
+            <div className="lg:hidden fixed bottom-2 left-3 right-3 z-50 pointer-events-auto">
+                <div className="bg-white/95 backdrop-blur-2xl border border-rose-100 rounded-full px-3 py-1 shadow-[0_10px_35px_rgba(0,0,0,0.12)] flex items-center justify-around">
                     <BottomNavBtn icon={<Home size={20} />} label="Home" active={activeTab === 'home'} onClick={() => { setActiveTab('home'); setMobileMenuOpen(false); }} />
                     <BottomNavBtn icon={<PlaySquare size={20} />} label="Watch" active={activeTab === 'watch_together'} onClick={() => { setActiveTab('watch_together'); setMobileMenuOpen(false); }} />
 
-                    {/* Center Hug Button */}
+                    {/* Elevated Pink Heart Center Hug Action Button */}
                     <button
                         onClick={handleNudgeClick}
-                        className="flex flex-col items-center justify-center flex-1 py-1"
+                        className="flex flex-col items-center justify-center flex-1 py-0.5 relative"
                     >
-                        <div className={`w-12 h-12 bg-gradient-to-tr from-rose-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg shadow-rose-200 -mt-6 border-4 border-white transition-all ${isNudging ? 'scale-90' : 'scale-100'}`}>
+                        <div className={`w-11 h-11 bg-gradient-to-tr from-rose-500 via-pink-500 to-rose-600 rounded-full flex items-center justify-center shadow-lg shadow-rose-300 -mt-6 border-3 border-white transition-all ${isNudging ? 'scale-90 rotate-12' : 'scale-105'}`}>
                             <Heart size={20} className="text-white fill-white" />
                         </div>
-                        <span className="text-[9px] font-black text-rose-500 uppercase mt-1">{isNudging ? 'Sent!' : 'Hug'}</span>
+                        <span className="text-[9px] font-black text-rose-500 uppercase mt-0.5">{isNudging ? 'Sent!' : 'Hug'}</span>
                     </button>
 
                     <BottomNavBtn icon={<MessageCircle size={20} />} label="Chat" active={activeTab === 'chat'} onClick={() => { setActiveTab('chat'); setMobileMenuOpen(false); }} />

@@ -414,16 +414,22 @@ function Dashboard() {
       />
 
       <main className="flex-1 flex flex-col gap-6 overflow-y-auto">
-        {/* Top Navbar */}
-        <nav className={`${glassStyle} p-4 px-6 md:px-8 rounded-[2rem] flex justify-between items-center z-20`}>
-          <div className="lg:hidden font-serif italic font-black text-rose-600 text-2xl tracking-tight">Love-Verse</div>
-          <div className="hidden lg:block text-xs font-bold text-gray-400 uppercase tracking-widest italic font-sans">
-            "Your digital home for love"
+        {/* --- TOP NAVBAR HEADER (Matches reference screenshot 1-to-1) --- */}
+        <nav className={`${glassStyle} p-3.5 px-5 md:px-8 rounded-[2.2rem] flex justify-between items-center z-20`}>
+          <div>
+            <p className="text-[11px] font-bold text-gray-500">Hello, {user?.name || 'Kunal'} 👋</p>
+            <h1 className="text-xl md:text-2xl font-black tracking-tight text-gray-900 flex items-center gap-1 font-sans">
+              <span>Love</span>
+              <span className="text-pink-500">-Verse</span>
+              <Heart size={14} className="text-pink-500 fill-pink-500 inline ml-0.5" />
+            </h1>
           </div>
+
           <div className="flex items-center gap-2 md:gap-3">
+            {/* 1. Notification Bell */}
             <button
               onClick={() => setShowNotifs(true)}
-              className="relative p-2.5 rounded-2xl bg-white/80 hover:bg-rose-50 text-gray-700 hover:text-rose-500 border border-rose-100 shadow-sm transition-all active:scale-95"
+              className="relative p-2.5 rounded-full bg-[#ffeef2] text-rose-600 hover:bg-rose-100 border border-rose-100/80 shadow-sm transition-all active:scale-95 flex items-center justify-center"
               title="Activity Center"
             >
               <Bell size={18} />
@@ -434,18 +440,28 @@ function Dashboard() {
               )}
             </button>
 
+            {/* 2. Security Lock */}
             <button
               onClick={() => setShowSecurityLock(true)}
-              className="p-2.5 rounded-2xl bg-white/80 hover:bg-rose-50 text-gray-700 hover:text-rose-500 border border-rose-100 shadow-sm transition-all active:scale-95"
+              className="p-2.5 rounded-full bg-white hover:bg-rose-50 text-gray-700 hover:text-rose-500 border border-rose-100/80 shadow-sm transition-all active:scale-95 flex items-center justify-center"
               title="Security PIN Lock"
             >
               <Lock size={18} />
             </button>
 
-            <div className="w-8 h-8 rounded-full bg-rose-500 text-white flex items-center justify-center font-black text-xs border border-white shadow-sm lg:hidden">
-              {user?.name?.charAt(0)}
+            {/* 3. User Avatar Initials Pill */}
+            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-pink-600 to-rose-500 text-white font-black text-xs flex items-center justify-center border-2 border-white shadow-md">
+              {user?.name?.charAt(0) || 'K'}
             </div>
-            <button onClick={handleLogout} className="lg:hidden text-gray-400 p-1 hover:text-rose-500"><LogOut size={18} /></button>
+
+            {/* 4. Logout Button */}
+            <button 
+              onClick={handleLogout} 
+              className="p-2.5 rounded-full bg-white hover:bg-rose-50 text-gray-400 hover:text-rose-500 border border-rose-100/80 shadow-sm transition-all active:scale-95 flex items-center justify-center"
+              title="Logout"
+            >
+              <LogOut size={18} />
+            </button>
           </div>
         </nav>
 
@@ -476,219 +492,226 @@ function Dashboard() {
 
         {/* --- DYNAMIC TABS --- */}
         {activeTab === 'home' && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
+          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-16">
 
-            {/* ========================================================================= */}
-            {/* MOBILE ONLY VIEW: Exact Mockup Card Layout Structure (Rose/Pink Theme) */}
-            {/* ========================================================================= */}
-            <div className="lg:hidden space-y-3.5">
+            {/* 1. HERO DAYS TOGETHER CARD (Matches reference screenshot 1-to-1) */}
+            <div className="bg-gradient-to-r from-[#4d0b22] via-[#6d1334] to-[#360618] text-white rounded-[2.5rem] p-6 shadow-2xl relative overflow-hidden border border-pink-500/20 space-y-4">
               
-              {/* 1. Days Together Hero Card */}
-              <div className="bg-gradient-to-br from-rose-950 via-rose-900 to-pink-950 text-white rounded-[2.5rem] p-6 shadow-2xl relative overflow-hidden space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-                    <span className="text-[10px] font-black tracking-widest uppercase text-rose-200">TOGETHER, STILL COUNTING</span>
-                  </div>
-                  <span className="text-xs font-bold text-rose-200/80">Lvl {level}</span>
+              {/* Background Archway Couple Illustration */}
+              <div className="absolute top-0 right-0 w-44 md:w-60 h-full pointer-events-none opacity-40 md:opacity-60 flex items-center justify-end pr-2">
+                <svg viewBox="0 0 200 200" className="w-full h-full">
+                  <defs>
+                    <radialGradient id="heroSunGlow" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stopColor="#ffb3c6" stopOpacity="0.9" />
+                      <stop offset="70%" stopColor="#ff2a6d" stopOpacity="0.5" />
+                      <stop offset="100%" stopColor="#360618" stopOpacity="0" />
+                    </radialGradient>
+                  </defs>
+                  <circle cx="120" cy="90" r="45" fill="url(#heroSunGlow)" />
+                  <path d="M 60,170 Q 120,140 180,170 L 180,200 L 60,200 Z" fill="#20030d" />
+                  <circle cx="110" cy="135" r="5" fill="#120107" />
+                  <path d="M 102,150 L 118,150 L 116,170 L 104,170 Z" fill="#120107" />
+                  <circle cx="128" cy="137" r="4.5" fill="#120107" />
+                  <path d="M 120,152 L 136,152 L 134,170 L 122,170 Z" fill="#120107" />
+                </svg>
+              </div>
+
+              {/* Header inside Hero */}
+              <div className="flex items-center justify-between relative z-10">
+                <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-pink-200/90">
+                  <Heart size={12} className="text-pink-400 fill-pink-400" /> TOGETHER, STILL COUNTING
                 </div>
-
-                <div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="font-serif text-6xl font-black tracking-tight text-white drop-shadow-md">{daysTogether}</span>
-                    <span className="font-serif italic text-2xl text-rose-200">days</span>
-                  </div>
-                  <p className="text-xs text-rose-200/90 font-medium mt-1">
-                    Since {user?.anniversaryDate ? new Date(user.anniversaryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'May 16'} · Level {level}, stronger every day
-                  </p>
+                <div className="flex items-center gap-1 bg-white/10 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-white/20 text-[10px] font-bold">
+                  <span>Lvl {level}</span>
+                  <Shield size={10} className="text-amber-300 fill-amber-300" />
                 </div>
+              </div>
 
-                <div className="flex gap-2 pt-2">
-                  {!showInput ? (
-                    <button
-                      onClick={() => setShowInput(true)}
-                      className="flex-1 py-3 px-4 bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md rounded-2xl font-bold text-xs text-white flex items-center justify-center gap-1.5 transition-all active:scale-95"
-                    >
-                      <CalendarIcon size={14} /> Change date
-                    </button>
-                  ) : (
-                    <div className="flex-1 flex gap-1 bg-white/10 p-2 rounded-2xl border border-white/20">
-                      <input type="date" value={tempDate} onChange={(e) => setTempDate(e.target.value)} className="bg-white text-gray-800 p-1.5 rounded-xl text-xs flex-1 font-bold outline-none" />
-                      <button onClick={handleUpdateDate} className="bg-rose-500 text-white px-3 rounded-xl font-black text-xs">Lock</button>
-                      <button onClick={() => setShowInput(false)} className="text-white px-2 font-bold">×</button>
-                    </div>
-                  )}
+              {/* Days Count */}
+              <div className="relative z-10">
+                <div className="flex items-baseline gap-2">
+                  <span className="font-serif text-5xl md:text-6xl font-black tracking-tight text-white drop-shadow-md">{daysTogether}</span>
+                  <span className="font-serif italic text-2xl text-pink-200 font-light">days</span>
+                </div>
+                <p className="text-xs text-pink-100/80 font-medium mt-1">
+                  Since {user?.anniversaryDate ? new Date(user.anniversaryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Aug 29'} • Level {level}, stronger every day
+                </p>
+              </div>
 
+              {/* 2 Hero Action Buttons */}
+              <div className="flex items-center gap-2 pt-2 relative z-10">
+                {!showInput ? (
                   <button
-                    onClick={() => setActiveTab('memories_tab')}
-                    className="flex-1 py-3 px-4 bg-gradient-to-r from-amber-400 to-rose-400 text-slate-950 rounded-2xl font-black text-xs shadow-lg flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                    onClick={() => setShowInput(true)}
+                    className="flex-1 py-2.5 px-4 bg-white/10 hover:bg-white/20 border border-white/30 backdrop-blur-md rounded-full font-bold text-xs text-white flex items-center justify-center gap-1.5 transition-all active:scale-95"
                   >
-                    <Sparkles size={14} /> Add a memory
+                    <CalendarIcon size={14} /> Change date
                   </button>
-                </div>
-              </div>
-
-              {/* 2. YOUR MOOD TODAY */}
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2 px-1">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">YOUR MOOD TODAY</span>
-                  <div className="flex-1 h-px bg-gray-200/80" />
-                </div>
-                <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-                  {moods.map((m) => {
-                    const isSelected = user?.mood?.includes(m.label);
-                    return (
-                      <button
-                        key={m.label}
-                        onClick={() => handleMoodUpdate(`${m.emoji} ${m.label}`)}
-                        className={`flex flex-col items-center justify-center px-4 py-3 rounded-2xl border transition-all shrink-0 min-w-[72px] ${
-                          isSelected
-                            ? 'bg-rose-50 border-rose-400 ring-2 ring-rose-300 text-rose-600 scale-105 shadow-md font-black'
-                            : 'bg-white/80 border-gray-100 text-gray-600 hover:bg-rose-50/50'
-                        }`}
-                      >
-                        <span className="text-2xl mb-1">{m.emoji}</span>
-                        <span className="text-[9px] font-bold uppercase tracking-tight">{m.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* 3. Partner Status Card */}
-              <div className="bg-slate-900 text-white p-4 rounded-3xl flex items-center justify-between shadow-xl border border-slate-800">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="relative shrink-0">
-                    <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-rose-500 to-pink-400 flex items-center justify-center font-black text-white text-base border-2 border-white shadow-md">
-                      {user.partnerId?.avatar ? (
-                        <img src={user.partnerId.avatar} alt="Partner" className="w-full h-full rounded-full object-cover" />
-                      ) : (
-                        user.partnerId?.name?.charAt(0) || 'P'
-                      )}
-                    </div>
-                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-slate-900 rounded-full" />
+                ) : (
+                  <div className="flex-1 flex gap-1 bg-white/10 p-1.5 rounded-full border border-white/30">
+                    <input type="date" value={tempDate} onChange={(e) => setTempDate(e.target.value)} className="bg-white text-gray-800 p-1 rounded-full text-xs flex-1 font-bold outline-none" />
+                    <button onClick={handleUpdateDate} className="bg-rose-500 text-white px-3 rounded-full font-black text-xs">Lock</button>
+                    <button onClick={() => setShowInput(false)} className="text-white px-2 font-bold">×</button>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-sm font-black text-white truncate leading-tight">{user.partnerId?.name || 'Partner'}</h4>
-                    <p className="text-xs text-rose-200/90 font-medium truncate mt-0.5">
-                      {user.partnerId?.mood ? `${user.partnerId.mood}` : '🥰 Feeling in love right now'}
-                    </p>
-                  </div>
-                </div>
+                )}
+
                 <button
-                  onClick={() => setActiveTab('chat')}
-                  className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all active:scale-95 shrink-0 ml-2"
-                  title="Chat with Partner"
+                  onClick={() => setActiveTab('memories_tab')}
+                  className="flex-1 py-2.5 px-4 bg-gradient-to-r from-amber-400 via-rose-500 to-pink-500 text-white rounded-full font-bold text-xs shadow-lg flex items-center justify-center gap-1.5 transition-all active:scale-95 hover:brightness-110"
                 >
-                  <MessageSquare size={18} />
+                  <Sparkles size={14} /> Add a memory
                 </button>
               </div>
+            </div>
 
-              {/* 4. Stats Grid Cards */}
-              <div className="grid grid-cols-12 gap-3">
-                {/* Connection Level */}
-                <div className="col-span-7 bg-white/80 backdrop-blur-xl p-4 rounded-3xl border border-white/60 shadow-lg flex flex-col justify-between space-y-2">
-                  <div>
-                    <div className="flex items-center gap-1 text-[9px] font-black text-rose-400 uppercase tracking-widest mb-0.5">
-                      <Zap size={12} /> CONNECTION LEVEL
-                    </div>
-                    <h3 className="font-serif text-3xl font-black text-gray-800">Lvl {level}</h3>
+            {/* 2. YOUR MOOD TODAY (Matches reference screenshot 1-to-1) */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 px-1 text-[10px] font-black tracking-widest text-gray-400 uppercase">
+                <Sparkles size={12} className="text-pink-500" /> YOUR MOOD TODAY
+              </div>
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                {moods.map((m) => {
+                  const isSelected = user?.mood?.includes(m.label);
+                  return (
+                    <button
+                      key={m.label}
+                      onClick={() => handleMoodUpdate(`${m.emoji} ${m.label}`)}
+                      className={`flex flex-col items-center justify-center px-4 py-3 rounded-2xl border transition-all shrink-0 min-w-[76px] app-touch-active ${
+                        isSelected
+                          ? 'bg-rose-50/90 border-rose-400 ring-2 ring-rose-300 text-rose-600 font-black shadow-sm scale-105'
+                          : 'bg-white border-gray-100 text-gray-500 hover:bg-rose-50/40 font-bold'
+                      }`}
+                    >
+                      <span className="text-2xl mb-1">{m.emoji}</span>
+                      <span className="text-[9px] uppercase tracking-tight">{m.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 3. PARTNER LIVE STATUS CARD (Matches reference screenshot 1-to-1) */}
+            <div className="bg-[#181a29] text-white p-3.5 rounded-3xl flex items-center justify-between shadow-xl border border-slate-800">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="relative shrink-0">
+                  <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-rose-500 to-pink-400 flex items-center justify-center font-black text-white text-base border-2 border-white shadow-md overflow-hidden">
+                    {user.partnerId?.avatar ? (
+                      <img src={user.partnerId.avatar} alt="Partner" className="w-full h-full object-cover" />
+                    ) : (
+                      user.partnerId?.name?.charAt(0) || 'P'
+                    )}
                   </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-gray-500 text-right mb-1 leading-none">{progress} / 100 XP to Lvl {level + 1}</p>
-                    <div className="h-3 bg-rose-100/80 rounded-full border border-rose-200/50 p-0.5 overflow-hidden shadow-inner">
-                      <div className="h-full bg-gradient-to-r from-rose-400 via-pink-500 to-rose-500 rounded-full transition-all duration-700" style={{ width: `${progress}%` }} />
-                    </div>
+                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-[#181a29] rounded-full animate-pulse" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-sm font-black text-white truncate leading-tight">{user.partnerId?.name || partnerName || 'Kunal Kumar'}</h4>
+                  <p className="text-xs text-rose-300 font-medium truncate mt-0.5 flex items-center gap-1">
+                    <span>🥰 Romantic</span>
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setActiveTab('chat')}
+                className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all active:scale-95 shrink-0 ml-2 relative"
+                title="Chat with Partner"
+              >
+                <MessageSquare size={18} />
+                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500" />
+              </button>
+            </div>
+
+            {/* 4. STATS GRID WIDGETS (Matches reference screenshot 1-to-1) */}
+            <div className="grid grid-cols-12 gap-3">
+              {/* Left Widget: Connection Level */}
+              <div className="col-span-6 bg-white p-4 rounded-3xl border border-rose-100/60 shadow-sm flex flex-col justify-between space-y-3 relative overflow-hidden">
+                <div>
+                  <div className="flex items-center gap-1 text-[9px] font-black text-pink-500 uppercase tracking-widest mb-1">
+                    <Zap size={12} /> CONNECTION LEVEL
+                  </div>
+                  <h3 className="font-serif text-3xl font-black text-gray-900">Lvl {level}</h3>
+                </div>
+                <div>
+                  <p className="text-[9px] font-bold text-gray-500 mb-1 leading-none">{progress} / 100 XP to Lvl {level + 1}</p>
+                  <div className="h-2.5 bg-rose-100/70 rounded-full overflow-hidden p-0.5">
+                    <div className="h-full bg-gradient-to-r from-rose-500 to-pink-500 rounded-full transition-all duration-700" style={{ width: `${progress}%` }} />
                   </div>
                 </div>
+                {/* Floating background heart illustration */}
+                <div className="absolute right-2 top-3 opacity-15 pointer-events-none">
+                  <Heart size={44} className="text-pink-400 fill-pink-400" />
+                </div>
+              </div>
 
-                {/* Memories & Milestone */}
-                <div className="col-span-5 flex flex-col gap-2.5">
-                  <div className="bg-white/80 backdrop-blur-xl p-3.5 rounded-3xl border border-white/60 shadow-lg flex-1 flex flex-col justify-between">
+              {/* Right Column: Memories & Milestone */}
+              <div className="col-span-6 flex flex-col gap-3">
+                {/* Memories Saved Card */}
+                <div className="bg-white p-3.5 rounded-3xl border border-rose-100/60 shadow-sm flex items-center justify-between">
+                  <div>
                     <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1">🖼️ MEMORIES</p>
-                    <p className="font-serif text-2xl font-black text-gray-800 leading-none mt-1">{memories.length}</p>
+                    <p className="font-serif text-2xl font-black text-gray-900 leading-none mt-1">{memories.length}</p>
+                    <p className="text-[8px] font-semibold text-gray-400 mt-0.5">Memories saved</p>
                   </div>
-                  <div className="bg-white/80 backdrop-blur-xl p-3.5 rounded-3xl border border-white/60 shadow-lg flex-1 flex flex-col justify-between">
-                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1">🏅 MILESTONE</p>
+                  <div className="w-9 h-9 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center font-black text-xs shrink-0">
+                    💖
+                  </div>
+                </div>
+
+                {/* Milestone Gold Card */}
+                <div className="bg-white p-3.5 rounded-3xl border border-rose-100/60 shadow-sm flex items-center justify-between">
+                  <div>
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1">🏆 MILESTONE</p>
                     <p className="font-serif text-2xl font-black text-amber-500 leading-none mt-1">Gold</p>
+                    <p className="text-[8px] font-semibold text-gray-400 mt-0.5">Next milestone at Lvl {level + 1}</p>
+                  </div>
+                  <div className="w-9 h-9 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center font-black text-xs shrink-0">
+                    🏆
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* 5. COMING UP NEXT */}
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2 px-1">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">COMING UP NEXT</span>
-                  <div className="flex-1 h-px bg-gray-200/80" />
+            {/* 5. COMING UP NEXT CARD (Matches reference screenshot 1-to-1) */}
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">COMING UP NEXT</p>
+              <div 
+                onClick={() => setActiveTab('calendar')}
+                className="bg-white p-4 rounded-3xl border border-rose-100/60 shadow-sm flex items-center justify-between cursor-pointer hover:bg-rose-50/40 transition-all app-touch-active"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center shrink-0">
+                    <CalendarIcon size={20} />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold italic text-rose-600">Nothing planned yet</h4>
+                    <p className="text-[10px] text-gray-400 font-medium">Tap "Add a memory" or "Daily Routine" to plan your day together</p>
+                  </div>
                 </div>
-                <div className="border-2 border-dashed border-rose-200/80 rounded-3xl p-3.5 text-center bg-white/40 backdrop-blur-md flex items-center gap-3">
-                  <div className="w-9 h-9 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
-                    <Clock size={18} />
+                <ChevronRight size={18} className="text-rose-400 shrink-0" />
+              </div>
+            </div>
+
+            {/* 6. EXPLORE TOGETHER MUSIC CARD (Matches reference screenshot 1-to-1) */}
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">❤️ EXPLORE TOGETHER</p>
+              <div 
+                onClick={() => setActiveTab('couple_beats')}
+                className="bg-white p-3.5 rounded-3xl border border-rose-100/60 shadow-sm flex items-center justify-between cursor-pointer hover:bg-rose-50/40 transition-all app-touch-active"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-purple-600 text-white flex items-center justify-center font-black shrink-0 shadow-md">
+                    <Radio size={20} />
                   </div>
-                  <div className="text-left flex-1 min-w-0">
-                    <p className="text-xs font-serif italic text-rose-600 font-bold leading-tight">Nothing planned yet</p>
-                    <p className="text-[10px] text-gray-400 font-medium leading-tight truncate">Tap "Add a memory" or "Daily Routine" to plan your day together</p>
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-900 leading-tight">Heat Waves</h4>
+                    <p className="text-[10px] text-gray-400 font-medium">Glass Animals</p>
                   </div>
+                </div>
+
+                <div className="flex items-center gap-1 text-xs font-bold text-rose-500">
+                  <span>Play together</span>
+                  <ChevronRight size={16} />
                 </div>
               </div>
-
-              {/* 6. EXPLORE TOGETHER LIST */}
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2 px-1">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">EXPLORE TOGETHER</span>
-                  <div className="flex-1 h-px bg-gray-200/80" />
-                </div>
-                <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/60 shadow-lg divide-y divide-gray-100 overflow-hidden">
-                  <button
-                    onClick={() => setActiveTab('couple_beats')}
-                    className="w-full p-3.5 flex items-center justify-between text-left hover:bg-rose-50/50 transition-all active:bg-rose-100/50"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-purple-100 text-purple-600 border border-purple-200/70 rounded-2xl flex items-center justify-center font-black shadow-sm shrink-0">
-                        <Radio size={20} />
-                      </div>
-                      <div>
-                        <h5 className="text-xs font-black text-gray-800">Beats Radio</h5>
-                        <p className="text-[10px] text-gray-400 font-medium">Listen to the same song, live</p>
-                      </div>
-                    </div>
-                    <ChevronRight size={16} className="text-gray-300" />
-                  </button>
-
-                  <button
-                    onClick={() => setActiveTab('virtual_touch')}
-                    className="w-full p-3.5 flex items-center justify-between text-left hover:bg-rose-50/50 transition-all active:bg-rose-100/50"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-pink-100 text-pink-600 border border-pink-200/70 rounded-2xl flex items-center justify-center font-black shadow-sm shrink-0">
-                        <Touchpad size={20} />
-                      </div>
-                      <div>
-                        <h5 className="text-xs font-black text-gray-800">Virtual Touch</h5>
-                        <p className="text-[10px] text-gray-400 font-medium">Touch the same spot together</p>
-                      </div>
-                    </div>
-                    <ChevronRight size={16} className="text-gray-300" />
-                  </button>
-
-                  <button
-                    onClick={() => setActiveTab('watch_together')}
-                    className="w-full p-3.5 flex items-center justify-between text-left hover:bg-rose-50/50 transition-all active:bg-rose-100/50"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-rose-100 text-rose-600 border border-rose-200/70 rounded-2xl flex items-center justify-center font-black shadow-sm shrink-0">
-                        <PlaySquare size={20} />
-                      </div>
-                      <div>
-                        <h5 className="text-xs font-black text-gray-800">Watch Together</h5>
-                        <p className="text-[10px] text-gray-400 font-medium">Sync movies & shows live</p>
-                      </div>
-                    </div>
-                    <ChevronRight size={16} className="text-gray-300" />
-                  </button>
-                </div>
-              </div>
-
             </div>
 
             {/* ========================================================================= */}
@@ -820,13 +843,8 @@ function Dashboard() {
                   <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Level</p>
                   <p className="text-2xl font-black text-rose-500">{level}</p>
                 </div>
-                <div className={`${glassStyle} p-5 rounded-[2rem] text-center`}>
-                  <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Milestone</p>
-                  <p className="text-2xl font-black text-rose-500">Gold</p>
-                </div>
               </div>
             </div>
-
           </div>
         )}
 
