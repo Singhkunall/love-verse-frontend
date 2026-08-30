@@ -115,11 +115,58 @@ const Login = () => {
       <div className="absolute top-0 right-0 w-[320px] md:w-[450px] h-[320px] md:h-[450px] pointer-events-none opacity-40 md:opacity-60 bg-gradient-to-bl from-pink-600/30 via-rose-500/20 to-transparent rounded-full blur-3xl" />
       <div className="absolute bottom-0 left-0 w-[300px] h-[300px] pointer-events-none opacity-30 bg-gradient-to-tr from-purple-800/30 to-pink-600/20 rounded-full blur-3xl" />
 
-      {/* Silhouette Romantic Archway Backdrop Graphic */}
-      <div className="absolute top-6 right-2 md:right-12 w-48 md:w-72 h-48 md:h-72 pointer-events-none opacity-25 md:opacity-40">
-        <div className="w-full h-full rounded-t-full border-4 border-pink-500/30 bg-gradient-to-b from-pink-500/20 to-purple-900/40 relative overflow-hidden flex items-end justify-center">
-          <div className="w-16 h-16 bg-pink-400/40 rounded-full blur-md mb-8 animate-pulse" />
-        </div>
+      {/* Couple Silhouette Heart Archway Graphic (Matches reference screenshot) */}
+      <div className="absolute -top-4 -right-4 w-72 md:w-[420px] h-72 md:h-[420px] pointer-events-none z-0 opacity-80 md:opacity-95">
+        <svg viewBox="0 0 300 300" className="w-full h-full drop-shadow-[0_0_35px_rgba(255,42,109,0.45)]">
+          <defs>
+            <linearGradient id="portalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#ff2a6d" stopOpacity="0.85" />
+              <stop offset="50%" stopColor="#d91b5c" stopOpacity="0.65" />
+              <stop offset="100%" stopColor="#2a083b" stopOpacity="0.95" />
+            </linearGradient>
+            <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#ffb3c6" stopOpacity="1" />
+              <stop offset="60%" stopColor="#ff2a6d" stopOpacity="0.75" />
+              <stop offset="100%" stopColor="#2a083b" stopOpacity="0" />
+            </radialGradient>
+          </defs>
+
+          {/* Heart Archway Outer Portal */}
+          <path
+            d="M 150,265 C 80,200 35,145 35,100 C 35,55 70,30 110,30 C 133,30 145,42 150,52 C 155,42 167,30 190,30 C 230,30 265,55 265,100 C 265,145 220,200 150,265 Z"
+            fill="url(#portalGrad)"
+            stroke="#ff5e91"
+            strokeWidth="3.5"
+            strokeOpacity="0.7"
+          />
+
+          {/* Inner Glowing Romantic Sun */}
+          <circle cx="150" cy="105" r="48" fill="url(#sunGlow)" className="animate-pulse" />
+
+          {/* Floating Sparkles inside Arch */}
+          <circle cx="125" cy="75" r="3" fill="#ffffff" opacity="0.9" />
+          <circle cx="178" cy="90" r="2.5" fill="#ffd1dc" opacity="0.95" />
+          <circle cx="110" cy="115" r="2" fill="#ffffff" opacity="0.8" />
+          <circle cx="190" cy="130" r="3" fill="#ffb3c6" opacity="0.85" />
+
+          {/* Couple Sitting Silhouette Ground Arc */}
+          <path d="M 75,215 Q 150,188 225,215 L 225,270 L 75,270 Z" fill="#0b0314" />
+
+          {/* Male Silhouette */}
+          <path
+            d="M 130,185 C 130,174 137,166 143,166 C 149,166 153,174 153,185 L 151,208 L 130,208 Z"
+            fill="#06010a"
+          />
+          <circle cx="142.5" cy="160" r="6.5" fill="#06010a" />
+
+          {/* Female Silhouette with Long Flowing Hair */}
+          <path
+            d="M 155,187 C 155,176 161,168 166,168 C 171,168 176,176 176,187 L 174,208 L 155,208 Z"
+            fill="#06010a"
+          />
+          <circle cx="165.5" cy="162" r="6" fill="#06010a" />
+          <path d="M 161,163 Q 172,170 170,182" stroke="#06010a" strokeWidth="3.5" strokeLinecap="round" />
+        </svg>
       </div>
 
       {/* Floating Hearts Background Particles */}
