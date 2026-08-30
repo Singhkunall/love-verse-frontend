@@ -2,22 +2,22 @@ import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
-import { User, Mail, ArrowRight, Heart, ShieldCheck, Sparkles } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { User, Mail, Sparkles, ArrowRight, Heart } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Redirect to dashboard if session token exists
+  // Agar already logged in hai toh dashboard pe bhejo
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) navigate('/dashboard');
   }, [navigate]);
 
   const handleGoogleSuccess = async (credentialResponse) => {
-    const loadId = toast.loading('Signing into Love-Verse...');
+    const loadId = toast.loading('Signing in...');
     try {
       const token = credentialResponse?.credential;
       if (!token) throw new Error('Google credential not received');
@@ -41,30 +41,30 @@ const Login = () => {
         const data = await response.json();
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data));
-        toast.success(`Welcome back, ${data.name}! ✨`, { id: loadId });
+        toast.success(`Welcome, ${data.name}! ✨`, { id: loadId });
         navigate('/dashboard');
       } else {
         throw new Error('Server returned ' + response.status);
       }
     } catch (error) {
       console.error('Google Login Error:', error);
-      toast.error('Google Login Failed! Try direct login below.', { id: loadId });
+      toast.error('Google Login Failed! 😢', { id: loadId });
     }
   };
 
   const handleDirectLogin = async (e) => {
     e.preventDefault();
     if (!email || !name) {
-      toast.error("Please enter both your Name and Email!");
+      toast.error("Please enter both Name and Email!");
       return;
     }
 
-    setIsSubmitting(true);
-    const loadId = toast.loading('Opening Sanctuary... ❤️');
+    const loadId = toast.loading('Entering Love-Verse... ❤️');
     const userEmail = email.trim().toLowerCase();
     const userName = name.trim();
 
     try {
+      // 1. Primary: Standard fetch request to live backend
       const response = await fetch('https://love-verse-backend.onrender.com/api/auth/google-login', {
         method: 'POST',
         headers: {
@@ -87,12 +87,10 @@ const Login = () => {
         return;
       }
     } catch (err) {
-      console.warn("Live backend fetch warning, applying direct session fallback:", err);
-    } finally {
-      setIsSubmitting(false);
+      console.warn("Live backend fetch warning, applying direct mobile session fallback:", err);
     }
 
-    // Direct local session fallback
+    // 2. Guaranteed Fallback: If network is blocked or offline, generate valid local session
     const fallbackUser = {
       _id: "usr_" + Math.random().toString(36).substring(2, 10),
       name: userName,
@@ -109,36 +107,51 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#faf7f5] flex flex-col items-center justify-center p-4 md:p-6 relative overflow-hidden select-none safe-top safe-bottom">
+    <div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center p-4 relative overflow-hidden">
 
-      {/* Subtle Pastel Ambient Orbs */}
-      <div className="absolute w-[500px] h-[500px] rounded-full bg-rose-200/40 blur-[120px] -top-32 -left-32 pointer-events-none" />
-      <div className="absolute w-[450px] h-[450px] rounded-full bg-pink-200/35 blur-[110px] -bottom-32 -right-32 pointer-events-none" />
+      {/* Animated background orbs */}
+      <div className="absolute w-[500px] h-[500px] rounded-full bg-rose-600/20 blur-[120px] top-[-100px] left-[-100px] animate-pulse" />
+      <div className="absolute w-[400px] h-[400px] rounded-full bg-pink-500/15 blur-[100px] bottom-[-80px] right-[-80px] animate-pulse" style={{ animationDelay: '1s' }} />
+      <div className="absolute w-[300px] h-[300px] rounded-full bg-red-500/10 blur-[80px] top-[40%] left-[40%] animate-pulse" style={{ animationDelay: '2s' }} />
 
-      <div className="relative z-10 w-full max-w-md my-auto">
-        
-        {/* Main Ultra-Clean Card */}
-        <div className="bg-white/90 backdrop-blur-2xl border border-rose-100/80 rounded-3xl p-7 md:p-9 shadow-[0_20px_50px_-15px_rgba(244,63,94,0.08)]">
+      {/* Floating hearts background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
+        {['❤️', '💖', '💗', '💓', '💞'].map((h, i) => (
+          <span
+            key={i}
+            className="absolute text-2xl opacity-10 animate-bounce"
+            style={{
+              left: `${10 + i * 20}%`,
+              top: `${15 + (i % 3) * 25}%`,
+              animationDelay: `${i * 0.5}s`,
+              animationDuration: `${2 + i * 0.4}s`
+            }}
+          >{h}</span>
+        ))}
+      </div>
 
-          {/* Minimalist Header */}
-          <div className="flex flex-col items-center mb-8 text-center">
-            <div className="w-14 h-14 bg-gradient-to-tr from-rose-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg shadow-rose-200 mb-3 border border-white">
-              <Heart size={26} className="text-white fill-white" />
+      <div className="relative z-10 w-full max-w-md">
+
+        {/* Card */}
+        <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-8 md:p-10 shadow-[0_0_80px_rgba(244,63,94,0.15)]">
+
+          {/* Logo */}
+          <div className="flex flex-col items-center mb-8">
+            <div className="relative mb-4">
+              <div className="w-20 h-20 bg-gradient-to-br from-rose-500 to-pink-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-rose-500/40 rotate-12 hover:rotate-0 transition-all duration-500 cursor-pointer">
+                <span className="text-4xl">❤️</span>
+              </div>
+              <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-400 rounded-full border-2 border-[#0d0d0d] animate-pulse" />
             </div>
-
-            <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">
-              Love-Verse
-            </h1>
-            <p className="text-xs font-medium text-gray-500 mt-1">
-              Private Digital Couple Sanctuary
-            </p>
+            <h1 className="text-4xl font-black text-white tracking-tighter">Love-Verse</h1>
+            <p className="text-white/40 text-sm mt-2 font-medium italic tracking-wide">"Where hearts meet digitally"</p>
           </div>
 
-          {/* Direct Login Form */}
+          {/* Direct Mobile & Web Form */}
           <form onSubmit={handleDirectLogin} className="space-y-4 mb-6">
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-gray-500 ml-1 flex items-center gap-1.5">
-                <User size={13} className="text-rose-500" /> Name
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-300 ml-1 flex items-center gap-1.5">
+                <User size={14} className="text-rose-400" /> Your Name
               </label>
               <input
                 type="text"
@@ -146,13 +159,13 @@ const Login = () => {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Enter your name"
                 required
-                className="w-full px-4 py-3 bg-gray-50/80 hover:bg-gray-50 border border-gray-200/80 focus:border-rose-400 focus:bg-white rounded-xl text-gray-800 placeholder-gray-400 text-sm font-semibold focus:outline-none focus:ring-2 ring-rose-100 transition-all"
+                className="w-full px-4 py-3 bg-white/10 border border-white/15 rounded-2xl text-white placeholder-gray-500 text-sm font-semibold focus:outline-none focus:border-rose-500 transition-all"
               />
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-gray-500 ml-1 flex items-center gap-1.5">
-                <Mail size={13} className="text-rose-500" /> Email
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-300 ml-1 flex items-center gap-1.5">
+                <Mail size={14} className="text-rose-400" /> Email Address
               </label>
               <input
                 type="email"
@@ -160,65 +173,64 @@ const Login = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 required
-                className="w-full px-4 py-3 bg-gray-50/80 hover:bg-gray-50 border border-gray-200/80 focus:border-rose-400 focus:bg-white rounded-xl text-gray-800 placeholder-gray-400 text-sm font-semibold focus:outline-none focus:ring-2 ring-rose-100 transition-all"
+                className="w-full px-4 py-3 bg-white/10 border border-white/15 rounded-2xl text-white placeholder-gray-500 text-sm font-semibold focus:outline-none focus:border-rose-500 transition-all"
               />
             </div>
 
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="w-full py-3.5 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white rounded-xl font-bold text-sm shadow-md shadow-rose-200 hover:shadow-lg transition-all flex items-center justify-center gap-2 mt-2 active:scale-[0.98] disabled:opacity-75"
+              className="w-full py-3.5 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white rounded-2xl font-black text-sm shadow-xl shadow-rose-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-2"
             >
-              <span>{isSubmitting ? 'Entering...' : 'Enter Sanctuary'}</span>
-              <ArrowRight size={16} />
+              <span>Enter Love-Verse</span>
+              <ArrowRight size={18} />
             </button>
           </form>
 
           {/* Divider */}
-          <div className="flex items-center gap-3 mb-6">
-            <div className="flex-1 h-px bg-gray-200/80" />
-            <span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">
-              OR GOOGLE AUTH
-            </span>
-            <div className="flex-1 h-px bg-gray-200/80" />
+          <div className="flex items-center gap-4 mb-6">
+            <div className="flex-1 h-px bg-white/10" />
+            <span className="text-white/30 text-[10px] font-bold uppercase tracking-widest">or Google Auth</span>
+            <div className="flex-1 h-px bg-white/10" />
           </div>
 
-          {/* Google Auth Container */}
+          {/* Google Login Button */}
           <div className="flex justify-center mb-6 min-h-[44px]">
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => toast.error("Google Login Failed!")}
-              useOneTap
-              theme="outline"
-              shape="pill"
-              size="large"
-              text="continue_with"
-            />
+            <div className="transform scale-105">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => toast.error("Google Login Failed! 😢")}
+                useOneTap
+                theme="filled_black"
+                shape="pill"
+                size="large"
+                text="continue_with"
+              />
+            </div>
           </div>
 
-          {/* Minimal Security Badge */}
-          <div className="flex items-center justify-center gap-1.5 mb-5 py-2 px-3 bg-rose-50/60 border border-rose-100/60 rounded-xl text-rose-700">
-            <ShieldCheck size={14} className="text-rose-500 shrink-0" />
-            <span className="text-[11px] font-bold">Encrypted Private Session</span>
+          {/* Info */}
+          <div className="flex items-center justify-center gap-2 mb-6">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+            <span className="text-white/40 text-xs font-semibold">Instant Secure Access • 100% In-App</span>
           </div>
 
           {/* Divider */}
-          <div className="h-px bg-gray-100 mb-5" />
+          <div className="h-px bg-white/10 mb-6" />
 
-          {/* Register Link */}
-          <p className="text-center text-gray-500 text-xs font-medium">
-            New couple?{' '}
+          {/* Register link */}
+          <p className="text-center text-white/40 text-sm">
+            Naye ho?{' '}
             <Link
               to="/register"
-              className="text-rose-500 font-bold hover:text-rose-600 transition-colors ml-0.5"
+              className="text-rose-400 font-bold hover:text-rose-300 transition-colors underline underline-offset-4"
             >
-              Create Account
+              Account banao
             </Link>
           </p>
         </div>
 
-        {/* Footer Credit */}
-        <p className="text-center text-gray-400 text-xs mt-6 font-medium flex items-center justify-center gap-1">
+        {/* Bottom text */}
+        <p className="text-center text-white/20 text-xs mt-6 font-medium flex items-center justify-center gap-1">
           Made with <Heart size={12} className="text-rose-500 fill-rose-500 inline" /> for couples
         </p>
       </div>
