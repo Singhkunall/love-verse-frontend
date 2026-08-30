@@ -558,8 +558,17 @@ function WatchTogether({ user, roomId, socket }) {
     }
   };
 
-  // Problem 1 Fix: Capacitor Native Screen Orientation Lock + Smart CSS 90-degree Rotate Fallback
+  // Problem 1 & Round 3 Section 3.1 Fix: Single-return cleanup to prevent stuck landscape/unscrollable body
   useEffect(() => {
+    const cleanupFullscreenState = () => {
+      document.body.classList.remove('cinema-fullscreen-active');
+      document.body.style.overflow = 'auto';
+      try { mobileService.unlockOrientation(); } catch (e) {}
+      setForceCssLandscape(false);
+    };
+
+    let removeListeners = () => {};
+
     try {
       if (isCinemaFullscreen) {
         document.body.classList.add('cinema-fullscreen-active');
@@ -581,29 +590,21 @@ function WatchTogether({ user, roomId, socket }) {
           window.addEventListener('resize', checkPhysicalOrientation);
           window.addEventListener('orientationchange', checkPhysicalOrientation);
 
-          return () => {
+          removeListeners = () => {
             window.removeEventListener('resize', checkPhysicalOrientation);
             window.removeEventListener('orientationchange', checkPhysicalOrientation);
-            setForceCssLandscape(false);
           };
         } else {
           setForceCssLandscape(false);
         }
       } else {
-        document.body.classList.remove('cinema-fullscreen-active');
-        document.body.style.overflow = 'auto';
-        mobileService.unlockOrientation();
-        setForceCssLandscape(false);
+        cleanupFullscreenState();
       }
     } catch (e) {}
 
     return () => {
-      try {
-        document.body.classList.remove('cinema-fullscreen-active');
-        document.body.style.overflow = 'auto';
-        mobileService.unlockOrientation();
-        setForceCssLandscape(false);
-      } catch (e) {}
+      removeListeners();
+      cleanupFullscreenState();
     };
   }, [isCinemaFullscreen]);
 
