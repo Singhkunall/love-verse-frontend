@@ -2,22 +2,22 @@ import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
-import { Capacitor } from '@capacitor/core';
-import { User, Mail, Sparkles, ArrowRight, Heart } from 'lucide-react';
+import { User, Mail, ArrowRight, Heart, Shield, Zap, Lock, Sparkles } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Agar already logged in hai toh dashboard pe bhejo
+  // Auto redirect if session token exists
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) navigate('/dashboard');
   }, [navigate]);
 
   const handleGoogleSuccess = async (credentialResponse) => {
-    const loadId = toast.loading('Signing in...');
+    const loadId = toast.loading('Signing into Love-Verse... ❤️');
     try {
       const token = credentialResponse?.credential;
       if (!token) throw new Error('Google credential not received');
@@ -41,14 +41,14 @@ const Login = () => {
         const data = await response.json();
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data));
-        toast.success(`Welcome, ${data.name}! ✨`, { id: loadId });
+        toast.success(`Welcome back, ${data.name}! ✨`, { id: loadId });
         navigate('/dashboard');
       } else {
         throw new Error('Server returned ' + response.status);
       }
     } catch (error) {
       console.error('Google Login Error:', error);
-      toast.error('Google Login Failed! 😢', { id: loadId });
+      toast.error('Google Login Failed! Try direct login below ❤️', { id: loadId });
     }
   };
 
@@ -59,12 +59,12 @@ const Login = () => {
       return;
     }
 
+    setIsSubmitting(true);
     const loadId = toast.loading('Entering Love-Verse... ❤️');
     const userEmail = email.trim().toLowerCase();
     const userName = name.trim();
 
     try {
-      // 1. Primary: Standard fetch request to live backend
       const response = await fetch('https://love-verse-backend.onrender.com/api/auth/google-login', {
         method: 'POST',
         headers: {
@@ -87,10 +87,12 @@ const Login = () => {
         return;
       }
     } catch (err) {
-      console.warn("Live backend fetch warning, applying direct mobile session fallback:", err);
+      console.warn("Live backend fetch warning, applying direct session fallback:", err);
+    } finally {
+      setIsSubmitting(false);
     }
 
-    // 2. Guaranteed Fallback: If network is blocked or offline, generate valid local session
+    // Direct local session fallback
     const fallbackUser = {
       _id: "usr_" + Math.random().toString(36).substring(2, 10),
       name: userName,
@@ -107,98 +109,132 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-[#0b0314] text-white flex flex-col justify-between p-4 md:p-6 relative overflow-hidden select-none safe-top safe-bottom font-sans">
 
-      {/* Animated background orbs */}
-      <div className="absolute w-[500px] h-[500px] rounded-full bg-rose-600/20 blur-[120px] top-[-100px] left-[-100px] animate-pulse" />
-      <div className="absolute w-[400px] h-[400px] rounded-full bg-pink-500/15 blur-[100px] bottom-[-80px] right-[-80px] animate-pulse" style={{ animationDelay: '1s' }} />
-      <div className="absolute w-[300px] h-[300px] rounded-full bg-red-500/10 blur-[80px] top-[40%] left-[40%] animate-pulse" style={{ animationDelay: '2s' }} />
+      {/* Romantic Sunset Arch & Ambient Glows */}
+      <div className="absolute top-0 right-0 w-[320px] md:w-[450px] h-[320px] md:h-[450px] pointer-events-none opacity-40 md:opacity-60 bg-gradient-to-bl from-pink-600/30 via-rose-500/20 to-transparent rounded-full blur-3xl" />
+      <div className="absolute bottom-0 left-0 w-[300px] h-[300px] pointer-events-none opacity-30 bg-gradient-to-tr from-purple-800/30 to-pink-600/20 rounded-full blur-3xl" />
 
-      {/* Floating hearts background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
-        {['❤️', '💖', '💗', '💓', '💞'].map((h, i) => (
+      {/* Silhouette Romantic Archway Backdrop Graphic */}
+      <div className="absolute top-6 right-2 md:right-12 w-48 md:w-72 h-48 md:h-72 pointer-events-none opacity-25 md:opacity-40">
+        <div className="w-full h-full rounded-t-full border-4 border-pink-500/30 bg-gradient-to-b from-pink-500/20 to-purple-900/40 relative overflow-hidden flex items-end justify-center">
+          <div className="w-16 h-16 bg-pink-400/40 rounded-full blur-md mb-8 animate-pulse" />
+        </div>
+      </div>
+
+      {/* Floating Hearts Background Particles */}
+      <div className="absolute inset-0 pointer-events-none opacity-15 overflow-hidden">
+        {['❤️', '💖', '💗', '💓', '💕'].map((emoji, idx) => (
           <span
-            key={i}
-            className="absolute text-2xl opacity-10 animate-bounce"
+            key={idx}
+            className="absolute text-xl animate-bounce"
             style={{
-              left: `${10 + i * 20}%`,
-              top: `${15 + (i % 3) * 25}%`,
-              animationDelay: `${i * 0.5}s`,
-              animationDuration: `${2 + i * 0.4}s`
+              left: `${8 + idx * 20}%`,
+              top: `${15 + (idx % 3) * 25}%`,
+              animationDelay: `${idx * 0.7}s`,
+              animationDuration: `${2.5 + idx * 0.4}s`
             }}
-          >{h}</span>
+          >
+            {emoji}
+          </span>
         ))}
       </div>
 
-      <div className="relative z-10 w-full max-w-md">
+      <div className="relative z-10 w-full max-w-md mx-auto my-auto space-y-6">
 
-        {/* Card */}
-        <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-8 md:p-10 shadow-[0_0_80px_rgba(244,63,94,0.15)]">
-
-          {/* Logo */}
-          <div className="flex flex-col items-center mb-8">
-            <div className="relative mb-4">
-              <div className="w-20 h-20 bg-gradient-to-br from-rose-500 to-pink-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-rose-500/40 rotate-12 hover:rotate-0 transition-all duration-500 cursor-pointer">
-                <span className="text-4xl">❤️</span>
-              </div>
-              <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-400 rounded-full border-2 border-[#0d0d0d] animate-pulse" />
-            </div>
-            <h1 className="text-4xl font-black text-white tracking-tighter">Love-Verse</h1>
-            <p className="text-white/40 text-sm mt-2 font-medium italic tracking-wide">"Where hearts meet digitally"</p>
+        {/* Top Branding Section */}
+        <div className="space-y-3 pt-2">
+          {/* Logo with Green Status Dot */}
+          <div className="relative w-16 h-16 bg-gradient-to-tr from-pink-600 to-rose-500 rounded-2xl flex items-center justify-center shadow-lg shadow-pink-500/30">
+            <Heart size={32} className="text-white fill-white" />
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-400 rounded-full border-2 border-[#0b0314] animate-pulse" />
           </div>
 
-          {/* Direct Mobile & Web Form */}
-          <form onSubmit={handleDirectLogin} className="space-y-4 mb-6">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-300 ml-1 flex items-center gap-1.5">
-                <User size={14} className="text-rose-400" /> Your Name
-              </label>
+          <div>
+            <h1 className="text-3xl md:text-4xl font-black tracking-tight flex items-center gap-1">
+              <span>Love</span>
+              <span className="text-pink-500">-Verse</span>
+            </h1>
+            <p className="text-xs md:text-sm font-medium text-pink-200/70 mt-1 flex items-center gap-1">
+              Where hearts meet digitally <Heart size={12} className="text-pink-500 fill-pink-500 inline" />
+            </p>
+          </div>
+        </div>
+
+        {/* Main Translucent Glass Card */}
+        <div className="bg-[#180829]/70 backdrop-blur-2xl border border-pink-500/20 rounded-[2.5rem] p-6 md:p-8 shadow-[0_15px_50px_rgba(244,63,94,0.15)] space-y-6">
+
+          {/* Card Welcome Header */}
+          <div>
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              Welcome back 👋
+            </h2>
+            <p className="text-xs text-gray-400 font-medium mt-0.5">
+              Sign in to continue your journey
+            </p>
+          </div>
+
+          {/* Form Inputs */}
+          <form onSubmit={handleDirectLogin} className="space-y-4">
+            
+            {/* Input 1: Name */}
+            <div className="relative flex items-center bg-[#25103a]/80 border border-pink-500/20 focus-within:border-pink-500 rounded-2xl p-1.5 transition-all">
+              <div className="w-10 h-10 rounded-xl bg-pink-600/30 flex items-center justify-center shrink-0 ml-1">
+                <User size={18} className="text-pink-400" />
+              </div>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your name"
+                placeholder="Your Name"
                 required
-                className="w-full px-4 py-3 bg-white/10 border border-white/15 rounded-2xl text-white placeholder-gray-500 text-sm font-semibold focus:outline-none focus:border-rose-500 transition-all"
+                className="w-full bg-transparent px-3 py-2 text-sm text-white placeholder-gray-400 font-medium outline-none"
               />
+              <User size={18} className="text-gray-500 mr-3 shrink-0" />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-300 ml-1 flex items-center gap-1.5">
-                <Mail size={14} className="text-rose-400" /> Email Address
-              </label>
+            {/* Input 2: Email */}
+            <div className="relative flex items-center bg-[#25103a]/80 border border-pink-500/20 focus-within:border-pink-500 rounded-2xl p-1.5 transition-all">
+              <div className="w-10 h-10 rounded-xl bg-pink-600/30 flex items-center justify-center shrink-0 ml-1">
+                <Mail size={18} className="text-pink-400" />
+              </div>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
+                placeholder="Email Address"
                 required
-                className="w-full px-4 py-3 bg-white/10 border border-white/15 rounded-2xl text-white placeholder-gray-500 text-sm font-semibold focus:outline-none focus:border-rose-500 transition-all"
+                className="w-full bg-transparent px-3 py-2 text-sm text-white placeholder-gray-400 font-medium outline-none"
               />
+              <Mail size={18} className="text-gray-500 mr-3 shrink-0" />
             </div>
 
+            {/* Submit Button */}
             <button
               type="submit"
-              className="w-full py-3.5 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white rounded-2xl font-black text-sm shadow-xl shadow-rose-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-2"
+              disabled={isSubmitting}
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#ff2a6d] to-[#ff007f] hover:from-[#ff1f64] hover:to-[#e60073] font-bold text-sm text-white shadow-[0_0_25px_rgba(255,42,109,0.4)] hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-75"
             >
-              <span>Enter Love-Verse</span>
+              <span>{isSubmitting ? 'Entering Love-Verse...' : 'Continue to Love-Verse'}</span>
               <ArrowRight size={18} />
             </button>
           </form>
 
-          {/* Divider */}
-          <div className="flex items-center gap-4 mb-6">
+          {/* Or Divider */}
+          <div className="flex items-center gap-3">
             <div className="flex-1 h-px bg-white/10" />
-            <span className="text-white/30 text-[10px] font-bold uppercase tracking-widest">or Google Auth</span>
+            <span className="text-[10px] font-bold text-gray-400 tracking-wider uppercase flex items-center gap-1">
+              <Heart size={8} className="text-pink-500 fill-pink-500" /> OR CONTINUE WITH
+            </span>
             <div className="flex-1 h-px bg-white/10" />
           </div>
 
-          {/* Google Login Button */}
-          <div className="flex justify-center mb-6 min-h-[44px]">
-            <div className="transform scale-105">
+          {/* Google Sign-in Container */}
+          <div className="flex justify-center min-h-[44px]">
+            <div className="hover:scale-105 transition-transform">
               <GoogleLogin
                 onSuccess={handleGoogleSuccess}
-                onError={() => toast.error("Google Login Failed! 😢")}
+                onError={() => toast.error("Google Login Failed! Try direct login above ❤️")}
                 useOneTap
                 theme="filled_black"
                 shape="pill"
@@ -208,32 +244,58 @@ const Login = () => {
             </div>
           </div>
 
-          {/* Info */}
-          <div className="flex items-center justify-center gap-2 mb-6">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-            <span className="text-white/40 text-xs font-semibold">Instant Secure Access • 100% In-App</span>
+          {/* 3 Pillar Features Box */}
+          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/10 text-center">
+            <div className="space-y-1">
+              <div className="w-8 h-8 rounded-full bg-pink-500/10 border border-pink-500/20 flex items-center justify-center mx-auto text-pink-400">
+                <Shield size={14} />
+              </div>
+              <h5 className="text-[10px] font-bold text-white">100% Secure</h5>
+              <p className="text-[8px] text-gray-400 font-medium">Your data is safe</p>
+            </div>
+
+            <div className="space-y-1 border-x border-white/10 px-1">
+              <div className="w-8 h-8 rounded-full bg-pink-500/10 border border-pink-500/20 flex items-center justify-center mx-auto text-pink-400">
+                <Zap size={14} />
+              </div>
+              <h5 className="text-[10px] font-bold text-white">Instant Access</h5>
+              <p className="text-[8px] text-gray-400 font-medium">No waiting, just love</p>
+            </div>
+
+            <div className="space-y-1">
+              <div className="w-8 h-8 rounded-full bg-pink-500/10 border border-pink-500/20 flex items-center justify-center mx-auto text-pink-400">
+                <Lock size={14} />
+              </div>
+              <h5 className="text-[10px] font-bold text-white">Private & Safe</h5>
+              <p className="text-[8px] text-gray-400 font-medium">Your privacy matters</p>
+            </div>
           </div>
-
-          {/* Divider */}
-          <div className="h-px bg-white/10 mb-6" />
-
-          {/* Register link */}
-          <p className="text-center text-white/40 text-sm">
-            Naye ho?{' '}
-            <Link
-              to="/register"
-              className="text-rose-400 font-bold hover:text-rose-300 transition-colors underline underline-offset-4"
-            >
-              Account banao
-            </Link>
-          </p>
         </div>
 
-        {/* Bottom text */}
-        <p className="text-center text-white/20 text-xs mt-6 font-medium flex items-center justify-center gap-1">
-          Made with <Heart size={12} className="text-rose-500 fill-rose-500 inline" /> for couples
-        </p>
+        {/* Below Card Register Link */}
+        <div className="text-center space-y-3">
+          <p className="text-xs text-gray-300 font-medium">
+            New here?{' '}
+            <Link
+              to="/register"
+              className="text-pink-400 font-bold hover:text-pink-300 transition-colors ml-1 inline-flex items-center gap-0.5"
+            >
+              Create an account <ArrowRight size={12} />
+            </Link>
+          </p>
+
+          <div className="flex items-center justify-center gap-2 opacity-30">
+            <div className="flex-1 h-px bg-dashed border-b border-pink-400/50" />
+            <Heart size={10} className="text-pink-400 fill-pink-400" />
+            <div className="flex-1 h-px bg-dashed border-b border-pink-400/50" />
+          </div>
+        </div>
       </div>
+
+      {/* Curved Footer */}
+      <footer className="relative z-10 text-center py-2 text-[11px] text-gray-400 font-medium flex items-center justify-center gap-1">
+        Made with <Heart size={12} className="text-pink-500 fill-pink-500 inline" /> for couples
+      </footer>
     </div>
   );
 };
