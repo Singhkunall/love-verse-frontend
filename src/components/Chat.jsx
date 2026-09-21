@@ -873,23 +873,23 @@ function Chat({ user }) {
         </div>
       )}
 
-      {/* Chat Sub-Header */}
-      <div className="px-3 py-3 bg-white/70 backdrop-blur-md border-b border-rose-100/60 flex items-center justify-between shadow-sm z-10">
+      {/* Chat Sub-Header (Matches Love-Verse UI Design Tokens) */}
+      <div className="px-4 py-3 bg-white/90 backdrop-blur-xl border-b border-rose-100/70 flex items-center justify-between shadow-sm z-10 rounded-b-2xl">
         <div className="flex items-center gap-3">
           <div className="relative shrink-0">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#aa2c4c] to-[#c9436a] text-white flex items-center justify-center font-black shadow-md border-2 border-white overflow-hidden">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-rose-500 to-pink-500 text-white flex items-center justify-center font-black shadow-md border-2 border-white overflow-hidden">
               {partnerAvatar ? (
                 <img src={partnerAvatar} alt={partnerName} className="w-full h-full object-cover" />
               ) : (
                 partnerName ? partnerName[0].toUpperCase() : 'P'
               )}
             </div>
-            <div className="w-3 h-3 bg-emerald-500 border-2 border-white rounded-full absolute bottom-0 right-0 shadow-sm" />
+            <div className="w-3 h-3 bg-emerald-500 border-2 border-white rounded-full absolute bottom-0 right-0 shadow-sm animate-pulse" />
           </div>
           <div>
-            <h3 className="font-bold text-gray-800 text-sm leading-tight">{partnerName}</h3>
-            <p className="text-[11px] font-medium text-emerald-500 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+            <h3 className="font-black text-gray-900 text-sm leading-tight">{partnerName}</h3>
+            <p className="text-[10px] font-bold text-emerald-500 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-ping" />
               {isTyping ? "Typing..." : "Online in Sanctuary"}
             </p>
           </div>
@@ -902,16 +902,16 @@ function Chat({ user }) {
               toast(isDisappearingMode ? "Disappearing Mode Off" : "Secret Disappearing Mode Active 🤫✨");
             }}
             className={`w-9 h-9 rounded-full flex items-center justify-center transition-all border active:scale-95 ${
-              isDisappearingMode ? 'bg-amber-500 text-white border-amber-600 shadow-md animate-pulse' : 'bg-rose-50 text-gray-700 hover:bg-rose-100 border-rose-100/80'
+              isDisappearingMode ? 'bg-amber-500 text-white border-amber-600 shadow-md animate-pulse' : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border-rose-100/80'
             }`}
             title={isDisappearingMode ? "Disappearing Mode Active" : "Enable Secret Disappearing Mode"}
           >
-            <Sparkles size={16} className={isDisappearingMode ? "fill-current text-amber-500" : ""} />
+            <Sparkles size={16} className={isDisappearingMode ? "fill-current text-white" : "text-rose-500"} />
           </button>
           <button
             onClick={() => startCall(false)}
             disabled={isCallUIOpen}
-            className="w-9 h-9 rounded-full bg-rose-50 text-gray-700 hover:bg-rose-100 flex items-center justify-center transition-all border border-rose-100/80 active:scale-95 disabled:opacity-40"
+            className="w-9 h-9 rounded-full bg-rose-50 text-rose-600 hover:bg-rose-100 flex items-center justify-center transition-all border border-rose-100/80 active:scale-95 disabled:opacity-40"
             title="Start HD Audio Call"
           >
             <Phone size={16} />
@@ -919,14 +919,14 @@ function Chat({ user }) {
           <button
             onClick={() => startCall(true)}
             disabled={isCallUIOpen}
-            className="w-9 h-9 rounded-full bg-[#aa2c4c] text-white flex items-center justify-center shadow-md hover:scale-105 transition-all active:scale-95 disabled:opacity-40"
+            className="w-9 h-9 rounded-full bg-gradient-to-tr from-rose-500 to-pink-500 text-white flex items-center justify-center shadow-md shadow-rose-200 hover:scale-105 transition-all active:scale-95 disabled:opacity-40"
             title="Start HD Video Call"
           >
             <Video size={16} />
           </button>
           <button
             onClick={() => setShowRoutine(!showRoutine)}
-            className="w-9 h-9 rounded-full bg-rose-50 text-rose-800 hover:bg-rose-100 flex items-center justify-center transition-all border border-rose-100/80 active:scale-95"
+            className="w-9 h-9 rounded-full bg-rose-50 text-rose-600 hover:bg-rose-100 flex items-center justify-center transition-all border border-rose-100/80 active:scale-95"
             title="Toggle Routines"
           >
             <ListTodo size={16} />
