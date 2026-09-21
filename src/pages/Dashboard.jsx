@@ -508,82 +508,30 @@ function Dashboard() {
             {/* ========================================================================= */}
             <div className="lg:hidden space-y-4">
 
-            {/* 1. HERO DAYS TOGETHER CARD (Matches reference screenshot 1-to-1) */}
-            <div className="bg-gradient-to-r from-[#4d0b22] via-[#6d1334] to-[#360618] text-white rounded-[2.5rem] p-6 shadow-2xl relative overflow-hidden border border-pink-500/20 space-y-4">
+            {/* 1. HERO DAYS TOGETHER CARD (Ultra-Clean Rose Gradient) */}
+            <div className="bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 text-white rounded-[2.5rem] p-6 shadow-[0_15px_35px_rgba(244,63,94,0.25)] relative overflow-hidden border border-white/20 space-y-4">
               
-              {/* Bright Vivid Couple Sunset Heart Graphic (100% Guaranteed Visible on all screens) */}
-              <div className="absolute top-0 right-0 w-[170px] sm:w-[220px] h-full pointer-events-none z-0 overflow-hidden rounded-r-[2.5rem]">
-                <svg viewBox="0 0 170 180" className="w-full h-full">
-                  <defs>
-                    <radialGradient id="heroHeartSun" cx="50%" cy="45%" r="55%">
-                      <stop offset="0%" stopColor="#ffccd5" stopOpacity="1" />
-                      <stop offset="45%" stopColor="#ff4d8d" stopOpacity="0.95" />
-                      <stop offset="85%" stopColor="#c41253" stopOpacity="0.85" />
-                      <stop offset="100%" stopColor="#540826" stopOpacity="0" />
-                    </radialGradient>
-                  </defs>
-
-                  {/* Big Glowing Pink Heart Sun in Sky */}
-                  <path
-                    d="M 95,120 C 50,80 20,48 20,24 C 20,6 38,-8 60,-8 C 74,-8 87,0 95,10 C 103,0 116,-8 130,-8 C 152,-8 170,6 170,24 C 170,48 140,80 95,120 Z"
-                    fill="url(#heroHeartSun)"
-                  />
-                  <path
-                    d="M 95,105 C 58,70 32,40 32,20 C 32,5 46,-4 64,-4 C 75,-4 86,2 95,10 C 104,2 115,-4 126,-4 C 144,-4 158,5 158,20 C 158,40 132,70 95,105 Z"
-                    fill="#ffe3ea"
-                    opacity="0.95"
-                  />
-
-                  {/* Glowing Star Sparkles */}
-                  <circle cx="60" cy="15" r="2.5" fill="#ffffff" opacity="0.95" />
-                  <circle cx="130" cy="20" r="2.5" fill="#ffffff" opacity="0.95" />
-                  <circle cx="40" cy="35" r="2" fill="#ffe3ea" opacity="0.9" />
-
-                  {/* Dark Hill Ground with Trees Contour */}
-                  <path
-                    d="M 0,150 C 40,118 110,118 170,145 L 170,180 L 0,180 Z"
-                    fill="#360416"
-                  />
-                  <path
-                    d="M 30,155 C 80,125 140,125 170,155 L 170,180 L 30,180 Z"
-                    fill="#170108"
-                  />
-
-                  {/* Male Silhouette */}
-                  <path
-                    d="M 80,122 C 80,113 85,106 90,106 C 95,106 99,113 99,122 L 97,144 L 80,144 Z"
-                    fill="#080004"
-                  />
-                  <circle cx="89.5" cy="100" r="5" fill="#080004" />
-
-                  {/* Female Silhouette sitting beside him */}
-                  <path
-                    d="M 100,124 C 100,115 105,108 110,108 C 115,108 119,115 119,124 L 117,144 L 100,144 Z"
-                    fill="#080004"
-                  />
-                  <circle cx="109.5" cy="102" r="4.5" fill="#080004" />
-                  <path d="M 106,103 Q 115,108 113,117" stroke="#080004" strokeWidth="2.5" strokeLinecap="round" />
-                </svg>
-              </div>
+              {/* Subtle Ambient Glow Effect */}
+              <div className="absolute top-0 right-0 w-44 h-full pointer-events-none opacity-20 bg-white rounded-r-[2.5rem] blur-xl" />
 
               {/* Header inside Hero */}
               <div className="flex items-center justify-between relative z-10">
-                <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-pink-200/90">
-                  <Heart size={12} className="text-pink-400 fill-pink-400" /> TOGETHER, STILL COUNTING
+                <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-white/90">
+                  <Heart size={12} className="text-white fill-white" /> TOGETHER, STILL COUNTING
                 </div>
-                <div className="flex items-center gap-1 bg-white/10 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-white/20 text-[10px] font-bold">
+                <div className="flex items-center gap-1 bg-white/20 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-white/30 text-[10px] font-bold text-white">
                   <span>Lvl {level}</span>
-                  <Shield size={10} className="text-amber-300 fill-amber-300" />
+                  <Shield size={10} className="text-amber-200 fill-amber-200" />
                 </div>
               </div>
 
               {/* Days Count */}
               <div className="relative z-10">
                 <div className="flex items-baseline gap-2">
-                  <span className="font-serif text-5xl md:text-6xl font-black tracking-tight text-white drop-shadow-md">{daysTogether}</span>
-                  <span className="font-serif italic text-2xl text-pink-200 font-light">days</span>
+                  <span className="font-serif text-5xl md:text-6xl font-black tracking-tight text-white drop-shadow-sm">{daysTogether}</span>
+                  <span className="font-serif italic text-2xl text-rose-100 font-light">days</span>
                 </div>
-                <p className="text-xs text-pink-100/80 font-medium mt-1">
+                <p className="text-xs text-rose-100/90 font-medium mt-1">
                   Since {user?.anniversaryDate ? new Date(user.anniversaryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Aug 29'} • Level {level}, stronger every day
                 </p>
               </div>
@@ -593,31 +541,31 @@ function Dashboard() {
                 {!showInput ? (
                   <button
                     onClick={() => setShowInput(true)}
-                    className="flex-1 py-2.5 px-4 bg-white/10 hover:bg-white/20 border border-white/30 backdrop-blur-md rounded-full font-bold text-xs text-white flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                    className="flex-1 py-2.5 px-4 bg-white/20 hover:bg-white/30 border border-white/40 backdrop-blur-md rounded-full font-bold text-xs text-white flex items-center justify-center gap-1.5 transition-all active:scale-95"
                   >
                     <CalendarIcon size={14} /> Change date
                   </button>
                 ) : (
-                  <div className="flex-1 flex gap-1 bg-white/10 p-1.5 rounded-full border border-white/30">
+                  <div className="flex-1 flex gap-1 bg-white/20 p-1.5 rounded-full border border-white/40">
                     <input type="date" value={tempDate} onChange={(e) => setTempDate(e.target.value)} className="bg-white text-gray-800 p-1 rounded-full text-xs flex-1 font-bold outline-none" />
-                    <button onClick={handleUpdateDate} className="bg-rose-500 text-white px-3 rounded-full font-black text-xs">Lock</button>
+                    <button onClick={handleUpdateDate} className="bg-rose-700 text-white px-3 rounded-full font-black text-xs">Lock</button>
                     <button onClick={() => setShowInput(false)} className="text-white px-2 font-bold">×</button>
                   </div>
                 )}
 
                 <button
                   onClick={() => setActiveTab('memories_tab')}
-                  className="flex-1 py-2.5 px-4 bg-gradient-to-r from-amber-400 via-rose-500 to-pink-500 text-white rounded-full font-bold text-xs shadow-lg flex items-center justify-center gap-1.5 transition-all active:scale-95 hover:brightness-110"
+                  className="flex-1 py-2.5 px-4 bg-white text-rose-600 hover:bg-rose-50 rounded-full font-bold text-xs shadow-md flex items-center justify-center gap-1.5 transition-all active:scale-95"
                 >
-                  <Sparkles size={14} /> Add a memory
+                  <Sparkles size={14} className="text-rose-500" /> Add a memory
                 </button>
               </div>
             </div>
 
-            {/* 2. YOUR MOOD TODAY (Matches reference screenshot 1-to-1) */}
+            {/* 2. YOUR MOOD TODAY (Clean White Cards) */}
             <div className="space-y-2">
               <div className="flex items-center gap-1.5 px-1 text-[10px] font-black tracking-widest text-gray-400 uppercase">
-                <Sparkles size={12} className="text-pink-500" /> YOUR MOOD TODAY
+                <Sparkles size={12} className="text-rose-500" /> YOUR MOOD TODAY
               </div>
               <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
                 {moods.map((m) => {
@@ -628,8 +576,8 @@ function Dashboard() {
                       onClick={() => handleMoodUpdate(`${m.emoji} ${m.label}`)}
                       className={`flex flex-col items-center justify-center px-4 py-3 rounded-2xl border transition-all shrink-0 min-w-[76px] app-touch-active ${
                         isSelected
-                          ? 'bg-rose-50/90 border-rose-400 ring-2 ring-rose-300 text-rose-600 font-black shadow-sm scale-105'
-                          : 'bg-white border-gray-100 text-gray-500 hover:bg-rose-50/40 font-bold'
+                          ? 'bg-rose-50 border-rose-400 ring-2 ring-rose-200 text-rose-600 font-black shadow-sm scale-105'
+                          : 'bg-white border-gray-200/80 text-gray-600 hover:bg-rose-50/40 font-bold'
                       }`}
                     >
                       <span className="text-2xl mb-1">{m.emoji}</span>
@@ -640,33 +588,32 @@ function Dashboard() {
               </div>
             </div>
 
-            {/* 3. PARTNER LIVE STATUS CARD (Matches reference screenshot 1-to-1) */}
-            <div className="bg-[#181a29] text-white p-3.5 rounded-3xl flex items-center justify-between shadow-xl border border-slate-800">
+            {/* 3. PARTNER LIVE STATUS CARD (Clean White Container) */}
+            <div className="bg-white text-gray-900 p-4 rounded-3xl flex items-center justify-between shadow-[0_4px_25px_rgba(0,0,0,0.03)] border border-rose-100/80">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="relative shrink-0">
-                  <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-rose-500 to-pink-400 flex items-center justify-center font-black text-white text-base border-2 border-white shadow-md overflow-hidden">
+                  <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-rose-500 to-pink-500 flex items-center justify-center font-black text-white text-base border-2 border-white shadow-md overflow-hidden">
                     {user?.partnerId?.avatar ? (
                       <img src={user.partnerId.avatar} alt="Partner" className="w-full h-full object-cover" />
                     ) : (
                       user?.partnerId?.name?.charAt(0) || 'P'
                     )}
                   </div>
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-[#181a29] rounded-full animate-pulse" />
+                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full animate-pulse" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h4 className="text-sm font-black text-white truncate leading-tight">{user?.partnerId?.name || partnerName || 'Kunal Kumar'}</h4>
-                  <p className="text-xs text-rose-300 font-medium truncate mt-0.5 flex items-center gap-1">
+                  <h4 className="text-sm font-black text-gray-900 truncate leading-tight">{user?.partnerId?.name || partnerName || 'Kunal Kumar'}</h4>
+                  <p className="text-xs text-rose-500 font-bold truncate mt-0.5 flex items-center gap-1">
                     <span>🥰 Romantic</span>
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setActiveTab('chat')}
-                className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all active:scale-95 shrink-0 ml-2 relative"
+                className="w-10 h-10 bg-rose-50 hover:bg-rose-100 rounded-full flex items-center justify-center text-rose-600 transition-all active:scale-95 shrink-0 ml-2 border border-rose-100"
                 title="Chat with Partner"
               >
                 <MessageSquare size={18} />
-                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500" />
               </button>
             </div>
 
