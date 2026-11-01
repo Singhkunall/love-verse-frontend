@@ -78,6 +78,7 @@ function Dashboard() {
     { type: 'mood', title: 'Partner Mood Updated 😊', text: 'Partner is feeling Romantic today!', time: '1h ago' }
   ]);
   const [showSecurityLock, setShowSecurityLock] = useState(false);
+  const [showAnniversaryModal, setShowAnniversaryModal] = useState(false);
   const [isPartnerOnline, setIsPartnerOnline] = useState(false);
   const [unreadChatCount, setUnreadChatCount] = useState(0);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
