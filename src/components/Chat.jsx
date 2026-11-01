@@ -211,17 +211,17 @@ function Chat({ user, isPartnerOnline, activeTab = 'chat', onNewUnreadMessage, o
       setCallType(data.type);
       setCallStatus('ringing-in');
       playRingtone();
-      mobileService.sendNotification(
-        `Incoming ${data.type === 'video' ? 'Video' : 'Audio'} Call 📞`,
-        `${partnerName} is calling you! Tap to answer.`,
-        data.type === 'video' ? '📹' : '📞'
-      );
-      toast(`Incoming ${data.type} call from partner!`, { duration: 5000 });
+      mobileService.sendCallNotification({
+        partnerName,
+        callType: data.type
+      });
+      toast(`Incoming ${data.type} call from ${partnerName}!`, { duration: 5000 });
     };
 
     // Partner accepted our outgoing call -> flip from ringing-out to connected
     const handleAcceptedSignal = () => {
       clearRingTimeout();
+      mobileService.cancelCallNotification();
       setCallStatus('connected');
       startCallTimer();
     };
@@ -246,11 +246,23 @@ function Chat({ user, isPartnerOnline, activeTab = 'chat', onNewUnreadMessage, o
     socket.on("call_ended_signal", handleEndSignal);
     socket.on("call_declined_signal", handleDeclinedSignal);
 
+    // Native Action Event Listeners (Answer / Decline from Android Shade)
+    const handleNativeAnswer = () => {
+      answerCall();
+    };
+    const handleNativeDecline = () => {
+      declineCall();
+    };
+    window.addEventListener('love_verse_answer_call', handleNativeAnswer);
+    window.addEventListener('love_verse_decline_call', handleNativeDecline);
+
     return () => {
       socket.off("incoming_call_signal", handleSignal);
       socket.off("call_accepted_signal", handleAcceptedSignal);
       socket.off("call_ended_signal", handleEndSignal);
       socket.off("call_declined_signal", handleDeclinedSignal);
+      window.removeEventListener('love_verse_answer_call', handleNativeAnswer);
+      window.removeEventListener('love_verse_decline_call', handleNativeDecline);
     };
   }, [partnerName, callStatus, userId]);
 
@@ -325,6 +337,7 @@ function Chat({ user, isPartnerOnline, activeTab = 'chat', onNewUnreadMessage, o
     try {
       stopRingtone();
       clearRingTimeout();
+      mobileService.cancelCallNotification();
       if (callTimerRef.current) clearInterval(callTimerRef.current);
       localTracksRef.current.audio?.stop();
       localTracksRef.current.audio?.close();
@@ -470,6 +483,7 @@ function Chat({ user, isPartnerOnline, activeTab = 'chat', onNewUnreadMessage, o
   // --- ANSWER CALL FUNCTION (receiver side) ---
   const answerCall = async () => {
     stopRingtone();
+    mobileService.cancelCallNotification();
     setCallStatus('connected');
     onOpenChat?.();
     try {
@@ -735,47 +749,54 @@ function Chat({ user, isPartnerOnline, activeTab = 'chat', onNewUnreadMessage, o
     <>
       <Toaster position="top-center" />
 
-      {/* INCOMING CALL DIALOG MODAL — theme-matched to app burgundy palette */}
+      {/* INCOMING CALL TOP HEADS-UP BANNER — iOS Dynamic Island / WhatsApp Style */}
       {isRingingIn && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-300">
-          <div className="bg-[#fffcf7] rounded-[2.5rem] p-8 max-w-sm w-full text-center space-y-6 shadow-2xl border border-[#f0d9c8] relative overflow-hidden">
-            <div className="absolute -top-16 -right-16 w-40 h-40 rounded-full bg-[#aa2c4c]/10" />
-            <div className="absolute -bottom-20 -left-16 w-40 h-40 rounded-full bg-[#d4a12c]/10" />
-
-            <div className="relative w-20 h-20 mx-auto">
-              <div className="absolute inset-0 rounded-full bg-[#aa2c4c]/30 animate-ping" />
-              <div className="relative w-20 h-20 bg-gradient-to-tr from-[#aa2c4c] to-[#c9436a] rounded-full flex items-center justify-center text-white shadow-xl">
-                {callType === 'video' ? <Video size={36} /> : <Phone size={36} />}
+        <div className="fixed top-4 left-4 right-4 max-w-md mx-auto z-[80] animate-in slide-in-from-top-6 duration-300">
+          <div className="bg-white/95 backdrop-blur-2xl border-2 border-rose-200/90 rounded-[2.2rem] p-3.5 shadow-[0_20px_50px_rgba(244,63,94,0.25)] flex items-center justify-between gap-3">
+            {/* Avatar with pulse */}
+            <div className="relative shrink-0">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-500 to-pink-500 text-white font-black flex items-center justify-center text-base shadow-md border-2 border-white overflow-hidden">
+                {partnerAvatar ? (
+                  <img src={partnerAvatar} alt={partnerName} className="w-full h-full object-cover" />
+                ) : (
+                  partnerName ? partnerName[0].toUpperCase() : 'P'
+                )}
               </div>
+              <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full flex items-center justify-center shadow-sm">
+                <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
+              </span>
             </div>
 
-            <div className="relative">
-              <h4 className="text-2xl font-black text-[#3a1a26]">Incoming {callType === 'video' ? 'Video' : 'Audio'} Call</h4>
-              <p className="text-xs font-bold text-[#aa2c4c] uppercase tracking-widest mt-1">{partnerName} is calling...</p>
+            {/* Caller Info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <h4 className="text-sm font-black text-gray-900 truncate leading-tight">{partnerName}</h4>
+                <span className="px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-600 text-[9px] font-black uppercase">
+                  {callType === 'video' ? 'Video' : 'Audio'}
+                </span>
+              </div>
+              <p className="text-xs font-bold text-rose-500 animate-pulse mt-0.5 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block animate-ping" />
+                Incoming call ringing...
+              </p>
             </div>
 
-            <div className="relative flex justify-center gap-5 pt-2">
-              <div className="flex flex-col items-center gap-1.5">
-                <button
-                  onClick={declineCall}
-                  className="w-14 h-14 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all active:scale-95"
-                  title="Decline Call"
-                >
-                  <PhoneOff size={24} />
-                </button>
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Decline</span>
-              </div>
-
-              <div className="flex flex-col items-center gap-1.5">
-                <button
-                  onClick={answerCall}
-                  className="w-14 h-14 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all animate-pulse active:scale-95"
-                  title="Accept Call"
-                >
-                  <Phone size={24} />
-                </button>
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Accept</span>
-              </div>
+            {/* Quick Action Buttons */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={declineCall}
+                className="w-10 h-10 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-md active:scale-95 transition-all"
+                title="Decline Call"
+              >
+                <PhoneOff size={18} />
+              </button>
+              <button
+                onClick={answerCall}
+                className="w-10 h-10 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-400/50 animate-pulse active:scale-95 transition-all"
+                title="Answer Call"
+              >
+                <Phone size={18} />
+              </button>
             </div>
           </div>
         </div>

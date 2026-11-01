@@ -10,6 +10,44 @@ class MobileService {
     this.wakeLock = null;
     this.notificationsEnabled = false;
     this.initAppListeners();
+    this.initCallActionTypes();
+  }
+
+  // Register Android Notification Action Types (Answer & Decline buttons)
+  async initCallActionTypes() {
+    if (this.isNative) {
+      try {
+        await LocalNotifications.registerActionTypes({
+          types: [
+            {
+              id: 'CALL_NOTIFICATION_ACTION',
+              actions: [
+                {
+                  id: 'answer_call',
+                  title: 'Answer 📞',
+                  foreground: true
+                },
+                {
+                  id: 'decline_call',
+                  title: 'Decline ❌',
+                  destructive: true
+                }
+              ]
+            }
+          ]
+        });
+
+        LocalNotifications.addListener('localNotificationActionPerformed', (notificationAction) => {
+          if (notificationAction.actionId === 'answer_call') {
+            window.dispatchEvent(new CustomEvent('love_verse_answer_call'));
+          } else if (notificationAction.actionId === 'decline_call') {
+            window.dispatchEvent(new CustomEvent('love_verse_decline_call'));
+          }
+        });
+      } catch (e) {
+        console.warn("Could not register local notification actions:", e);
+      }
+    }
   }
 
   // Initialize Capacitor App State Listeners (Background / Foreground)
@@ -126,6 +164,53 @@ class MobileService {
       }
     } catch (err) {
       console.error("Failed to send notification:", err);
+    }
+  }
+
+  // Send High-Priority Incoming Call Notification with Action Buttons (Android & Web)
+  async sendCallNotification({ partnerName, callType }) {
+    try {
+      if (!this.notificationsEnabled) {
+        await this.requestNotificationPermission();
+      }
+
+      if (this.isNative) {
+        await LocalNotifications.schedule({
+          notifications: [
+            {
+              id: 99999,
+              title: `Incoming ${callType === 'video' ? 'Video' : 'Audio'} Call 📞`,
+              body: `${partnerName} is calling you! Tap Answer or Decline.`,
+              schedule: { at: new Date(Date.now() + 50) },
+              smallIcon: 'ic_launcher',
+              iconColor: '#10B981',
+              actionTypeId: 'CALL_NOTIFICATION_ACTION',
+              ongoing: true
+            }
+          ]
+        });
+      } else if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(`Incoming ${callType === 'video' ? 'Video' : 'Audio'} Call 📞`, {
+          body: `${partnerName} is calling you! Tap to answer.`,
+          icon: '/favicon.ico',
+          requireInteraction: true
+        });
+      }
+    } catch (err) {
+      console.warn("sendCallNotification error:", err);
+    }
+  }
+
+  // Cancel Ongoing Call Notification
+  async cancelCallNotification() {
+    try {
+      if (this.isNative) {
+        await LocalNotifications.cancel({
+          notifications: [{ id: 99999 }]
+        });
+      }
+    } catch (err) {
+      console.warn("cancelCallNotification error:", err);
     }
   }
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Heart, LogOut, User, UserPlus, Clock, Calendar as CalendarIcon, Sparkles, Image as ImageIcon, Plus, Trash2, Zap, Gamepad2, Star, ListTodo, CheckCircle2, Circle, ChevronRight, Radio, Touchpad, PlaySquare, MessageSquare, Bell, Lock, Trophy, Shield, Settings } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -83,19 +83,32 @@ function Dashboard() {
   const [unreadChatCount, setUnreadChatCount] = useState(0);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [lightboxMedia, setLightboxMedia] = useState(null);
+  const [activeMessageAlert, setActiveMessageAlert] = useState(null);
+  const messageAlertTimeoutRef = useRef(null);
 
   useEffect(() => {
     if (activeTab === 'chat') {
       setUnreadChatCount(0);
+      setActiveMessageAlert(null);
     }
   }, [activeTab]);
 
   const handleNewUnreadMessage = (data) => {
     setUnreadChatCount(prev => prev + 1);
-    toast(`💬 ${data?.senderName || partnerName || 'Partner'}: ${data?.bodyText || 'New message'}`, {
-      icon: '💌',
-      duration: 4000,
+    const sender = data?.senderName || partnerName || 'Partner';
+    const text = data?.bodyText || data?.message || 'New message';
+
+    setActiveMessageAlert({
+      senderName: sender,
+      text: text,
+      avatar: user?.partnerId?.avatar || user?.partnerAvatar,
+      time: 'Just now'
     });
+
+    if (messageAlertTimeoutRef.current) clearTimeout(messageAlertTimeoutRef.current);
+    messageAlertTimeoutRef.current = setTimeout(() => {
+      setActiveMessageAlert(null);
+    }, 5000);
   };
 
   const userId = user?._id || user?.id || "guest";
@@ -456,6 +469,37 @@ function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#fff0f3] flex gap-6 p-4 md:p-6 lg:p-8 font-sans overflow-x-hidden relative">
+
+      {/* GLOBAL TOP FLOATING MESSAGE PILL ALERT (Option 3) */}
+      {activeMessageAlert && activeTab !== 'chat' && (
+        <div
+          onClick={() => {
+            setActiveTab('chat');
+            setActiveMessageAlert(null);
+          }}
+          className="fixed top-4 left-4 right-4 max-w-md mx-auto z-[75] animate-in slide-in-from-top-4 duration-300 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all"
+        >
+          <div className="bg-white/95 backdrop-blur-2xl border-2 border-rose-200/90 rounded-[2rem] p-3.5 shadow-[0_15px_40px_rgba(244,63,94,0.18)] flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-rose-500 to-pink-500 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-md border-2 border-white overflow-hidden">
+              {activeMessageAlert.avatar ? (
+                <img src={activeMessageAlert.avatar} alt="Partner" className="w-full h-full object-cover" />
+              ) : (
+                activeMessageAlert.senderName?.[0]?.toUpperCase() || 'P'
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex justify-between items-center">
+                <h5 className="text-xs font-black text-gray-900 truncate leading-tight">{activeMessageAlert.senderName}</h5>
+                <span className="text-[9px] font-bold text-gray-400">{activeMessageAlert.time}</span>
+              </div>
+              <p className="text-xs text-rose-600 font-bold truncate mt-0.5">"{activeMessageAlert.text}"</p>
+            </div>
+            <span className="px-2.5 py-1 rounded-full bg-rose-50 text-rose-600 font-black text-[10px] uppercase border border-rose-200/80 shadow-xs">
+              Reply
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* NAYA: Floating Hearts Component */}
       {showHearts && <FloatingHearts />}
