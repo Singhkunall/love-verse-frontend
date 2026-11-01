@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Heart, Home, MessageCircle, Zap, Image as ImageIcon, Calendar as CalendarIcon, Gamepad2, ShoppingBag, LogOut, RotateCw, Menu, X, PlaySquare, Globe, Trophy, Radio, Touchpad } from 'lucide-react';
-function SidebarBtn({ icon, label, active, onClick }) {
+import { Heart, Home, MessageCircle, Zap, Image as ImageIcon, Calendar as CalendarIcon, Gamepad2, ShoppingBag, LogOut, RotateCw, Menu, X, PlaySquare, Globe, Trophy, Radio, Touchpad, Settings } from 'lucide-react';
+function SidebarBtn({ icon, label, active, onClick, badge }) {
     return (
         <button
             onClick={onClick}
@@ -9,30 +9,45 @@ function SidebarBtn({ icon, label, active, onClick }) {
                     : 'text-gray-500 hover:bg-white/40 hover:text-gray-700'
                 }`}
         >
-            <div className={`${active ? 'text-rose-500' : 'text-gray-400'}`}>{icon}</div>
+            <div className={`relative ${active ? 'text-rose-500' : 'text-gray-400'}`}>
+                {icon}
+                {badge > 0 && !active && (
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full ring-2 ring-white animate-pulse" />
+                )}
+            </div>
             <span className="text-sm tracking-tight">{label}</span>
+            {badge > 0 && !active && (
+                <span className="ml-auto px-2 py-0.5 text-[10px] font-black bg-rose-500 text-white rounded-full shadow-sm animate-bounce">
+                    {badge > 9 ? '9+' : badge}
+                </span>
+            )}
             {active && <div className="ml-auto w-1.5 h-1.5 bg-rose-500 rounded-full shadow-[0_0_8px_rgba(244,63,94,0.6)]"></div>}
         </button>
     );
 }
 
 // Mobile bottom nav button
-function BottomNavBtn({ icon, label, active, onClick }) {
+function BottomNavBtn({ icon, label, active, onClick, badge }) {
     return (
         <button
             onClick={onClick}
             className={`flex flex-col items-center justify-center gap-1 flex-1 py-2 transition-all ${active ? 'text-rose-500' : 'text-gray-400'
                 }`}
         >
-            <div className={`p-1.5 rounded-xl transition-all ${active ? 'bg-rose-50' : ''}`}>
+            <div className={`p-1.5 rounded-xl transition-all relative ${active ? 'bg-rose-50' : ''}`}>
                 {icon}
+                {badge > 0 && !active && (
+                    <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-md animate-pulse">
+                        {badge > 9 ? '9+' : badge}
+                    </span>
+                )}
             </div>
             <span className="text-[9px] font-black uppercase tracking-tight">{label}</span>
         </button>
     );
 }
 
-const Sidebar = ({ activeTab, setActiveTab, user, handleLogout, sendNudge, onSendAnniversaryToast }) => {
+const Sidebar = ({ activeTab, setActiveTab, user, handleLogout, sendNudge, onSendAnniversaryToast, unreadChatCount = 0, onOpenSettings }) => {
     const glassStyle = "bg-white/70 backdrop-blur-2xl border border-white/50 shadow-xl";
     const [isNudging, setIsNudging] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -69,7 +84,7 @@ const Sidebar = ({ activeTab, setActiveTab, user, handleLogout, sendNudge, onSen
                     <div className="space-y-1">
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-4 mb-2">The Essentials</p>
                         <SidebarBtn icon={<Home size={20} />} label="Home" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
-                        <SidebarBtn icon={<MessageCircle size={20} />} label="Chat & Call" active={activeTab === 'chat'} onClick={() => setActiveTab('chat')} />
+                        <SidebarBtn icon={<MessageCircle size={20} />} label="Chat & Call" active={activeTab === 'chat'} onClick={() => setActiveTab('chat')} badge={unreadChatCount} />
                         <SidebarBtn icon={<PlaySquare size={20} />} label="Watch Together" active={activeTab === 'watch_together'} onClick={() => setActiveTab('watch_together')} />
                     </div>
                     <div className="space-y-1">
@@ -109,7 +124,10 @@ const Sidebar = ({ activeTab, setActiveTab, user, handleLogout, sendNudge, onSen
                             <p className="text-xs font-black text-gray-800 truncate">{user?.name}</p>
                             <p className="text-[9px] font-bold text-green-500 uppercase">Active Now</p>
                         </div>
-                        <button onClick={handleLogout} className="p-2 text-gray-400 hover:text-rose-500 transition-colors">
+                        <button onClick={onOpenSettings} title="Settings" className="p-2 text-gray-400 hover:text-rose-500 rounded-xl hover:bg-rose-50 transition-colors">
+                            <Settings size={18} />
+                        </button>
+                        <button onClick={handleLogout} title="Logout" className="p-2 text-gray-400 hover:text-red-500 rounded-xl hover:bg-red-50 transition-colors">
                             <LogOut size={18} />
                         </button>
                     </div>
@@ -133,7 +151,7 @@ const Sidebar = ({ activeTab, setActiveTab, user, handleLogout, sendNudge, onSen
                         <span className="text-[9px] font-black text-rose-500 uppercase mt-0.5">{isNudging ? 'Sent!' : 'Hug'}</span>
                     </button>
 
-                    <BottomNavBtn icon={<MessageCircle size={20} />} label="Chat" active={activeTab === 'chat'} onClick={() => { setActiveTab('chat'); setMobileMenuOpen(false); }} />
+                    <BottomNavBtn icon={<MessageCircle size={20} />} label="Chat" active={activeTab === 'chat'} onClick={() => { setActiveTab('chat'); setMobileMenuOpen(false); }} badge={unreadChatCount} />
                     <BottomNavBtn icon={<Menu size={20} />} label="Hub" active={mobileMenuOpen} onClick={() => setMobileMenuOpen(!mobileMenuOpen)} />
                 </div>
             </div>
@@ -258,8 +276,17 @@ const Sidebar = ({ activeTab, setActiveTab, user, handleLogout, sendNudge, onSen
                             </div>
                         </div>
 
-                        {/* Muted Destructive Logout Section */}
-                        <div className="pt-3 border-t border-rose-100/80">
+                        {/* Account Settings & Logout */}
+                        <div className="pt-3 border-t border-rose-100/80 space-y-2">
+                            <button
+                                onClick={() => {
+                                    setMobileMenuOpen(false);
+                                    onOpenSettings?.();
+                                }}
+                                className="w-full py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 rounded-2xl font-bold text-xs transition-all flex items-center justify-center gap-2 active:scale-95 shadow-sm"
+                            >
+                                <Settings size={15} /> Account & Sanctuary Settings
+                            </button>
                             <button
                                 onClick={() => {
                                     handleLogout();

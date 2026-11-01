@@ -18,7 +18,7 @@ const socket = io.connect(API_URL);
 // How long an outgoing call rings before we auto-cancel it (ms)
 const CALL_RING_TIMEOUT = 30000;
 
-function Chat({ user, isPartnerOnline }) {
+function Chat({ user, isPartnerOnline, activeTab = 'chat', onNewUnreadMessage, onOpenChat, onImageClick }) {
   const [currentMessage, setCurrentMessage] = useState("");
   const [messageList, setMessageList] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -29,6 +29,13 @@ function Chat({ user, isPartnerOnline }) {
   const [sendingVoice, setSendingVoice] = useState(false);
   const [playingId, setPlayingId] = useState(null);
   const [partnerOnlineState, setPartnerOnlineState] = useState(isPartnerOnline ?? false);
+
+  const activeTabRef = useRef(activeTab);
+  const onNewUnreadMessageRef = useRef(onNewUnreadMessage);
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+    onNewUnreadMessageRef.current = onNewUnreadMessage;
+  }, [activeTab, onNewUnreadMessage]);
 
   // --- Call state machine ---
   // 'idle' | 'ringing-out' (we called, waiting for answer) | 'ringing-in' (incoming) | 'connected'
@@ -364,6 +371,9 @@ function Chat({ user, isPartnerOnline }) {
           bodyText,
           '💬'
         );
+        if (activeTabRef.current !== 'chat' && onNewUnreadMessageRef.current) {
+          onNewUnreadMessageRef.current({ ...data, bodyText });
+        }
       }
     };
     const handleTyping = (data) => {
@@ -461,6 +471,7 @@ function Chat({ user, isPartnerOnline }) {
   const answerCall = async () => {
     stopRingtone();
     setCallStatus('connected');
+    onOpenChat?.();
     try {
       const appId = import.meta.env.VITE_AGORA_APP_ID;
       if (!appId) {
@@ -721,7 +732,7 @@ function Chat({ user, isPartnerOnline }) {
   const isCallUIOpen = isRingingOut || isRingingIn || isConnected;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-140px)] lg:h-[82vh] bg-transparent overflow-hidden relative mb-16 lg:mb-0">
+    <>
       <Toaster position="top-center" />
 
       {/* INCOMING CALL DIALOG MODAL — theme-matched to app burgundy palette */}
@@ -907,8 +918,10 @@ function Chat({ user, isPartnerOnline }) {
         </div>
       )}
 
-      {/* Chat Sub-Header (Matches Love-Verse UI Design Tokens) */}
-      <div className="px-4 py-3 bg-white/90 backdrop-blur-xl border-b border-rose-100/70 flex items-center justify-between shadow-sm z-10 rounded-b-2xl">
+      {/* Regular Chat Interface - Visible when activeTab === 'chat' */}
+      <div className={`flex-col h-[calc(100vh-140px)] lg:h-[82vh] bg-transparent overflow-hidden relative mb-16 lg:mb-0 ${activeTab === 'chat' ? 'flex' : 'hidden'}`}>
+        {/* Chat Sub-Header (Matches Love-Verse UI Design Tokens) */}
+        <div className="px-4 py-3 bg-white/90 backdrop-blur-xl border-b border-rose-100/70 flex items-center justify-between shadow-sm z-10 rounded-b-2xl">
         <div className="flex items-center gap-3">
           <div className="relative shrink-0">
             <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-rose-500 to-pink-500 text-white flex items-center justify-center font-black shadow-md border-2 border-white overflow-hidden">
@@ -1034,7 +1047,15 @@ function Chat({ user, isPartnerOnline }) {
                   {msg.isVideo ? (
                     <video src={msg.message} controls className="rounded-xl max-h-60 object-cover" />
                   ) : msg.isImage ? (
-                    <img src={msg.message} alt="Shared photo" className="rounded-xl max-h-60 object-cover" />
+                    <img
+                      src={msg.message}
+                      alt="Shared photo"
+                      className="rounded-xl max-h-60 object-cover cursor-pointer hover:opacity-90 active:scale-[0.99] transition-all shadow-sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onImageClick?.({ url: msg.message, type: 'image', caption: `${msg.senderName || partnerName}'s photo` });
+                      }}
+                    />
                   ) : msg.isVoiceNote ? (
                     <div className="flex items-center gap-3 min-w-[180px]">
                       <button
@@ -1160,6 +1181,7 @@ function Chat({ user, isPartnerOnline }) {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

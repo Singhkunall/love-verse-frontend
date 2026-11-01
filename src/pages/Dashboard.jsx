@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Heart, LogOut, User, UserPlus, Clock, Calendar as CalendarIcon, Sparkles, Image as ImageIcon, Plus, Trash2, Zap, Gamepad2, Star, ListTodo, CheckCircle2, Circle, ChevronRight, Radio, Touchpad, PlaySquare, MessageSquare, Bell, Lock, Trophy, Shield } from 'lucide-react';
+import { Heart, LogOut, User, UserPlus, Clock, Calendar as CalendarIcon, Sparkles, Image as ImageIcon, Plus, Trash2, Zap, Gamepad2, Star, ListTodo, CheckCircle2, Circle, ChevronRight, Radio, Touchpad, PlaySquare, MessageSquare, Bell, Lock, Trophy, Shield, Settings } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import Chat from '../components/Chat';
@@ -21,6 +21,8 @@ import NotificationCenter from '../components/NotificationCenter';
 import SecurityLock from '../components/SecurityLock';
 import AnniversaryModal from '../components/AnniversaryModal';
 import LoveDoodleBoard from '../components/LoveDoodleBoard';
+import MediaLightbox from '../components/MediaLightbox';
+import SettingsModal from '../components/SettingsModal';
 import { mobileService } from '../utils/mobileService';
 import API_URL from '../utils/config';
 import { compressImage } from '../utils/imageCompressor';
@@ -76,8 +78,24 @@ function Dashboard() {
     { type: 'mood', title: 'Partner Mood Updated 😊', text: 'Partner is feeling Romantic today!', time: '1h ago' }
   ]);
   const [showSecurityLock, setShowSecurityLock] = useState(false);
-  const [showAnniversaryModal, setShowAnniversaryModal] = useState(false);
   const [isPartnerOnline, setIsPartnerOnline] = useState(false);
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [lightboxMedia, setLightboxMedia] = useState(null);
+
+  useEffect(() => {
+    if (activeTab === 'chat') {
+      setUnreadChatCount(0);
+    }
+  }, [activeTab]);
+
+  const handleNewUnreadMessage = (data) => {
+    setUnreadChatCount(prev => prev + 1);
+    toast(`💬 ${data?.senderName || partnerName || 'Partner'}: ${data?.bodyText || 'New message'}`, {
+      icon: '💌',
+      duration: 4000,
+    });
+  };
 
   const userId = user?._id || user?.id || "guest";
   // ✅ Fix 1: safely extract partnerId as string regardless of object or string
@@ -335,8 +353,14 @@ function Dashboard() {
       }
     };
 
+    const handlePartnerDisconnected = () => {
+      toast("Partner disconnected from sanctuary.", { icon: "💔" });
+      fetchUserProfile();
+    };
+
     socket.on("user_presence_change", handlePresenceChange);
     socket.on("presence_response", handlePresenceResponse);
+    socket.on("partner_disconnected", handlePartnerDisconnected);
 
     fetchUserProfile();
     fetchTasks();
@@ -348,6 +372,7 @@ function Dashboard() {
       socket.off("receive_nudge");
       socket.off("task_updated");
       socket.off("partner_connected");
+      socket.off("partner_disconnected", handlePartnerDisconnected);
       socket.off("partner_mood_updated");
       socket.off("partner_avatar_updated");
       socket.off("receive_anniversary_toast");
@@ -442,6 +467,8 @@ function Dashboard() {
         handleLogout={handleLogout}
         sendNudge={sendNudge}
         onSendAnniversaryToast={handleSendAnniversaryToast}
+        unreadChatCount={unreadChatCount}
+        onOpenSettings={() => setIsSettingsOpen(true)}
       />
 
       <main className="flex-1 flex flex-col gap-6 overflow-y-auto">
@@ -487,6 +514,15 @@ function Dashboard() {
               title="Security PIN Lock"
             >
               <Lock size={18} />
+            </button>
+
+            {/* 3. Sanctuary Settings */}
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="p-2.5 rounded-full bg-white hover:bg-rose-50 text-gray-700 hover:text-rose-500 border border-rose-100/80 shadow-sm transition-all active:scale-95 flex items-center justify-center"
+              title="Sanctuary Settings"
+            >
+              <Settings size={18} />
             </button>
 
             {/* 3. User Avatar Initials Pill */}
@@ -1165,7 +1201,10 @@ function Dashboard() {
               {memories.map((mem, index) => (
                 <div key={mem._id} className={`group relative bg-white p-4 pb-12 shadow-2xl transition-all duration-500 hover:rotate-0 hover:scale-105 ${index % 2 === 0 ? '-rotate-2' : 'rotate-2'}`}>
                   <button onClick={() => handleDeleteMemory(mem._id)} className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-xl opacity-0 group-hover:opacity-100 z-10 transition-opacity cursor-pointer shadow-lg"><Trash2 size={18} /></button>
-                  <div className="overflow-hidden rounded-3xl mb-4 border border-gray-50 shadow-inner">
+                  <div 
+                    onClick={() => setLightboxMedia({ url: mem.imageUrl, type: 'image', caption: mem.caption, date: mem.createdAt })}
+                    className="overflow-hidden rounded-3xl mb-4 border border-gray-50 shadow-inner cursor-pointer hover:opacity-95 transition-opacity"
+                  >
                     <img src={mem.imageUrl} alt="memory" className="w-full h-auto object-contain grayscale-[20%] group-hover:grayscale-0 transition-all duration-500" />
                   </div>
                   <p className="font-medium text-gray-800 text-center italic tracking-tight px-2">"{mem.caption}"</p>
@@ -1179,11 +1218,16 @@ function Dashboard() {
           </div>
         )}
 
-        {activeTab === 'chat' && (
-          <div className="h-[80vh] flex flex-col animate-in fade-in slide-in-from-right-4 duration-500">
-            <Chat user={user} isPartnerOnline={isPartnerOnline} />
-          </div>
-        )}
+        <div className={activeTab === 'chat' ? "h-[80vh] flex flex-col animate-in fade-in slide-in-from-right-4 duration-500" : "contents"}>
+          <Chat
+            user={user}
+            isPartnerOnline={isPartnerOnline}
+            activeTab={activeTab}
+            onNewUnreadMessage={handleNewUnreadMessage}
+            onOpenChat={() => setActiveTab('chat')}
+            onImageClick={(media) => setLightboxMedia(media)}
+          />
+        </div>
         {activeTab === 'watch_together' && (
           <WatchTogether user={user} roomId={roomId} socket={socket} />
         )}
@@ -1197,6 +1241,22 @@ function Dashboard() {
           <VirtualTouch user={user} roomId={roomId} socket={socket} />
         )}
       </main>
+
+      {/* Lightbox for Fullscreen Media Viewing */}
+      <MediaLightbox
+        isOpen={Boolean(lightboxMedia)}
+        onClose={() => setLightboxMedia(null)}
+        media={lightboxMedia}
+      />
+
+      {/* Sanctuary & Account Settings Modal */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        user={user}
+        onPartnerUnlinked={fetchUserProfile}
+        onLogout={handleLogout}
+      />
     </div>
   );
 }
