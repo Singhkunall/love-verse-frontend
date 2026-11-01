@@ -77,6 +77,7 @@ function Dashboard() {
   ]);
   const [showSecurityLock, setShowSecurityLock] = useState(false);
   const [showAnniversaryModal, setShowAnniversaryModal] = useState(false);
+  const [isPartnerOnline, setIsPartnerOnline] = useState(false);
 
   const userId = user?._id || user?.id || "guest";
   // ✅ Fix 1: safely extract partnerId as string regardless of object or string
@@ -310,6 +311,33 @@ function Dashboard() {
       } catch (err) { console.log("Offline nudge check failed", err); }
     };
 
+    // Presence Check & Listeners
+    if (partnerId) {
+      socket.emit("check_presence", partnerId);
+      axios.get(`${import.meta.env.VITE_API_URL}/api/auth/presence/${partnerId}`)
+        .then(res => {
+          if (res.data?.isOnline !== undefined) {
+            setIsPartnerOnline(Boolean(res.data.isOnline));
+          }
+        })
+        .catch(() => {});
+    }
+
+    const handlePresenceChange = (data) => {
+      if (data && String(data.userId) === String(partnerId)) {
+        setIsPartnerOnline(Boolean(data.isOnline));
+      }
+    };
+
+    const handlePresenceResponse = (data) => {
+      if (data && String(data.userId) === String(partnerId)) {
+        setIsPartnerOnline(Boolean(data.isOnline));
+      }
+    };
+
+    socket.on("user_presence_change", handlePresenceChange);
+    socket.on("presence_response", handlePresenceResponse);
+
     fetchUserProfile();
     fetchTasks();
     fetchMemories();
@@ -324,8 +352,10 @@ function Dashboard() {
       socket.off("partner_avatar_updated");
       socket.off("receive_anniversary_toast");
       socket.off("receive_anniversary_letter");
+      socket.off("user_presence_change", handlePresenceChange);
+      socket.off("presence_response", handlePresenceResponse);
     };
-  }, [roomId, userId]);
+  }, [roomId, userId, partnerId]);
 
   const sendNudge = async () => {
     try {
@@ -601,12 +631,16 @@ function Dashboard() {
                         user?.partnerId?.name?.charAt(0) || partnerName?.charAt(0) || 'P'
                       )}
                     </div>
-                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full animate-pulse" />
+                    <span className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full ${isPartnerOnline ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <h4 className="text-sm font-black text-gray-900 truncate leading-tight">{user?.partnerId?.name || partnerName}</h4>
-                    <p className="text-xs text-rose-500 font-bold truncate mt-0.5 flex items-center gap-1">
-                      <span>{user?.partnerId?.mood || "Online in Sanctuary 💕"}</span>
+                    <p className={`text-xs font-bold truncate mt-0.5 flex items-center gap-1.5 ${isPartnerOnline ? 'text-emerald-500' : 'text-gray-400'}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${isPartnerOnline ? 'bg-emerald-500' : 'bg-gray-400'}`} />
+                      <span>{isPartnerOnline ? "Online now" : "Offline"}</span>
+                      {user?.partnerId?.mood && (
+                        <span className="text-gray-400 font-normal truncate">• {user.partnerId.mood}</span>
+                      )}
                     </p>
                   </div>
                 </div>
@@ -844,8 +878,16 @@ function Dashboard() {
                 <div className={`${glassStyle} p-8 rounded-[3rem]`}>
                   <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><User className="text-rose-400" size={20} /> Partner Status</h3>
                   {isPartnerConnected ? (
-                    <div className="space-y-2">
-                      <p className="text-rose-500 font-bold text-[10px] tracking-widest uppercase flex items-center gap-1"><Heart size={10} fill="currentColor" /> Linked with {user?.partnerId?.name || partnerName} ❤️</p>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-rose-500 font-bold text-[10px] tracking-widest uppercase flex items-center gap-1">
+                          <Heart size={10} fill="currentColor" /> Linked with {user?.partnerId?.name || partnerName} ❤️
+                        </p>
+                        <div className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${isPartnerOnline ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-gray-50 text-gray-500 border-gray-200'}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${isPartnerOnline ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`} />
+                          <span>{isPartnerOnline ? "Online now" : "Offline"}</span>
+                        </div>
+                      </div>
                       <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100 shadow-inner">
                         <p className="text-[10px] text-rose-400 uppercase font-black mb-1">Partner's Mood</p>
                         <p className="text-xl font-bold text-gray-800">{user.partnerId?.mood || "Normal 😊"}</p>
@@ -1139,7 +1181,7 @@ function Dashboard() {
 
         {activeTab === 'chat' && (
           <div className="h-[80vh] flex flex-col animate-in fade-in slide-in-from-right-4 duration-500">
-            <Chat user={user} />
+            <Chat user={user} isPartnerOnline={isPartnerOnline} />
           </div>
         )}
         {activeTab === 'watch_together' && (

@@ -18,7 +18,7 @@ const socket = io.connect(API_URL);
 // How long an outgoing call rings before we auto-cancel it (ms)
 const CALL_RING_TIMEOUT = 30000;
 
-function Chat({ user }) {
+function Chat({ user, isPartnerOnline }) {
   const [currentMessage, setCurrentMessage] = useState("");
   const [messageList, setMessageList] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -28,6 +28,7 @@ function Chat({ user }) {
   const [recordingTime, setRecordingTime] = useState(0);
   const [sendingVoice, setSendingVoice] = useState(false);
   const [playingId, setPlayingId] = useState(null);
+  const [partnerOnlineState, setPartnerOnlineState] = useState(isPartnerOnline ?? false);
 
   // --- Call state machine ---
   // 'idle' | 'ringing-out' (we called, waiting for answer) | 'ringing-in' (incoming) | 'connected'
@@ -64,6 +65,39 @@ function Chat({ user }) {
     || (user?.partnerEmail ? user.partnerEmail.split('@')[0] : "Partner");
 
   const partnerAvatar = (typeof user?.partnerId === 'object' && user.partnerId?.avatar) || user?.partnerAvatar;
+
+  // Sync isPartnerOnline prop
+  useEffect(() => {
+    if (isPartnerOnline !== undefined) {
+      setPartnerOnlineState(isPartnerOnline);
+    }
+  }, [isPartnerOnline]);
+
+  // Real-time presence listeners in Chat
+  useEffect(() => {
+    if (!partnerId) return;
+
+    socket.emit("check_presence", partnerId);
+
+    const onPresenceChange = (data) => {
+      if (data && String(data.userId) === String(partnerId)) {
+        setPartnerOnlineState(Boolean(data.isOnline));
+      }
+    };
+    const onPresenceResp = (data) => {
+      if (data && String(data.userId) === String(partnerId)) {
+        setPartnerOnlineState(Boolean(data.isOnline));
+      }
+    };
+
+    socket.on("user_presence_change", onPresenceChange);
+    socket.on("presence_response", onPresenceResp);
+
+    return () => {
+      socket.off("user_presence_change", onPresenceChange);
+      socket.off("presence_response", onPresenceResp);
+    };
+  }, [partnerId]);
 
   // Agora client initialization
   useEffect(() => {
@@ -884,13 +918,13 @@ function Chat({ user }) {
                 partnerName ? partnerName[0].toUpperCase() : 'P'
               )}
             </div>
-            <div className="w-3 h-3 bg-emerald-500 border-2 border-white rounded-full absolute bottom-0 right-0 shadow-sm animate-pulse" />
+            <div className={`w-3 h-3 border-2 border-white rounded-full absolute bottom-0 right-0 shadow-sm ${partnerOnlineState ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
           </div>
           <div>
             <h3 className="font-black text-gray-900 text-sm leading-tight">{partnerName}</h3>
-            <p className="text-[10px] font-bold text-emerald-500 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-ping" />
-              {isTyping ? "Typing..." : "Online in Sanctuary"}
+            <p className={`text-[10px] font-bold flex items-center gap-1 ${partnerOnlineState ? 'text-emerald-500' : 'text-gray-400'}`}>
+              <span className={`w-1.5 h-1.5 rounded-full inline-block ${partnerOnlineState ? 'bg-emerald-500 animate-ping' : 'bg-gray-400'}`} />
+              {isTyping ? "Typing..." : partnerOnlineState ? "Online in Sanctuary" : "Offline"}
             </p>
           </div>
         </div>
