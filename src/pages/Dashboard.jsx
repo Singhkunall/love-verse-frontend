@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Heart, LogOut, User, Clock, Calendar as CalendarIcon, Sparkles, Image as ImageIcon, Plus, Trash2, Zap, Gamepad2, Star, ListTodo, CheckCircle2, Circle, ChevronRight, Radio, Touchpad, PlaySquare, MessageSquare, Bell, Lock, Trophy, Shield } from 'lucide-react';
+import { Heart, LogOut, User, UserPlus, Clock, Calendar as CalendarIcon, Sparkles, Image as ImageIcon, Plus, Trash2, Zap, Gamepad2, Star, ListTodo, CheckCircle2, Circle, ChevronRight, Radio, Touchpad, PlaySquare, MessageSquare, Bell, Lock, Trophy, Shield } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import Chat from '../components/Chat';
@@ -83,6 +83,7 @@ function Dashboard() {
   const partnerId = user?.partnerId?._id?.toString() || user?.partnerId?.toString() || "";
   // ✅ Fix 2: roomId now uses proper string IDs safely
   const roomId = [String(userId), String(partnerId)].sort().join("_");
+  const isPartnerConnected = Boolean(partnerId && partnerId !== "undefined" && partnerId !== "null" && partnerId !== "");
 
   const partnerName = (typeof user?.partnerId === 'object' && user?.partnerId?.name)
     || user?.partnerName
@@ -588,34 +589,70 @@ function Dashboard() {
               </div>
             </div>
 
-            {/* 3. PARTNER LIVE STATUS CARD (Clean White Container) */}
-            <div className="bg-white text-gray-900 p-4 rounded-3xl flex items-center justify-between shadow-[0_4px_25px_rgba(0,0,0,0.03)] border border-rose-100/80">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="relative shrink-0">
-                  <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-rose-500 to-pink-500 flex items-center justify-center font-black text-white text-base border-2 border-white shadow-md overflow-hidden">
-                    {user?.partnerId?.avatar ? (
-                      <img src={user.partnerId.avatar} alt="Partner" className="w-full h-full object-cover" />
-                    ) : (
-                      user?.partnerId?.name?.charAt(0) || 'P'
-                    )}
+            {/* 3. PARTNER STATUS CARD: Connected Partner Info OR Invite Partner Form */}
+            {isPartnerConnected ? (
+              <div className="bg-white text-gray-900 p-4 rounded-3xl flex items-center justify-between shadow-[0_4px_25px_rgba(0,0,0,0.03)] border border-rose-100/80">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="relative shrink-0">
+                    <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-rose-500 to-pink-500 flex items-center justify-center font-black text-white text-base border-2 border-white shadow-md overflow-hidden">
+                      {user?.partnerId?.avatar ? (
+                        <img src={user.partnerId.avatar} alt="Partner" className="w-full h-full object-cover" />
+                      ) : (
+                        user?.partnerId?.name?.charAt(0) || partnerName?.charAt(0) || 'P'
+                      )}
+                    </div>
+                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full animate-pulse" />
                   </div>
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full animate-pulse" />
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-sm font-black text-gray-900 truncate leading-tight">{user?.partnerId?.name || partnerName}</h4>
+                    <p className="text-xs text-rose-500 font-bold truncate mt-0.5 flex items-center gap-1">
+                      <span>{user?.partnerId?.mood || "Online in Sanctuary 💕"}</span>
+                    </p>
+                  </div>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <h4 className="text-sm font-black text-gray-900 truncate leading-tight">{user?.partnerId?.name || partnerName || 'Kunal Kumar'}</h4>
-                  <p className="text-xs text-rose-500 font-bold truncate mt-0.5 flex items-center gap-1">
-                    <span>🥰 Romantic</span>
-                  </p>
+                <button
+                  onClick={() => setActiveTab('chat')}
+                  className="w-10 h-10 bg-rose-50 hover:bg-rose-100 rounded-full flex items-center justify-center text-rose-600 transition-all active:scale-95 shrink-0 ml-2 border border-rose-100"
+                  title="Chat with Partner"
+                >
+                  <MessageSquare size={18} />
+                </button>
+              </div>
+            ) : (
+              <div className="bg-white text-gray-900 p-4 rounded-3xl shadow-[0_4px_25px_rgba(0,0,0,0.03)] border border-rose-100/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-9 h-9 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center font-bold">
+                      <UserPlus size={18} />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider">Connect Partner</h4>
+                      <p className="text-[10px] text-gray-400 font-medium">Enter your partner's registered email</p>
+                    </div>
+                  </div>
+                  <span className="text-[9px] font-bold px-2 py-0.5 bg-rose-50 text-rose-600 border border-rose-100 rounded-full">
+                    Invite
+                  </span>
+                </div>
+
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    placeholder="Partner's Email"
+                    value={partnerEmail}
+                    onChange={(e) => setPartnerEmail(e.target.value)}
+                    className="flex-1 px-4 py-2.5 bg-rose-50/50 hover:bg-rose-50/80 focus:bg-white rounded-2xl border border-rose-100 outline-none text-xs text-gray-800 font-bold placeholder:text-gray-400 focus:ring-2 ring-rose-200 transition-all"
+                  />
+                  <button
+                    onClick={handleConnect}
+                    className="px-5 py-2.5 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white rounded-2xl font-bold text-xs shadow-md shadow-rose-200 active:scale-95 transition-all flex items-center gap-1.5 shrink-0"
+                  >
+                    <span>Invite</span>
+                    <Heart size={12} fill="white" />
+                  </button>
                 </div>
               </div>
-              <button
-                onClick={() => setActiveTab('chat')}
-                className="w-10 h-10 bg-rose-50 hover:bg-rose-100 rounded-full flex items-center justify-center text-rose-600 transition-all active:scale-95 shrink-0 ml-2 border border-rose-100"
-                title="Chat with Partner"
-              >
-                <MessageSquare size={18} />
-              </button>
-            </div>
+            )}
 
             {/* 4. STATS GRID WIDGETS (Matches reference screenshot 1-to-1) */}
             <div className="grid grid-cols-12 gap-3">
@@ -806,9 +843,9 @@ function Dashboard() {
                 </div>
                 <div className={`${glassStyle} p-8 rounded-[3rem]`}>
                   <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><User className="text-rose-400" size={20} /> Partner Status</h3>
-                  {user.partnerId ? (
+                  {isPartnerConnected ? (
                     <div className="space-y-2">
-                      <p className="text-rose-400 font-bold text-[10px] tracking-widest uppercase flex items-center gap-1"><Heart size={10} fill="currentColor" /> Linked ❤️</p>
+                      <p className="text-rose-500 font-bold text-[10px] tracking-widest uppercase flex items-center gap-1"><Heart size={10} fill="currentColor" /> Linked with {user?.partnerId?.name || partnerName} ❤️</p>
                       <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100 shadow-inner">
                         <p className="text-[10px] text-rose-400 uppercase font-black mb-1">Partner's Mood</p>
                         <p className="text-xl font-bold text-gray-800">{user.partnerId?.mood || "Normal 😊"}</p>
@@ -819,7 +856,7 @@ function Dashboard() {
                       <input type="email" placeholder="Partner's Email" value={partnerEmail} onChange={(e) => setPartnerEmail(e.target.value)} className="flex-1 p-3 bg-white rounded-xl border border-gray-100 outline-none text-sm focus:ring-1 ring-rose-200" />
                       <button
                         onClick={handleConnect}
-                        className="bg-gray-900 text-white px-4 py-2 rounded-xl font-bold text-xs">
+                        className="bg-gray-900 hover:bg-rose-600 text-white px-4 py-2 rounded-xl font-bold text-xs transition-colors">
                         Invite
                       </button>
                     </div>
