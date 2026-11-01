@@ -116,9 +116,9 @@ const Sidebar = ({ activeTab, setActiveTab, user, handleLogout, sendNudge, onSen
                 </div>
             </aside>
 
-            {/* MOBILE FLOATING GLASS BOTTOM DOCK (Matches reference screenshot 1-to-1) */}
+            {/* MOBILE FLOATING GLASS BOTTOM DOCK (Ultra-Clean Light Theme) */}
             <div className="lg:hidden fixed bottom-2 left-3 right-3 z-50 pointer-events-auto">
-                <div className="bg-white/95 backdrop-blur-2xl border border-rose-100 rounded-full px-3 py-1 shadow-[0_10px_35px_rgba(0,0,0,0.12)] flex items-center justify-around">
+                <div className="bg-white/95 backdrop-blur-2xl border border-rose-100/90 rounded-full px-3 py-1 shadow-[0_10px_35px_rgba(244,63,94,0.12)] flex items-center justify-around">
                     <BottomNavBtn icon={<Home size={20} />} label="Home" active={activeTab === 'home'} onClick={() => { setActiveTab('home'); setMobileMenuOpen(false); }} />
                     <BottomNavBtn icon={<PlaySquare size={20} />} label="Watch" active={activeTab === 'watch_together'} onClick={() => { setActiveTab('watch_together'); setMobileMenuOpen(false); }} />
 
@@ -127,7 +127,7 @@ const Sidebar = ({ activeTab, setActiveTab, user, handleLogout, sendNudge, onSen
                         onClick={handleNudgeClick}
                         className="flex flex-col items-center justify-center flex-1 py-0.5 relative"
                     >
-                        <div className={`w-11 h-11 bg-gradient-to-tr from-rose-500 via-pink-500 to-rose-600 rounded-full flex items-center justify-center shadow-lg shadow-rose-300 -mt-6 border-3 border-white transition-all ${isNudging ? 'scale-90 rotate-12' : 'scale-105'}`}>
+                        <div className={`w-11 h-11 bg-gradient-to-tr from-rose-500 via-pink-500 to-rose-600 rounded-full flex items-center justify-center shadow-lg shadow-rose-300 -mt-6 border-2 border-white transition-all ${isNudging ? 'scale-90 rotate-12' : 'scale-105'}`}>
                             <Heart size={20} className="text-white fill-white" />
                         </div>
                         <span className="text-[9px] font-black text-rose-500 uppercase mt-0.5">{isNudging ? 'Sent!' : 'Hug'}</span>
