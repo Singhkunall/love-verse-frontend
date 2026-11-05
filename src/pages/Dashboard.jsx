@@ -85,8 +85,10 @@ function Dashboard() {
   const [lightboxMedia, setLightboxMedia] = useState(null);
   const [activeMessageAlert, setActiveMessageAlert] = useState(null);
   const messageAlertTimeoutRef = useRef(null);
+  const activeTabRef = useRef(activeTab);
 
   useEffect(() => {
+    activeTabRef.current = activeTab;
     if (activeTab === 'chat') {
       setUnreadChatCount(0);
       setActiveMessageAlert(null);
@@ -96,7 +98,17 @@ function Dashboard() {
   const handleNewUnreadMessage = (data) => {
     setUnreadChatCount(prev => prev + 1);
     const sender = data?.senderName || partnerName || 'Partner';
-    const text = data?.bodyText || data?.message || 'New message';
+    let text = data?.bodyText;
+    if (!text) {
+      if (data?.isImage) text = 'Sent a photo 📸';
+      else if (data?.isVideo) text = 'Sent a video 🎬';
+      else if (data?.isVoiceNote) text = 'Sent a voice note 🎙️';
+      else if (typeof data?.message === 'string' && (data.message.startsWith('http://') || data.message.startsWith('https://'))) {
+        text = 'Sent a media file 📎';
+      } else {
+        text = data?.message || 'New message';
+      }
+    }
 
     setActiveMessageAlert({
       senderName: sender,
@@ -108,7 +120,7 @@ function Dashboard() {
     if (messageAlertTimeoutRef.current) clearTimeout(messageAlertTimeoutRef.current);
     messageAlertTimeoutRef.current = setTimeout(() => {
       setActiveMessageAlert(null);
-    }, 5000);
+    }, 6000);
   };
 
   const userId = user?._id || user?.id || "guest";
@@ -266,11 +278,61 @@ function Dashboard() {
   };
 
   useEffect(() => {
-    socket.emit("setup", userId);
-    socket.emit("join_chat", roomId);
+    // Socket setup and automatic reconnect re-authentication
+    const handleSocketConnect = () => {
+      if (userId && userId !== "guest") {
+        socket.emit("setup", userId);
+      }
+      if (roomId && partnerId) {
+        socket.emit("join_chat", roomId);
+      }
+    };
+
+    socket.on("connect", handleSocketConnect);
+    if (socket.connected) {
+      handleSocketConnect();
+    } else {
+      socket.emit("setup", userId);
+      if (roomId && partnerId) socket.emit("join_chat", roomId);
+    }
+
     socket.on("task_updated", () => { fetchTasks(); });
 
     mobileService.requestNotificationPermission();
+
+    // Real-Time Global Message Notification (Pill, sound chime & mobile system push)
+    const handleGlobalReceiveMessage = (data) => {
+      if (!data) return;
+      const senderId = String(data.sender || data.senderId || "");
+      const myId = String(userId);
+
+      // Only notify when message is from partner (not self)
+      if (senderId && senderId !== myId) {
+        const isHidden = typeof document !== 'undefined' && document.hidden;
+        const isOutsideChat = activeTabRef.current !== 'chat';
+
+        if (isOutsideChat || isHidden) {
+          handleNewUnreadMessage(data);
+          mobileService.playMessageNotificationSound();
+
+          const bodyText = data.isImage
+            ? 'Sent a photo 📸'
+            : data.isVideo
+            ? 'Sent a video 🎬'
+            : data.isVoiceNote
+            ? 'Sent a voice note 🎙️'
+            : (data.message || 'New message');
+
+          mobileService.sendNotification(
+            `New Message from ${data.senderName || partnerName}`,
+            bodyText,
+            '💬'
+          );
+        }
+      }
+    };
+
+    socket.on("receive_message", handleGlobalReceiveMessage);
 
     socket.on("partner_connected", () => {
       fetchUserProfile();
@@ -383,6 +445,8 @@ function Dashboard() {
     if (user?.anniversaryDate) calculateDays(user.anniversaryDate);
 
     return () => {
+      socket.off("connect", handleSocketConnect);
+      socket.off("receive_message", handleGlobalReceiveMessage);
       socket.off("receive_nudge");
       socket.off("task_updated");
       socket.off("partner_connected");
@@ -1271,6 +1335,8 @@ function Dashboard() {
             onNewUnreadMessage={handleNewUnreadMessage}
             onOpenChat={() => setActiveTab('chat')}
             onImageClick={(media) => setLightboxMedia(media)}
+            socket={socket}
+            roomId={roomId}
           />
         </div>
         {activeTab === 'watch_together' && (

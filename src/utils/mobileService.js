@@ -167,6 +167,38 @@ class MobileService {
     }
   }
 
+  // Soft, pleasant two-tone synthesized chime for message notifications (Zero external audio asset needed)
+  playMessageNotificationSound() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      const now = ctx.currentTime;
+      // D5 (587.33Hz) -> A5 (880Hz) gentle notification chime
+      osc.frequency.setValueAtTime(587.33, now);
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.4);
+    } catch (e) {
+      // AudioContext may be blocked before user gesture; gracefully ignore
+    }
+  }
+
   // Send High-Priority Incoming Call Notification with Action Buttons (Android & Web)
   async sendCallNotification({ partnerName, callType }) {
     try {

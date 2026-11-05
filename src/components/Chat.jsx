@@ -13,12 +13,22 @@ import Routine from './Routine';
 import { mobileService } from '../utils/mobileService';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://love-verse-backend.onrender.com';
-const socket = io.connect(API_URL);
+const defaultSocket = io.connect(API_URL);
 
 // How long an outgoing call rings before we auto-cancel it (ms)
 const CALL_RING_TIMEOUT = 30000;
 
-function Chat({ user, isPartnerOnline, activeTab = 'chat', onNewUnreadMessage, onOpenChat, onImageClick }) {
+function Chat({
+  user,
+  isPartnerOnline,
+  activeTab = 'chat',
+  onNewUnreadMessage,
+  onOpenChat,
+  onImageClick,
+  socket: externalSocket,
+  roomId: externalRoomId
+}) {
+  const socket = externalSocket || defaultSocket;
   const [currentMessage, setCurrentMessage] = useState("");
   const [messageList, setMessageList] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -63,9 +73,9 @@ function Chat({ user, isPartnerOnline, activeTab = 'chat', onNewUnreadMessage, o
   const localTracksRef = useRef({ audio: null, video: null });
   const ringtoneRef = useRef(null);
 
-  const userId = user._id || user.id;
-  const partnerId = user.partnerId?._id || user.partnerId;
-  const roomId = [userId, partnerId].sort().join("_");
+  const userId = String(user?._id || user?.id || "");
+  const partnerId = String(user?.partnerId?._id || user?.partnerId || "");
+  const roomId = externalRoomId || [userId, partnerId].sort().join("_");
 
   const partnerName = (typeof user?.partnerId === 'object' && user.partnerId?.name)
     || user?.partnerName
@@ -376,27 +386,27 @@ function Chat({ user, isPartnerOnline, activeTab = 'chat', onNewUnreadMessage, o
 
   useEffect(() => {
     const handleReceive = (data) => {
-      if (data.sender !== userId) {
-        setMessageList(list => [...list, data]);
-        const bodyText = data.isImage ? 'Sent a photo 📸' : data.isVideo ? 'Sent a video 🎬' : (data.message || 'New message');
-        mobileService.sendNotification(
-          `New Message from ${data.senderName || partnerName}`,
-          bodyText,
-          '💬'
-        );
-        if (activeTabRef.current !== 'chat' && onNewUnreadMessageRef.current) {
-          onNewUnreadMessageRef.current({ ...data, bodyText });
-        }
+      if (!data) return;
+      const senderId = String(data.sender || data.senderId || "");
+      if (senderId && senderId !== String(userId)) {
+        setMessageList(list => {
+          const exists = list.some(m => 
+            (m._id && data._id && m._id === data._id) ||
+            (String(m.sender) === String(data.sender) && m.time === data.time && m.message === data.message)
+          );
+          if (exists) return list;
+          return [...list, data];
+        });
       }
     };
     const handleTyping = (data) => {
-      if (data.userId !== userId) setIsTyping(data.typing);
+      if (data && String(data.userId) !== String(userId)) setIsTyping(Boolean(data.typing));
     };
     const handleReaction = (data) => {
       setMessageList(prev => prev.map((msg, idx) => {
         if (idx === data.msgIndex) {
           const reactions = msg.reactions || [];
-          return { ...msg, reactions: [...reactions.filter(r => r.userId !== data.userId), { emoji: data.emoji, userId: data.userId }] };
+          return { ...msg, reactions: [...reactions.filter(r => String(r.userId) !== String(data.userId)), { emoji: data.emoji, userId: data.userId }] };
         }
         return msg;
       }));
@@ -409,7 +419,7 @@ function Chat({ user, isPartnerOnline, activeTab = 'chat', onNewUnreadMessage, o
       socket.off("display_typing", handleTyping);
       socket.off("receive_msg_reaction", handleReaction);
     };
-  }, [userId, partnerName]);
+  }, [socket, userId]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -613,6 +623,8 @@ function Chat({ user, isPartnerOnline, activeTab = 'chat', onNewUnreadMessage, o
 
       const messageData = {
         room: roomId,
+        receiverId: partnerId,
+        to: partnerId,
         sender: userId,
         senderName: user.name,
         message: voiceUrl,
@@ -647,6 +659,8 @@ function Chat({ user, isPartnerOnline, activeTab = 'chat', onNewUnreadMessage, o
     if (currentMessage.trim() !== "") {
       const messageData = {
         room: roomId,
+        receiverId: partnerId,
+        to: partnerId,
         sender: userId,
         senderName: user.name,
         message: currentMessage,
@@ -684,6 +698,8 @@ function Chat({ user, isPartnerOnline, activeTab = 'chat', onNewUnreadMessage, o
 
         const messageData = {
           room: roomId,
+          receiverId: partnerId,
+          to: partnerId,
           sender: userId,
           senderName: user.name,
           message: res.data.url,
