@@ -1,7 +1,9 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { PushNotifications } from '@capacitor/push-notifications';
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
+import axios from 'axios';
 import toast from 'react-hot-toast';
 
 class MobileService {
@@ -71,6 +73,81 @@ class MobileService {
         console.log("Tab foregrounded");
       }
     });
+  }
+
+  // Initialize Firebase Cloud Messaging (FCM) Push Notifications
+  async initPushNotifications(userId) {
+    if (!this.isNative) return;
+    try {
+      // 1. Create Android Notification Channel for high-importance alerts
+      await PushNotifications.createChannel({
+        id: 'love_verse_channel',
+        name: 'Love-Verse Messages & Calls',
+        description: 'Instant notifications for partner messages and calls',
+        importance: 5,
+        visibility: 1,
+        sound: 'default',
+        vibration: true,
+        lights: true,
+        lightColor: '#F43F5E'
+      });
+
+      // 2. Request Push Notification Permissions
+      let permStatus = await PushNotifications.checkPermissions();
+      if (permStatus.receive === 'prompt' || permStatus.receive === 'prompt-with-rationale') {
+        permStatus = await PushNotifications.requestPermissions();
+      }
+
+      if (permStatus.receive !== 'granted') {
+        console.warn('Push notification permission not granted:', permStatus.receive);
+        return;
+      }
+
+      // 3. Register device with FCM
+      await PushNotifications.register();
+
+      // 4. Remove duplicate listeners before adding
+      await PushNotifications.removeAllListeners();
+
+      PushNotifications.addListener('registration', async (token) => {
+        console.log('FCM Device Token registered:', token.value);
+        if (userId && token.value) {
+          try {
+            const API_URL = import.meta.env.VITE_API_URL || 'https://love-verse-backend.onrender.com';
+            await axios.post(`${API_URL}/api/auth/save-push-token`, {
+              userId,
+              token: token.value
+            });
+            console.log('Push token saved to backend for user:', userId);
+          } catch (tokenErr) {
+            console.error('Failed to save push token to backend:', tokenErr);
+          }
+        }
+      });
+
+      PushNotifications.addListener('registrationError', (error) => {
+        console.error('FCM Registration error:', error);
+      });
+
+      // 5. When push notification arrives while app is in foreground
+      PushNotifications.addListener('pushNotificationReceived', (notification) => {
+        console.log('Push notification received in foreground:', notification);
+        this.playMessageNotificationSound();
+      });
+
+      // 6. When user clicks push notification (wakes up phone from closed/background state)
+      PushNotifications.addListener('pushNotificationActionPerformed', (notificationAction) => {
+        console.log('Push notification clicked by user:', notificationAction);
+        const data = notificationAction.notification?.data;
+        if (data?.type === 'call') {
+          window.dispatchEvent(new CustomEvent('love_verse_navigate', { detail: { tab: 'chat', openCall: true } }));
+        } else {
+          window.dispatchEvent(new CustomEvent('love_verse_navigate', { detail: { tab: 'chat' } }));
+        }
+      });
+    } catch (err) {
+      console.error('Push notification initialization error:', err);
+    }
   }
 
   // Lock Device Screen to Landscape Orientation (Native Capacitor & Web fallback)

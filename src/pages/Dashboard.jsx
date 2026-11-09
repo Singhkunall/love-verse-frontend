@@ -300,6 +300,17 @@ function Dashboard() {
 
     mobileService.requestNotificationPermission();
 
+    if (userId && userId !== "guest") {
+      mobileService.initPushNotifications(userId);
+    }
+
+    const handlePushNavigate = (e) => {
+      if (e.detail?.tab) {
+        setActiveTab(e.detail.tab);
+      }
+    };
+    window.addEventListener('love_verse_navigate', handlePushNavigate);
+
     // Real-Time Global Message Notification (Pill, sound chime & mobile system push)
     const handleGlobalReceiveMessage = (data) => {
       if (!data) return;
@@ -457,6 +468,7 @@ function Dashboard() {
       socket.off("receive_anniversary_letter");
       socket.off("user_presence_change", handlePresenceChange);
       socket.off("presence_response", handlePresenceResponse);
+      window.removeEventListener('love_verse_navigate', handlePushNavigate);
     };
   }, [roomId, userId, partnerId]);
 
