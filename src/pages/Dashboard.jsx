@@ -308,6 +308,11 @@ function Dashboard() {
       if (e.detail?.tab) {
         setActiveTab(e.detail.tab);
       }
+      if (e.detail?.autoAnswer || e.detail?.openCall) {
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('love_verse_answer_call', { detail: e.detail }));
+        }, 500);
+      }
     };
     window.addEventListener('love_verse_navigate', handlePushNavigate);
 

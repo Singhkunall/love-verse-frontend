@@ -1,9 +1,12 @@
 package com.loveverse.app;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -40,7 +43,7 @@ public class MainActivity extends BridgeActivity {
         // Request Android OS runtime permissions at app launch
         requestAndroidPermissions();
 
-        WebView webView = this.bridge.getWebView();
+        WebView webView = this.bridge != null ? this.bridge.getWebView() : null;
         if (webView != null) {
             WebSettings settings = webView.getSettings();
             settings.setJavaScriptEnabled(true);
@@ -61,6 +64,51 @@ public class MainActivity extends BridgeActivity {
                     });
                 }
             });
+        }
+
+        handleCallIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleCallIntent(intent);
+    }
+
+    private void handleCallIntent(Intent intent) {
+        if (intent == null) return;
+        String action = intent.getStringExtra("action");
+        if ("answer_call".equals(action)) {
+            final String callType = intent.getStringExtra("callType") != null ? intent.getStringExtra("callType") : "video";
+            final String roomId = intent.getStringExtra("roomId") != null ? intent.getStringExtra("roomId") : "";
+            final String callerId = intent.getStringExtra("callerId") != null ? intent.getStringExtra("callerId") : "";
+
+            new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    WebView wv = bridge != null ? bridge.getWebView() : null;
+                    if (wv != null) {
+                        wv.evaluateJavascript(
+                            "window.dispatchEvent(new CustomEvent('love_verse_navigate', { detail: { tab: 'chat', openCall: true, autoAnswer: true, callType: '" + callType + "', roomId: '" + roomId + "', callerId: '" + callerId + "' } }));",
+                            null
+                        );
+                    }
+                }
+            }, 1000);
+        } else if ("decline_call".equals(action)) {
+            new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    WebView wv = bridge != null ? bridge.getWebView() : null;
+                    if (wv != null) {
+                        wv.evaluateJavascript(
+                            "window.dispatchEvent(new CustomEvent('love_verse_decline_call'));",
+                            null
+                        );
+                    }
+                }
+            }, 500);
         }
     }
 

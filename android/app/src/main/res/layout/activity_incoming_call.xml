@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_call_gradient"
+    android:keepScreenOn="true"
+    android:padding="24dp">
+
+    <!-- Top Section: Header & Caller Details -->
+    <LinearLayout
+        android:id="@+id/llTopHeader"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="32dp"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvCallBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_call_pill"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="5dp"
+            android:text="📞 Love-Verse Call"
+            android:textColor="#FDA4AF"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvCallerName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="Partner ❤️"
+            android:textColor="#FFFFFF"
+            android:textSize="30sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvCallStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="Incoming Video Call • Ringing..."
+            android:textColor="#F472B6"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <!-- Center Section: Avatar with Romantic Aura -->
+    <RelativeLayout
+        android:id="@+id/rlCenterAvatar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true">
+
+        <ImageView
+            android:id="@+id/ivCallerAvatar"
+            android:layout_width="150dp"
+            android:layout_height="150dp"
+            android:layout_centerInParent="true"
+            android:contentDescription="Partner Avatar"
+            android:scaleType="centerCrop"
+            android:src="@mipmap/ic_launcher" />
+    </RelativeLayout>
+
+    <TextView
+        android:id="@+id/tvLoveNote"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/rlCenterAvatar"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="20dp"
+        android:background="@drawable/bg_call_pill"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="8dp"
+        android:text="Missing you so much... Pick up! 🥺❤️"
+        android:textColor="#FBCFE8"
+        android:textSize="13sp" />
+
+    <!-- Bottom Action Bar: Decline & Answer Buttons -->
+    <LinearLayout
+        android:id="@+id/llCallActions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="40dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:weightSum="2">
+
+        <!-- Decline Action -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <ImageButton
+                android:id="@+id/btnDecline"
+                android:layout_width="74dp"
+                android:layout_height="74dp"
+                android:background="@drawable/btn_decline_circle"
+                android:contentDescription="Decline Call"
+                android:elevation="8dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_call_decline" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Decline"
+                android:textColor="#FCA5A5"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Answer Action -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <ImageButton
+                android:id="@+id/btnAnswer"
+                android:layout_width="74dp"
+                android:layout_height="74dp"
+                android:background="@drawable/btn_accept_circle"
+                android:contentDescription="Answer Call"
+                android:elevation="8dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_call_answer" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Answer"
+                android:textColor="#6EE7B7"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+
+</RelativeLayout>

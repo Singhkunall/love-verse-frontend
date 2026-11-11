@@ -10,6 +10,12 @@
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     
+    <!-- Permissions for Full-Screen Incoming Calls & Wake Up -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
+    
     <!-- MediaProjection & Foreground Service Permissions for Android Screen Share -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
@@ -43,6 +49,31 @@
 
         </activity>
 
+        <!-- Full-Screen Incoming Call Activity (Wakes phone when locked) -->
+        <activity
+            android:name=".IncomingCallActivity"
+            android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:launchMode="singleTop"
+            android:excludeFromRecents="true"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:screenOrientation="portrait"
+            android:exported="true" />
+
+        <!-- Call Action Receiver for Notification Buttons -->
+        <receiver
+            android:name=".CallActionReceiver"
+            android:exported="false" />
+
+        <!-- Custom Firebase Messaging Service for Full-Screen Call Interception -->
+        <service
+            android:name=".LoveVerseMessagingService"
+            android:exported="false">
+            <intent-filter android:priority="999">
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -53,7 +84,7 @@
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
 
-        <!-- Firebase Cloud Messaging Default Notification Channel & Icon for killed-state notifications -->
+        <!-- Firebase Cloud Messaging Default Notification Channel & Icon -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="love_verse_channel" />
