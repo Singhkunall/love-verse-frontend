@@ -435,6 +435,18 @@ function Chat({
 
     setCallType(isVideo ? "video" : "audio");
     setCallStatus('ringing-out');
+
+    // Immediately dispatch call signal & push notification so partner's device rings right away
+    socket.emit("send_call_signal", {
+      to: partnerId,
+      receiverId: partnerId,
+      from: userId,
+      callerId: userId,
+      senderName: user?.name || "Partner",
+      type: isVideo ? "video" : "audio",
+      roomId
+    });
+
     try {
       const uid = Math.floor(Math.random() * 100000);
 
@@ -469,13 +481,6 @@ function Chat({
       const tracksToPublish = isVideo ? [audioTrack, videoTrack] : [audioTrack];
       await agoraClientRef.current.publish(tracksToPublish);
 
-      socket.emit("send_call_signal", {
-        to: partnerId,
-        from: userId,
-        type: isVideo ? "video" : "audio",
-        roomId
-      });
-
       // Reliability: don't ring forever — auto-cancel if nobody answers
       ringTimeoutRef.current = setTimeout(() => {
         toast.error("No answer.");
@@ -486,7 +491,8 @@ function Chat({
     } catch (err) {
       console.error("Call error:", err);
       toast.error("Could not start call. Check mic & camera permissions!");
-      setCallStatus('idle');
+      socket.emit("end_call_signal", { to: partnerId, from: userId });
+      cleanupCall();
     }
   };
 
