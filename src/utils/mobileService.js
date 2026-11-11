@@ -61,6 +61,7 @@ class MobileService {
           console.log("App moved to background. Maintaining WebRTC audio tracks...");
         } else {
           console.log("App moved to foreground.");
+          this.syncStoredPushToken();
         }
       });
     }
@@ -73,6 +74,32 @@ class MobileService {
         console.log("Tab foregrounded");
       }
     });
+  }
+
+  // Synchronize locally stored FCM device token with MongoDB
+  async syncStoredPushToken(userId) {
+    let targetUserId = userId;
+    if (!targetUserId || targetUserId === 'guest') {
+      try {
+        const u = JSON.parse(localStorage.getItem('user') || '{}');
+        targetUserId = u._id || u.id;
+      } catch (e) {}
+    }
+    if (!targetUserId || targetUserId === 'guest') return;
+
+    try {
+      const storedToken = localStorage.getItem('love_verse_fcm_token');
+      if (storedToken) {
+        const API_URL = import.meta.env.VITE_API_URL || 'https://love-verse-backend.onrender.com';
+        await axios.post(`${API_URL}/api/auth/save-push-token`, {
+          userId: targetUserId,
+          token: storedToken
+        });
+        console.log('Synchronized stored FCM token with backend for user:', targetUserId);
+      }
+    } catch (err) {
+      console.warn('Could not sync stored FCM token:', err.message);
+    }
   }
 
   // Initialize Firebase Cloud Messaging (FCM) Push Notifications
@@ -92,7 +119,55 @@ class MobileService {
         lightColor: '#F43F5E'
       });
 
-      // 2. Request Push Notification Permissions
+      // 2. Attach listeners BEFORE registering (Capacitor requirement)
+      PushNotifications.addListener('registration', async (token) => {
+        console.log('FCM Device Token registered successfully:', token.value);
+        if (token?.value) {
+          localStorage.setItem('love_verse_fcm_token', token.value);
+          let targetUserId = userId;
+          if (!targetUserId || targetUserId === 'guest') {
+            try {
+              const u = JSON.parse(localStorage.getItem('user') || '{}');
+              targetUserId = u._id || u.id;
+            } catch (e) {}
+          }
+          if (targetUserId && targetUserId !== 'guest') {
+            try {
+              const API_URL = import.meta.env.VITE_API_URL || 'https://love-verse-backend.onrender.com';
+              await axios.post(`${API_URL}/api/auth/save-push-token`, {
+                userId: targetUserId,
+                token: token.value
+              });
+              console.log('Push token saved to backend for user:', targetUserId);
+            } catch (tokenErr) {
+              console.error('Failed to save push token to backend:', tokenErr);
+            }
+          }
+        }
+      });
+
+      PushNotifications.addListener('registrationError', (error) => {
+        console.error('FCM Registration error:', error);
+      });
+
+      // When push notification arrives while app is in foreground
+      PushNotifications.addListener('pushNotificationReceived', (notification) => {
+        console.log('Push notification received in foreground:', notification);
+        this.playMessageNotificationSound();
+      });
+
+      // When user clicks push notification (wakes up phone from closed/background state)
+      PushNotifications.addListener('pushNotificationActionPerformed', (notificationAction) => {
+        console.log('Push notification clicked by user:', notificationAction);
+        const data = notificationAction.notification?.data;
+        if (data?.type === 'call') {
+          window.dispatchEvent(new CustomEvent('love_verse_navigate', { detail: { tab: 'chat', openCall: true } }));
+        } else {
+          window.dispatchEvent(new CustomEvent('love_verse_navigate', { detail: { tab: 'chat' } }));
+        }
+      });
+
+      // 3. Request Push Notification Permissions
       let permStatus = await PushNotifications.checkPermissions();
       if (permStatus.receive === 'prompt' || permStatus.receive === 'prompt-with-rationale') {
         permStatus = await PushNotifications.requestPermissions();
@@ -103,48 +178,13 @@ class MobileService {
         return;
       }
 
-      // 3. Register device with FCM
+      // 4. Register device with FCM
       await PushNotifications.register();
 
-      // 4. Remove duplicate listeners before adding
-      await PushNotifications.removeAllListeners();
-
-      PushNotifications.addListener('registration', async (token) => {
-        console.log('FCM Device Token registered:', token.value);
-        if (userId && token.value) {
-          try {
-            const API_URL = import.meta.env.VITE_API_URL || 'https://love-verse-backend.onrender.com';
-            await axios.post(`${API_URL}/api/auth/save-push-token`, {
-              userId,
-              token: token.value
-            });
-            console.log('Push token saved to backend for user:', userId);
-          } catch (tokenErr) {
-            console.error('Failed to save push token to backend:', tokenErr);
-          }
-        }
-      });
-
-      PushNotifications.addListener('registrationError', (error) => {
-        console.error('FCM Registration error:', error);
-      });
-
-      // 5. When push notification arrives while app is in foreground
-      PushNotifications.addListener('pushNotificationReceived', (notification) => {
-        console.log('Push notification received in foreground:', notification);
-        this.playMessageNotificationSound();
-      });
-
-      // 6. When user clicks push notification (wakes up phone from closed/background state)
-      PushNotifications.addListener('pushNotificationActionPerformed', (notificationAction) => {
-        console.log('Push notification clicked by user:', notificationAction);
-        const data = notificationAction.notification?.data;
-        if (data?.type === 'call') {
-          window.dispatchEvent(new CustomEvent('love_verse_navigate', { detail: { tab: 'chat', openCall: true } }));
-        } else {
-          window.dispatchEvent(new CustomEvent('love_verse_navigate', { detail: { tab: 'chat' } }));
-        }
-      });
+      // 5. If we already had a token saved, sync it immediately
+      if (userId) {
+        this.syncStoredPushToken(userId);
+      }
     } catch (err) {
       console.error('Push notification initialization error:', err);
     }

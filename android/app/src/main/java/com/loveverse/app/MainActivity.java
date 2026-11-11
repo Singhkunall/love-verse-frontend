@@ -19,6 +19,24 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // Create High-Priority Notification Channel for Firebase Cloud Messaging
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            android.app.NotificationChannel channel = new android.app.NotificationChannel(
+                "love_verse_channel",
+                "Love-Verse Messages & Calls",
+                android.app.NotificationManager.IMPORTANCE_HIGH
+            );
+            channel.setDescription("Instant notifications for partner messages and calls");
+            channel.enableLights(true);
+            channel.enableVibration(true);
+            channel.setShowBadge(true);
+            channel.setLockscreenVisibility(android.app.Notification.VISIBILITY_PUBLIC);
+            android.app.NotificationManager manager = getSystemService(android.app.NotificationManager.class);
+            if (manager != null) {
+                manager.createNotificationChannel(channel);
+            }
+        }
+
         // Request Android OS runtime permissions at app launch
         requestAndroidPermissions();
 
@@ -48,11 +66,14 @@ public class MainActivity extends BridgeActivity {
 
     private void requestAndroidPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            String[] permissions = {
-                Manifest.permission.RECORD_AUDIO,
-                Manifest.permission.CAMERA,
-                Manifest.permission.MODIFY_AUDIO_SETTINGS
-            };
+            java.util.List<String> permList = new java.util.ArrayList<>();
+            permList.add(Manifest.permission.RECORD_AUDIO);
+            permList.add(Manifest.permission.CAMERA);
+            permList.add(Manifest.permission.MODIFY_AUDIO_SETTINGS);
+            if (Build.VERSION.SDK_INT >= 33) {
+                permList.add("android.permission.POST_NOTIFICATIONS");
+            }
+            String[] permissions = permList.toArray(new String[0]);
 
             boolean needRequest = false;
             for (String perm : permissions) {
