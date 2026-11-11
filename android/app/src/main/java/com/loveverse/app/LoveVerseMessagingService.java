@@ -1,5 +1,6 @@
 package com.loveverse.app;
 
+import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -9,6 +10,7 @@ import android.media.AudioAttributes;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
+import android.os.PowerManager;
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import com.capacitorjs.plugins.pushnotifications.PushNotificationsPlugin;
@@ -53,13 +55,32 @@ public class LoveVerseMessagingService extends FirebaseMessagingService {
         String callerId = data.get("callerId");
         if (callerId == null) callerId = "";
 
-        // Intent for full-screen incoming call UI
+        // 1. Wake up the phone's physical screen using PowerManager WakeLock
+        try {
+            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            if (pm != null) {
+                PowerManager.WakeLock wl = pm.newWakeLock(
+                    PowerManager.FULL_WAKE_LOCK |
+                    PowerManager.ACQUIRE_CAUSES_WAKEUP |
+                    PowerManager.ON_AFTER_RELEASE,
+                    "LoveVerse:IncomingCallWakeLock"
+                );
+                wl.acquire(15000); // Hold wake lock for 15s to allow user to answer
+            }
+        } catch (Exception ignored) {}
+
+        // 2. Intent for full-screen incoming call UI
         Intent callIntent = new Intent(this, IncomingCallActivity.class);
         callIntent.putExtra("callerName", callerName);
         callIntent.putExtra("callType", callType);
         callIntent.putExtra("roomId", roomId);
         callIntent.putExtra("callerId", callerId);
-        callIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        callIntent.addFlags(
+            Intent.FLAG_ACTIVITY_NEW_TASK |
+            Intent.FLAG_ACTIVITY_CLEAR_TOP |
+            Intent.FLAG_ACTIVITY_SINGLE_TOP |
+            Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+        );
 
         PendingIntent fullScreenPendingIntent = PendingIntent.getActivity(
             this,
@@ -68,7 +89,7 @@ public class LoveVerseMessagingService extends FirebaseMessagingService {
             PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)
         );
 
-        // Intent for Decline Action Button
+        // 3. Intent for Decline Action Button
         Intent declineIntent = new Intent(this, CallActionReceiver.class);
         declineIntent.setAction("DECLINE_CALL");
         declineIntent.putExtra("callerId", callerId);
@@ -82,7 +103,7 @@ public class LoveVerseMessagingService extends FirebaseMessagingService {
 
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
-        // Create high-importance channel with loud ringtone sound and vibration for calls
+        // 4. Create high-importance channel with loud ringtone sound and vibration for calls
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && notificationManager != null) {
             NotificationChannel channel = new NotificationChannel(
                 CALL_CHANNEL_ID,
@@ -92,7 +113,8 @@ public class LoveVerseMessagingService extends FirebaseMessagingService {
             channel.setDescription("Full-screen alerts for partner voice and video calls");
             channel.enableVibration(true);
             channel.setVibrationPattern(new long[]{0, 800, 500, 800, 500, 800});
-            channel.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+            channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+            channel.setBypassDnd(true);
 
             Uri ringtoneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
             AudioAttributes audioAttributes = new AudioAttributes.Builder()
@@ -121,7 +143,7 @@ public class LoveVerseMessagingService extends FirebaseMessagingService {
             notificationManager.notify(CALL_NOTIFICATION_ID, builder.build());
         }
 
-        // Direct launch if display allows
+        // 5. Direct launch attempt as well (works on devices with pop-up window permission or when screen is on)
         try {
             startActivity(callIntent);
         } catch (Exception ignored) {}

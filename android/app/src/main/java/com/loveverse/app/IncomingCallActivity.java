@@ -1,6 +1,5 @@
 package com.loveverse.app;
 
-import android.app.Activity;
 import android.app.KeyguardManager;
 import android.app.NotificationManager;
 import android.content.Context;
@@ -19,8 +18,9 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import androidx.appcompat.app.AppCompatActivity;
 
-public class IncomingCallActivity extends Activity {
+public class IncomingCallActivity extends AppCompatActivity {
 
     private MediaPlayer mediaPlayer;
     private Vibrator vibrator;
@@ -34,11 +34,10 @@ public class IncomingCallActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Must configure window to show on locked screen and turn screen on BEFORE super.onCreate
+        configureLockScreenFlags();
+
         super.onCreate(savedInstanceState);
-
-        // Unlock and turn on screen when phone is locked / display is off
-        turnScreenOnAndDismissKeyguard();
-
         setContentView(R.layout.activity_incoming_call);
 
         // Extract call parameters from Intent
@@ -101,7 +100,7 @@ public class IncomingCallActivity extends Activity {
         autoTimeoutHandler.postDelayed(timeoutRunnable, 35000);
     }
 
-    private void turnScreenOnAndDismissKeyguard() {
+    private void configureLockScreenFlags() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true);
             setTurnScreenOn(true);
@@ -109,14 +108,15 @@ public class IncomingCallActivity extends Activity {
             if (keyguardManager != null) {
                 keyguardManager.requestDismissKeyguard(this, null);
             }
-        } else {
-            getWindow().addFlags(
-                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
-                WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD |
-                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON |
-                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
-            );
         }
+
+        getWindow().addFlags(
+            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
+            WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD |
+            WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON |
+            WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON |
+            WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON
+        );
     }
 
     private void startRingingAndVibration() {

@@ -52,7 +52,7 @@
         <!-- Full-Screen Incoming Call Activity (Wakes phone when locked) -->
         <activity
             android:name=".IncomingCallActivity"
-            android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:theme="@style/AppTheme.IncomingCall"
             android:launchMode="singleTop"
             android:excludeFromRecents="true"
             android:showWhenLocked="true"
