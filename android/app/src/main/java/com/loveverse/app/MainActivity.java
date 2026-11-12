@@ -56,9 +56,25 @@ public class MainActivity extends BridgeActivity {
             webView.addJavascriptInterface(new Object() {
                 @android.webkit.JavascriptInterface
                 public void syncWidget(String userId, String partnerName, String photoUrl, String daysTogether, String mood) {
+                    syncWidgetWithBattery(userId, partnerName, photoUrl, daysTogether, mood, -1);
+                }
+
+                @android.webkit.JavascriptInterface
+                public void syncWidgetWithBattery(String userId, String partnerName, String photoUrl, String daysTogether, String mood, int batteryLevel) {
                     android.content.SharedPreferences prefs = getSharedPreferences("LoveVerseWidgetPrefs", MODE_PRIVATE);
                     prefs.edit().putString("user_id", userId).apply();
-                    LoveVerseWidgetProvider.saveAndRefreshWidget(MainActivity.this, partnerName, photoUrl, daysTogether, mood, "Just now");
+                    LoveVerseWidgetProvider.saveAndRefreshWidget(MainActivity.this, partnerName, photoUrl, daysTogether, mood, "Just now", batteryLevel);
+                }
+
+                @android.webkit.JavascriptInterface
+                public int getBatteryLevel() {
+                    try {
+                        android.os.BatteryManager bm = (android.os.BatteryManager) getSystemService(BATTERY_SERVICE);
+                        if (bm != null) {
+                            return bm.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY);
+                        }
+                    } catch (Exception ignored) {}
+                    return -1;
                 }
             }, "LoveVerseWidget");
 

@@ -37,7 +37,7 @@ public class LoveVerseWidgetProvider extends AppWidgetProvider {
         String mood = prefs.getString("mood", "🥰 Romantic");
         String photoTime = prefs.getString("photo_time", "Just now");
         int heartbeatCount = prefs.getInt("heartbeat_count", 0);
-        int battery = prefs.getInt("battery_level", 75);
+        int battery = prefs.getInt("battery_level", -1);
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_love_verse);
 
@@ -45,7 +45,11 @@ public class LoveVerseWidgetProvider extends AppWidgetProvider {
         views.setTextViewText(R.id.widget_partner_name, partnerName);
         views.setTextViewText(R.id.widget_days_together, daysTogether);
         views.setTextViewText(R.id.widget_partner_mood, mood);
-        views.setTextViewText(R.id.widget_battery, " • 🔋 " + battery + "%");
+        if (battery > 0 && battery <= 100) {
+            views.setTextViewText(R.id.widget_battery, " • 🔋 " + battery + "%");
+        } else {
+            views.setTextViewText(R.id.widget_battery, "");
+        }
         views.setTextViewText(R.id.widget_photo_time, photoTime);
 
         if (heartbeatCount > 0) {
@@ -122,6 +126,18 @@ public class LoveVerseWidgetProvider extends AppWidgetProvider {
         final String mood,
         final String photoTime
     ) {
+        saveAndRefreshWidget(context, partnerName, photoUrl, daysTogether, mood, photoTime, -1);
+    }
+
+    public static void saveAndRefreshWidget(
+        final Context context,
+        final String partnerName,
+        final String photoUrl,
+        final String daysTogether,
+        final String mood,
+        final String photoTime,
+        final int batteryLevel
+    ) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
 
@@ -132,6 +148,9 @@ public class LoveVerseWidgetProvider extends AppWidgetProvider {
         }
         if (mood != null) editor.putString("mood", mood);
         if (photoTime != null) editor.putString("photo_time", photoTime);
+        if (batteryLevel > 0 && batteryLevel <= 100) {
+            editor.putInt("battery_level", batteryLevel);
+        }
         editor.apply();
 
         // Download photo in background if URL is provided

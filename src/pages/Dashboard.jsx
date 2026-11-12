@@ -325,16 +325,49 @@ function Dashboard() {
     window.addEventListener('love_verse_open_widget_snap', handleOpenWidgetSnap);
 
     // Auto-sync Android Home Screen Widget with latest partner photo & days
-    if (typeof window !== 'undefined' && window.LoveVerseWidget?.syncWidget && user) {
+    if (typeof window !== 'undefined' && user) {
       const partnerPhoto = user?.partnerId?.widgetPhoto || user?.partnerId?.avatar || user?.partnerAvatar || null;
-      window.LoveVerseWidget.syncWidget(
-        String(userId),
-        partnerName,
-        partnerPhoto,
-        String(daysTogether),
-        user?.mood || 'Romantic ❤️'
-      );
+      const partnerBattery = user?.partnerId?.batteryLevel || -1;
+      if (window.LoveVerseWidget?.syncWidgetWithBattery) {
+        window.LoveVerseWidget.syncWidgetWithBattery(
+          String(userId),
+          partnerName,
+          partnerPhoto,
+          String(daysTogether),
+          user?.mood || 'Romantic ❤️',
+          partnerBattery
+        );
+      } else if (window.LoveVerseWidget?.syncWidget) {
+        window.LoveVerseWidget.syncWidget(
+          String(userId),
+          partnerName,
+          partnerPhoto,
+          String(daysTogether),
+          user?.mood || 'Romantic ❤️'
+        );
+      }
     }
+
+    // Read REAL phone battery percentage and sync to partner's widget
+    const syncRealBattery = async () => {
+      try {
+        let level = -1;
+        if (typeof window !== 'undefined' && window.LoveVerseWidget?.getBatteryLevel) {
+          level = window.LoveVerseWidget.getBatteryLevel();
+        }
+        if (level <= 0 && typeof navigator !== 'undefined' && 'getBattery' in navigator) {
+          const battery = await navigator.getBattery();
+          level = Math.round(battery.level * 100);
+        }
+        if (level > 0 && userId && userId !== 'guest') {
+          axios.post(`${API_URL}/api/auth/update-battery`, {
+            userId,
+            batteryLevel: level
+          }).catch(() => {});
+        }
+      } catch (e) {}
+    };
+    syncRealBattery();
 
     // Real-Time Global Message Notification (Pill, sound chime & mobile system push)
     const handleGlobalReceiveMessage = (data) => {
