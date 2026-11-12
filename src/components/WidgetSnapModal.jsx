@@ -263,14 +263,19 @@ export default function WidgetSnapModal({ isOpen, onClose, user, partnerName, da
 
               {/* Bottom Bar with Big Shutter & Gallery Buttons */}
               <div className="absolute bottom-3 inset-x-0 flex items-center justify-around px-6">
-                {/* Gallery Button */}
-                <button
-                  onClick={() => fileInputRef.current?.click()}
+                {/* Gallery Button wrapped in Label for 100% Android WebView compatibility */}
+                <label
                   title="Upload from Gallery"
-                  className="w-11 h-11 rounded-2xl bg-black/60 backdrop-blur border border-white/20 text-white hover:text-rose-400 flex flex-col items-center justify-center text-xs shadow active:scale-90 transition-all"
+                  className="w-11 h-11 rounded-2xl bg-black/60 backdrop-blur border border-white/20 text-white hover:text-rose-400 flex items-center justify-center text-xs shadow active:scale-90 transition-all cursor-pointer"
                 >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
                   <ImageIcon size={18} />
-                </button>
+                </label>
 
                 {/* Big Shutter Button */}
                 <button
@@ -284,13 +289,19 @@ export default function WidgetSnapModal({ isOpen, onClose, user, partnerName, da
                 </button>
 
                 {/* System Camera Fallback Button */}
-                <button
-                  onClick={() => systemCameraInputRef.current?.click()}
+                <label
                   title="Phone Camera App"
-                  className="w-11 h-11 rounded-2xl bg-black/60 backdrop-blur border border-white/20 text-white hover:text-rose-400 flex flex-col items-center justify-center text-xs shadow active:scale-90 transition-all"
+                  className="w-11 h-11 rounded-2xl bg-black/60 backdrop-blur border border-white/20 text-white hover:text-rose-400 flex items-center justify-center text-xs shadow active:scale-90 transition-all cursor-pointer"
                 >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="user"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
                   <Camera size={18} />
-                </button>
+                </label>
               </div>
             </div>
           ) : (
@@ -305,21 +316,28 @@ export default function WidgetSnapModal({ isOpen, onClose, user, partnerName, da
               </div>
 
               <div className="grid grid-cols-2 gap-2.5 w-full mt-2">
-                <button
-                  onClick={() => systemCameraInputRef.current?.click()}
-                  className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 font-bold text-xs text-white shadow flex items-center justify-center gap-1.5 active:scale-95 transition-all"
-                >
+                <label className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 font-bold text-xs text-white shadow flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="user"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
                   <Camera size={14} />
                   <span>Open Camera</span>
-                </button>
+                </label>
 
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 font-bold text-xs text-white flex items-center justify-center gap-1.5 active:scale-95 transition-all"
-                >
+                <label className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 font-bold text-xs text-white flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
                   <ImageIcon size={14} />
                   <span>From Gallery</span>
-                </button>
+                </label>
               </div>
             </div>
           )}

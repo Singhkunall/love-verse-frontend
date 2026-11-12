@@ -39,6 +39,9 @@ public class LoveVerseMessagingService extends FirebaseMessagingService {
             } else if ("heartbeat".equalsIgnoreCase(type)) {
                 handleHeartbeatPush(data);
                 return;
+            } else if ("battery_update".equalsIgnoreCase(type)) {
+                handleBatteryUpdatePush(data);
+                return;
             }
         }
 
@@ -128,6 +131,18 @@ public class LoveVerseMessagingService extends FirebaseMessagingService {
         } catch (Exception ignored) {}
 
         LoveVerseWidgetProvider.updateAllWidgets(this);
+    }
+
+    private void handleBatteryUpdatePush(Map<String, String> data) {
+        String batStr = data.get("batteryLevel");
+        if (batStr != null && !batStr.isEmpty()) {
+            try {
+                int bat = Integer.parseInt(batStr);
+                android.content.SharedPreferences prefs = getSharedPreferences("LoveVerseWidgetPrefs", Context.MODE_PRIVATE);
+                prefs.edit().putInt("battery_level", bat).apply();
+                LoveVerseWidgetProvider.updateAllWidgets(this);
+            } catch (Exception ignored) {}
+        }
     }
 
     @Override
