@@ -23,6 +23,7 @@ import AnniversaryModal from '../components/AnniversaryModal';
 import LoveDoodleBoard from '../components/LoveDoodleBoard';
 import MediaLightbox from '../components/MediaLightbox';
 import SettingsModal from '../components/SettingsModal';
+import WidgetSnapModal from '../components/WidgetSnapModal';
 import { mobileService } from '../utils/mobileService';
 import API_URL from '../utils/config';
 import { compressImage } from '../utils/imageCompressor';
@@ -79,6 +80,7 @@ function Dashboard() {
   ]);
   const [showSecurityLock, setShowSecurityLock] = useState(false);
   const [showAnniversaryModal, setShowAnniversaryModal] = useState(false);
+  const [showWidgetSnapModal, setShowWidgetSnapModal] = useState(false);
   const [isPartnerOnline, setIsPartnerOnline] = useState(false);
   const [unreadChatCount, setUnreadChatCount] = useState(0);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -316,6 +318,24 @@ function Dashboard() {
     };
     window.addEventListener('love_verse_navigate', handlePushNavigate);
 
+    // Listener for Home Screen Widget Camera Snap action
+    const handleOpenWidgetSnap = () => {
+      setShowWidgetSnapModal(true);
+    };
+    window.addEventListener('love_verse_open_widget_snap', handleOpenWidgetSnap);
+
+    // Auto-sync Android Home Screen Widget with latest partner photo & days
+    if (typeof window !== 'undefined' && window.LoveVerseWidget?.syncWidget && user) {
+      const partnerPhoto = user?.partnerId?.widgetPhoto || user?.partnerId?.avatar || user?.partnerAvatar || null;
+      window.LoveVerseWidget.syncWidget(
+        String(userId),
+        partnerName,
+        partnerPhoto,
+        String(daysTogether),
+        user?.mood || 'Romantic ❤️'
+      );
+    }
+
     // Real-Time Global Message Notification (Pill, sound chime & mobile system push)
     const handleGlobalReceiveMessage = (data) => {
       if (!data) return;
@@ -474,6 +494,7 @@ function Dashboard() {
       socket.off("user_presence_change", handlePresenceChange);
       socket.off("presence_response", handlePresenceResponse);
       window.removeEventListener('love_verse_navigate', handlePushNavigate);
+      window.removeEventListener('love_verse_open_widget_snap', handleOpenWidgetSnap);
     };
   }, [roomId, userId, partnerId]);
 
@@ -633,6 +654,15 @@ function Dashboard() {
               )}
             </button>
 
+            {/* Widget Snap Button */}
+            <button
+              onClick={() => setShowWidgetSnapModal(true)}
+              className="p-2.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-500 border border-rose-200 shadow-sm transition-all active:scale-95 flex items-center justify-center"
+              title="Send Home Screen Widget Snap"
+            >
+              <Camera size={18} />
+            </button>
+
             {/* 2. Security Lock */}
             <button
               onClick={() => setShowSecurityLock(true)}
@@ -680,6 +710,15 @@ function Dashboard() {
           isOpen={showSecurityLock}
           onClose={() => setShowSecurityLock(false)}
           onUnlock={() => setShowSecurityLock(false)}
+        />
+
+        {/* Home Screen Widget Snap Modal */}
+        <WidgetSnapModal
+          isOpen={showWidgetSnapModal}
+          onClose={() => setShowWidgetSnapModal(false)}
+          user={user}
+          partnerName={partnerName}
+          daysTogether={daysTogether}
         />
 
         {/* 1-Year Anniversary Celebration Modal */}

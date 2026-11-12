@@ -65,6 +65,28 @@
             android:name=".CallActionReceiver"
             android:exported="false" />
 
+        <!-- Love-Verse Android Home Screen Widget Provider -->
+        <receiver
+            android:name=".LoveVerseWidgetProvider"
+            android:label="Love-Verse Couple Widget"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/love_verse_widget_info" />
+        </receiver>
+
+        <!-- Broadcast Receiver for 1-Tap Heartbeat from Home Screen Widget -->
+        <receiver
+            android:name=".HeartbeatWidgetReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.loveverse.app.ACTION_SEND_HEARTBEAT" />
+            </intent-filter>
+        </receiver>
+
         <!-- Custom Firebase Messaging Service for Full-Screen Call Interception -->
         <service
             android:name=".LoveVerseMessagingService"

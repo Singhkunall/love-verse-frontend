@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:background="@drawable/bg_widget_card"
+    android:padding="12dp"
+    android:gravity="center_vertical">
+
+    <!-- Left: Live Partner Photo Frame -->
+    <FrameLayout
+        android:id="@+id/widget_photo_container"
+        android:layout_width="115dp"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_widget_photo">
+
+        <ImageView
+            android:id="@+id/widget_partner_photo"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:src="@drawable/bg_widget_photo"
+            android:contentDescription="Partner Photo" />
+
+        <!-- Top Left: Partner Name Tag -->
+        <TextView
+            android:id="@+id/widget_partner_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|start"
+            android:layout_margin="6dp"
+            android:background="@drawable/bg_call_pill"
+            android:paddingHorizontal="6dp"
+            android:paddingVertical="2dp"
+            android:text="Partner ❤️"
+            android:textColor="#FFFFFF"
+            android:textSize="10sp"
+            android:textStyle="bold" />
+
+        <!-- Bottom Left: Time Ago -->
+        <TextView
+            android:id="@+id/widget_photo_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|start"
+            android:layout_margin="6dp"
+            android:text="Just now"
+            android:textColor="#CCFFFFFF"
+            android:textSize="9sp" />
+
+        <!-- Bottom Right: Camera Snap Button -->
+        <ImageButton
+            android:id="@+id/btn_widget_camera"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="4dp"
+            android:background="@drawable/bg_widget_heartbeat_btn"
+            android:src="@drawable/ic_widget_camera"
+            android:padding="6dp"
+            android:contentDescription="Snap Photo" />
+    </FrameLayout>
+
+    <!-- Right: Couple Details & 1-Tap Heartbeat Action -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:layout_marginStart="10dp"
+        android:orientation="vertical"
+        android:gravity="center_vertical">
+
+        <!-- Days Together Counter Pill -->
+        <TextView
+            android:id="@+id/widget_days_together"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_widget_pill"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="3dp"
+            android:text="412 Days Together ❤️"
+            android:textColor="#FDA4AF"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+        <!-- Partner Mood & Battery -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="4dp"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/widget_partner_mood"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🥰 Romantic"
+                android:textColor="#F43F5E"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/widget_battery"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" • 🔋 75%"
+                android:textColor="#94A3B8"
+                android:textSize="10sp" />
+        </LinearLayout>
+
+        <!-- 1-Tap Send Heartbeat Button -->
+        <LinearLayout
+            android:id="@+id/btn_send_heartbeat"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_widget_heartbeat_btn"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingHorizontal="8dp">
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginEnd="6dp"
+                android:src="@drawable/ic_widget_heart"
+                android:contentDescription="Heartbeat" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Send Heartbeat"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Status / Counter -->
+        <TextView
+            android:id="@+id/widget_heartbeat_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:gravity="center"
+            android:text="💓 Tap to send love"
+            android:textColor="#94A3B8"
+            android:textSize="9sp" />
+
+    </LinearLayout>
+
+</LinearLayout>

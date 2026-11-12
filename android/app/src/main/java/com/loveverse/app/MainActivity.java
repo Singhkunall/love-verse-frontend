@@ -53,6 +53,15 @@ public class MainActivity extends BridgeActivity {
             settings.setDomStorageEnabled(true);
             settings.setDatabaseEnabled(true);
 
+            webView.addJavascriptInterface(new Object() {
+                @android.webkit.JavascriptInterface
+                public void syncWidget(String userId, String partnerName, String photoUrl, String daysTogether, String mood) {
+                    android.content.SharedPreferences prefs = getSharedPreferences("LoveVerseWidgetPrefs", MODE_PRIVATE);
+                    prefs.edit().putString("user_id", userId).apply();
+                    LoveVerseWidgetProvider.saveAndRefreshWidget(MainActivity.this, partnerName, photoUrl, daysTogether, mood, "Just now");
+                }
+            }, "LoveVerseWidget");
+
             webView.setWebChromeClient(new WebChromeClient() {
                 @Override
                 public void onPermissionRequest(final PermissionRequest request) {
@@ -109,6 +118,19 @@ public class MainActivity extends BridgeActivity {
                     }
                 }
             }, 500);
+        } else if ("open_widget_camera".equals(action)) {
+            new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    WebView wv = bridge != null ? bridge.getWebView() : null;
+                    if (wv != null) {
+                        wv.evaluateJavascript(
+                            "window.dispatchEvent(new CustomEvent('love_verse_open_widget_snap'));",
+                            null
+                        );
+                    }
+                }
+            }, 800);
         }
     }
 

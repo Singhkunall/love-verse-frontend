@@ -11,6 +11,8 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.PowerManager;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import com.capacitorjs.plugins.pushnotifications.PushNotificationsPlugin;
@@ -26,13 +28,106 @@ public class LoveVerseMessagingService extends FirebaseMessagingService {
     @Override
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
         Map<String, String> data = remoteMessage.getData();
-        if (data != null && "call".equalsIgnoreCase(data.get("type"))) {
-            showFullScreenIncomingCall(data);
-            return;
+        if (data != null) {
+            String type = data.get("type");
+            if ("call".equalsIgnoreCase(type)) {
+                showFullScreenIncomingCall(data);
+                return;
+            } else if ("widget_update".equalsIgnoreCase(type)) {
+                handleWidgetUpdatePush(data);
+                return;
+            } else if ("heartbeat".equalsIgnoreCase(type)) {
+                handleHeartbeatPush(data);
+                return;
+            }
         }
 
         // Delegate chat messages to Capacitor's default push notification pipeline
         PushNotificationsPlugin.sendRemoteMessage(remoteMessage);
+    }
+
+    private void handleWidgetUpdatePush(Map<String, String> data) {
+        String photoUrl = data.get("photoUrl");
+        String senderName = data.get("senderName");
+        String daysTogether = data.get("daysTogether");
+        String mood = data.get("mood");
+
+        LoveVerseWidgetProvider.saveAndRefreshWidget(
+            this,
+            senderName,
+            photoUrl,
+            daysTogether,
+            mood,
+            "Just now"
+        );
+
+        // Show friendly notification banner that partner updated the home screen
+        try {
+            NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm != null) {
+                Intent openIntent = new Intent(this, MainActivity.class);
+                PendingIntent pi = PendingIntent.getActivity(
+                    this,
+                    991,
+                    openIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)
+                );
+
+                NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "love_verse_channel")
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setContentTitle("New Home Screen Photo 📸❤️")
+                    .setContentText((senderName != null ? senderName : "Partner") + " sent a new photo to your widget!")
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setAutoCancel(true)
+                    .setContentIntent(pi);
+
+                nm.notify(991, builder.build());
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private void handleHeartbeatPush(Map<String, String> data) {
+        String senderName = data.get("senderName");
+        if (senderName == null || senderName.isEmpty()) senderName = "Partner";
+
+        // Gentle love heartbeat vibration
+        try {
+            Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+            if (vibrator != null && vibrator.hasVibrator()) {
+                long[] pattern = { 0, 90, 100, 140, 100, 90 };
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1));
+                } else {
+                    vibrator.vibrate(pattern, -1);
+                }
+            }
+        } catch (Exception ignored) {}
+
+        // Show heartbeat banner notification
+        try {
+            NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm != null) {
+                Intent openIntent = new Intent(this, MainActivity.class);
+                PendingIntent pi = PendingIntent.getActivity(
+                    this,
+                    992,
+                    openIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)
+                );
+
+                NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "love_verse_channel")
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setContentTitle("Heartbeat Received 💓")
+                    .setContentText(senderName + " sent you a love heartbeat!")
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setAutoCancel(true)
+                    .setContentIntent(pi);
+
+                nm.notify(992, builder.build());
+            }
+        } catch (Exception ignored) {}
+
+        LoveVerseWidgetProvider.updateAllWidgets(this);
     }
 
     @Override
